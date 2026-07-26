@@ -343,6 +343,7 @@
     border-radius: 10px 10px 0 0; font-size: 12px; color: #9a9aa2;
   }
   .code-block-header + pre { border-radius: 0 0 10px 10px; margin-top: 0; }
+  .code-block-header-actions { display: flex; align-items: center; gap: 6px; }
   .copy-code-btn {
     background: none; border: 1px solid #35353a; color: #9a9aa2;
     border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer;
@@ -419,7 +420,7 @@
   }
   .history-item mark { background: var(--accent); color: #fff; border-radius: 3px; padding: 0 1px; }
   #no-results { padding: 10px; font-size: 12px; color: var(--text-dim); text-align: center; }
-  .actions { display: flex; gap: 6px; margin-top: 8px; opacity: .5; }
+  .actions { display: flex; gap: 6px; margin-top: 8px; opacity: .5; flex-wrap: wrap; }
   .actions button {
     background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px;
     display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 6px;
@@ -583,7 +584,7 @@
     border-radius: 10px; padding: 10px; font-size: 15px; font-family: inherit; resize: none;
     outline: none; min-height: 44px;
   }
-  .edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+  .edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; flex-wrap: wrap; }
   .edit-actions button {
     font-size: 12px; padding: 6px 12px; border-radius: 7px; cursor: pointer; border: none;
   }
@@ -632,6 +633,8 @@
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
     .history-menu { min-width: 150px; }
+
+    #artifact-panel { width: 100% !important; }
   }
 
   @media (display-mode: standalone) {
@@ -643,6 +646,147 @@
     #bg-canvas { display: none; }
     #bg-glow { opacity: 0.5; }
   }
+
+  /* ===================================================================
+     FOLDERS / TAGS / ARCHIVE / TRASH
+  =================================================================== */
+  .folder-group { margin-bottom: 2px; }
+  .folder-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+    user-select: none;
+  }
+  .folder-header:hover { background: var(--panel-2); color: var(--text); }
+  .folder-header.drop-target { background: rgba(124,92,255,.15); outline: 1px dashed var(--accent); }
+  .folder-header .chev { width: 10px; height: 10px; transition: transform .15s ease; flex-shrink: 0; }
+  .folder-group.collapsed .chev { transform: rotate(-90deg); }
+  .folder-group.collapsed .folder-items { display: none; }
+  .folder-header .folder-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
+  .folder-header .folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-header .folder-count { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .folder-header .kebab-btn { opacity: 0; }
+  .folder-header:hover .kebab-btn { opacity: 1; }
+  .folder-items { padding-left: 4px; }
+  #folders-section { margin-bottom: 6px; }
+  #add-folder-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 12.5px; color: var(--text-dim); border: 1px dashed var(--border);
+    margin: 2px 0 8px;
+  }
+  #add-folder-row:hover { color: var(--text); border-color: var(--accent); }
+  .history-item[draggable="true"] { cursor: grab; }
+  .history-item.dragging { opacity: .4; }
+  .tag-chip {
+    display: inline-flex; align-items: center; font-size: 10px; font-weight: 600;
+    background: rgba(124,92,255,.15); color: var(--accent); border-radius: 20px;
+    padding: 1px 7px; margin-left: 4px; flex-shrink: 0; max-width: 70px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .archived-badge, .trash-badge { font-size: 11px; flex-shrink: 0; }
+  .trash-meta { font-size: 11px; color: var(--text-dim); padding: 2px 0 0; }
+  .restore-link { background: none; border: none; color: var(--accent); font-size: 12px; cursor: pointer; padding: 4px 6px; }
+  .restore-link:hover { text-decoration: underline; }
+  #move-folder-menu, #tag-input-row { padding: 6px; }
+  .folder-pick-btn {
+    display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--text); font-size: 13px;
+    padding: 7px 8px; border-radius: 6px; cursor: pointer;
+  }
+  .folder-pick-btn:hover { background: var(--border); }
+  .folder-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ===================================================================
+     MESSAGE TOOLBAR EXTRAS (translate / language menu / quote block)
+  =================================================================== */
+  .lang-menu-wrap { position: relative; display: inline-block; }
+  .lang-menu {
+    position: absolute; bottom: calc(100% + 4px); left: 0; z-index: 41;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px; min-width: 150px; max-height: 220px; overflow-y: auto;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); display: none;
+  }
+  .lang-menu.open { display: block; }
+  .lang-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: var(--text); font-size: 12.5px; padding: 6px 8px; border-radius: 6px; cursor: pointer;
+  }
+  .lang-menu button:hover { background: var(--border); }
+  .quote-block {
+    border-left: 3px solid var(--accent); background: var(--panel-2);
+    padding: 8px 10px; border-radius: 0 8px 8px 0; margin-bottom: 8px;
+    font-size: 12.5px; color: var(--text-dim); position: relative;
+  }
+  .quote-block b { color: var(--text); }
+  .quote-block .quote-remove {
+    position: absolute; top: 4px; right: 6px; background: none; border: none;
+    color: var(--text-dim); cursor: pointer; font-size: 13px;
+  }
+  .toolbar-result-box {
+    margin-top: 8px; padding: 10px 12px; background: var(--panel-2);
+    border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0; font-size: 13.5px; line-height: 1.55;
+  }
+  .toolbar-result-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--accent); font-weight: 700; margin-bottom: 4px;
+  }
+  .toolbar-spinner {
+    display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+    border: 2px solid var(--text-dim); border-top-color: var(--accent);
+    animation: spin .7s linear infinite; vertical-align: -1px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===================================================================
+     ARTIFACT PANEL
+  =================================================================== */
+  .open-artifact-btn { color: var(--accent) !important; }
+  #artifact-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    z-index: 55;
+  }
+  #artifact-backdrop.show { display: block; }
+  #artifact-panel {
+    position: fixed; top: 0; right: 0; height: 100dvh; width: min(640px, 92vw);
+    background: var(--panel); border-left: 1px solid var(--border);
+    z-index: 56; display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform .28s ease;
+    box-shadow: -8px 0 30px rgba(0,0,0,.25);
+  }
+  #artifact-panel.show { transform: translateX(0); }
+  #artifact-panel.fullscreen { width: 100vw; }
+  .artifact-header {
+    display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .artifact-title { font-size: 13.5px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .artifact-badge {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    background: rgba(124,92,255,.15); color: var(--accent); border-radius: 6px; padding: 3px 7px;
+    flex-shrink: 0;
+  }
+  .artifact-tabs { display: flex; gap: 4px; padding: 8px 14px 0; flex-shrink: 0; }
+  .artifact-tab {
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    font-size: 12.5px; padding: 7px 12px; border-bottom: 2px solid transparent; font-weight: 500;
+  }
+  .artifact-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .artifact-toolbar { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .artifact-icon-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
+    border-radius: 7px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  }
+  .artifact-icon-btn:hover { color: var(--text); background: var(--panel-2); }
+  .artifact-body { flex: 1; overflow: auto; position: relative; background: var(--code-bg); }
+  .artifact-body iframe { width: 100%; height: 100%; border: none; background: #fff; }
+  .artifact-body pre {
+    margin: 0; padding: 16px; font-size: 13px; font-family: "SF Mono", Menlo, monospace;
+    white-space: pre; overflow: auto; height: 100%; color: var(--text);
+  }
+  .artifact-body .artifact-markdown { padding: 20px; background: var(--panel); height: 100%; overflow: auto; font-size: 14.5px; line-height: 1.65; }
+  .artifact-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -689,11 +833,26 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       Templates
     </button>
+    <button class="nav-item" onclick="openArchivePanel()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 7h18M5 7v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7M9 11h6M3 4h18v3H3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Archived
+    </button>
+    <button class="nav-item" onclick="openTrashPanel()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Trash
+    </button>
   </div>
   <div id="chat-search-wrap">
     <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     <input id="chat-search" type="text" placeholder="Search chats..." oninput="filterHistory(this.value)" aria-label="Search chats">
   </div>
+
+  <div id="folders-section"></div>
+  <div id="add-folder-row" onclick="createFolderPrompt()">
+    <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    New folder
+  </div>
+
   <div id="history-list"></div>
   <div class="sidebar-footer">
     <div class="sf-mark">
@@ -837,6 +996,41 @@
   </div>
 </div>
 
+<!-- Archived chats panel -->
+<div id="archive-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeArchivePanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🗄️ Archived Chats</h3><button class="icon-close" onclick="closeArchivePanel()">✕</button></div>
+    <div class="panel-body" id="archive-list"></div>
+  </div>
+</div>
+
+<!-- Trash panel -->
+<div id="trash-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeTrashPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🗑️ Trash</h3><button class="icon-close" onclick="closeTrashPanel()">✕</button></div>
+    <div class="panel-body" id="trash-list">
+      <div class="empty-hint">Chats stay here until you empty the trash. Deleting from Trash is permanent.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Artifact panel -->
+<div id="artifact-backdrop" onclick="closeArtifact()"></div>
+<div id="artifact-panel">
+  <div class="artifact-header">
+    <span class="artifact-badge" id="artifact-badge">CODE</span>
+    <span class="artifact-title" id="artifact-title">Artifact</span>
+    <div class="artifact-toolbar">
+      <button class="artifact-icon-btn" onclick="copyArtifactCode()" data-tooltip="Copy code" aria-label="Copy code"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <button class="artifact-icon-btn" onclick="downloadArtifact()" data-tooltip="Download" aria-label="Download"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="artifact-icon-btn" onclick="toggleArtifactFullscreen()" data-tooltip="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="artifact-icon-btn" onclick="closeArtifact()" data-tooltip="Close" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="artifact-tabs" id="artifact-tabs"></div>
+  <div class="artifact-body" id="artifact-body"></div>
+</div>
+
 <script>
 // ====== CONFIG ======
 const API_URL = "https://biswajitmohapatra-biswalex-llm.hf.space";
@@ -855,6 +1049,14 @@ let activeProjectId = null;
 let pendingProjectFiles = [];
 let templates = [];
 let isSharedView = false;
+
+// ---------- STATE: folders / organization ----------
+let folders = [];
+const FOLDER_COLORS = ['#7c5cff', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+let draggedConvId = null;
+
+const CHEV_SVG = `<svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const KEBAB_SVG = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>`;
 
 const DEFAULT_TEMPLATES = [
   { id: 't1', title: 'Summarize document', text: "Summarize the attached document in 5 bullet points." },
@@ -1131,11 +1333,31 @@ function startEditMessage(bubbleId, idx) {
   const cancelBtn = document.createElement('button');
   cancelBtn.textContent = 'Cancel';
   cancelBtn.onclick = () => cancelEditMessage(bubbleId, idx);
+  const improveBtn = document.createElement('button');
+  improveBtn.textContent = '✨ Improve writing';
+  improveBtn.onclick = async () => {
+    const original = ta.value;
+    if (!original.trim()) return;
+    improveBtn.disabled = true;
+    improveBtn.textContent = '✨ Improving...';
+    try {
+      const res = await fetch(API_URL + '/quick-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: original, task: 'improve', model: selectedModel })
+      });
+      const data = await res.json();
+      if (data.result) { ta.value = data.result; autoGrow(ta); }
+    } catch (err) { /* silently leave text unchanged on failure */ }
+    improveBtn.disabled = false;
+    improveBtn.textContent = '✨ Improve writing';
+  };
   const saveBtn = document.createElement('button');
   saveBtn.className = 'primary';
   saveBtn.textContent = 'Save & submit';
   saveBtn.onclick = () => saveEditMessage(bubbleId, idx, ta.value);
   actions.appendChild(cancelBtn);
+  actions.appendChild(improveBtn);
   actions.appendChild(saveBtn);
   bubble.appendChild(ta);
   bubble.appendChild(actions);
@@ -1228,11 +1450,243 @@ function initTheme() {
 }
 initTheme();
 
+// ---------- FOLDERS ----------
+function loadFolders() {
+  try { folders = JSON.parse(localStorage.getItem('biswalex_folders') || '[]'); } catch (e) { folders = []; }
+}
+function saveFolders() { localStorage.setItem('biswalex_folders', JSON.stringify(folders)); }
+
+function createFolderPrompt() {
+  const name = prompt('Folder name');
+  if (!name || !name.trim()) return;
+  const color = FOLDER_COLORS[folders.length % FOLDER_COLORS.length];
+  folders.push({ id: 'f-' + Date.now(), name: name.trim().slice(0, 40), color, collapsed: false });
+  saveFolders();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function renameFolder(evt, id) {
+  evt.stopPropagation();
+  const f = folders.find(x => x.id === id);
+  if (!f) return;
+  const name = prompt('Rename folder', f.name);
+  if (name && name.trim()) {
+    f.name = name.trim().slice(0, 40);
+    saveFolders();
+    renderHistory(document.getElementById('chat-search').value);
+  }
+}
+
+function deleteFolder(evt, id) {
+  evt.stopPropagation();
+  if (!confirm('Delete this folder? Chats inside will become unfiled (not deleted).')) return;
+  folders = folders.filter(f => f.id !== id);
+  conversations.forEach(c => { if (c.folderId === id) c.folderId = null; });
+  saveFolders();
+  saveConversations();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function toggleFolderCollapse(id) {
+  const f = folders.find(x => x.id === id);
+  if (!f) return;
+  f.collapsed = !f.collapsed;
+  saveFolders();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function openMoveFolderMenu(evt, id) {
+  evt.stopPropagation();
+  const menu = document.getElementById('menu-' + id);
+  if (!menu) return;
+  const noFolderBtn = `<button onclick="moveConversationToFolder('${id}', null)">🚫 No folder</button>`;
+  const folderBtns = folders.map(f =>
+    `<button onclick="moveConversationToFolder('${id}', '${f.id}')"><span class="folder-color-dot" style="background:${f.color}"></span>${escapeHtml(f.name)}</button>`
+  ).join('');
+  const backBtn = `<button onclick="closeAllHistoryMenus()">← Cancel</button>`;
+  menu.innerHTML = noFolderBtn + folderBtns + backBtn;
+}
+
+function moveConversationToFolder(id, folderId) {
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  conv.folderId = folderId;
+  saveConversations();
+  closeAllHistoryMenus();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function duplicateConversation(evt, id) {
+  evt.stopPropagation();
+  closeAllHistoryMenus();
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  const copy = JSON.parse(JSON.stringify(conv));
+  copy.id = 'c-' + Date.now();
+  copy.title = (conv.title || 'Chat') + ' (copy)';
+  copy.pinned = false;
+  copy.updatedAt = Date.now();
+  conversations.push(copy);
+  saveConversations();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function promptAddTag(evt, id) {
+  evt.stopPropagation();
+  closeAllHistoryMenus();
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  const tag = prompt('Add a tag (e.g. "work", "urgent")', '');
+  if (!tag || !tag.trim()) return;
+  conv.tags = conv.tags || [];
+  const clean = tag.trim().slice(0, 20);
+  if (!conv.tags.includes(clean)) conv.tags.push(clean);
+  saveConversations();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function archiveConversation(evt, id) {
+  evt.stopPropagation();
+  closeAllHistoryMenus();
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  conv.archived = true;
+  saveConversations();
+  if (currentConvId === id) newChat();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function unarchiveConversation(id) {
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  conv.archived = false;
+  saveConversations();
+  renderArchiveList();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function trashConversation(evt, id) {
+  evt.stopPropagation();
+  closeAllHistoryMenus();
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  conv.deleted = true;
+  conv.deletedAt = Date.now();
+  saveConversations();
+  if (currentConvId === id) newChat();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function restoreFromTrash(id) {
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  conv.deleted = false;
+  conv.deletedAt = null;
+  saveConversations();
+  renderTrashList();
+  renderHistory(document.getElementById('chat-search').value);
+}
+
+function permanentlyDelete(id) {
+  if (!confirm('Permanently delete this chat? This cannot be undone.')) return;
+  conversations = conversations.filter(c => c.id !== id);
+  saveConversations();
+  renderTrashList();
+}
+
+function emptyTrash() {
+  const trashed = conversations.filter(c => c.deleted);
+  if (trashed.length === 0) return;
+  if (!confirm(`Permanently delete all ${trashed.length} chat(s) in Trash? This cannot be undone.`)) return;
+  conversations = conversations.filter(c => !c.deleted);
+  saveConversations();
+  renderTrashList();
+}
+
+function openArchivePanel() {
+  renderArchiveList();
+  document.getElementById('archive-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closeArchivePanel() { document.getElementById('archive-backdrop').classList.remove('show'); }
+function renderArchiveList() {
+  const list = document.getElementById('archive-list');
+  const items = conversations.filter(c => c.archived && !c.deleted).sort((a, b) => b.updatedAt - a.updatedAt);
+  if (items.length === 0) { list.innerHTML = '<div class="empty-hint">No archived chats.</div>'; return; }
+  list.innerHTML = items.map(c => `
+    <div class="project-item">
+      <div class="project-item-main" onclick="loadConversation('${c.id}'); closeArchivePanel();">
+        <div class="project-item-name">${escapeHtml(c.title)}</div>
+        <div class="project-item-sub">${new Date(c.updatedAt).toLocaleDateString()}</div>
+      </div>
+      <button class="restore-link" onclick="unarchiveConversation('${c.id}')">Unarchive</button>
+    </div>`).join('');
+}
+
+function openTrashPanel() {
+  renderTrashList();
+  document.getElementById('trash-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closeTrashPanel() { document.getElementById('trash-backdrop').classList.remove('show'); }
+function renderTrashList() {
+  const list = document.getElementById('trash-list');
+  const items = conversations.filter(c => c.deleted).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty-hint">Trash is empty. Chats stay here until you empty the trash.</div>';
+    return;
+  }
+  list.innerHTML = `<button class="panel-secondary-btn" style="margin-bottom:10px;" onclick="emptyTrash()">Empty Trash</button>` +
+    items.map(c => `
+    <div class="project-item">
+      <div class="project-item-main">
+        <div class="project-item-name">${escapeHtml(c.title)}</div>
+        <div class="trash-meta">Deleted ${c.deletedAt ? new Date(c.deletedAt).toLocaleDateString() : ''}</div>
+      </div>
+      <button class="restore-link" onclick="restoreFromTrash('${c.id}')">Restore</button>
+      <button class="danger-link" onclick="permanentlyDelete('${c.id}')">Delete forever</button>
+    </div>`).join('');
+}
+
+// ---- Drag & drop into folders ----
+function onHistoryDragStart(evt, id) {
+  draggedConvId = id;
+  evt.dataTransfer.effectAllowed = 'move';
+  try { evt.dataTransfer.setData('text/plain', id); } catch (e) {}
+  evt.currentTarget.classList.add('dragging');
+}
+function onHistoryDragEnd(evt) {
+  evt.currentTarget.classList.remove('dragging');
+  draggedConvId = null;
+}
+function onFolderDragOver(evt, el) {
+  evt.preventDefault();
+  el.classList.add('drop-target');
+}
+function onFolderDragLeave(evt, el) {
+  el.classList.remove('drop-target');
+}
+function onFolderDrop(evt, folderId) {
+  evt.preventDefault();
+  evt.currentTarget.classList.remove('drop-target');
+  let id = draggedConvId;
+  try { id = evt.dataTransfer.getData('text/plain') || draggedConvId; } catch (e) {}
+  if (id) moveConversationToFolder(id, folderId);
+}
+
 // ---------- CONVERSATION HISTORY / SEARCH ----------
 function loadConversations() {
   try {
     conversations = JSON.parse(localStorage.getItem('biswalex_conversations') || '[]');
   } catch (e) { conversations = []; }
+  // Backfill fields for conversations saved before folders/tags/archive/trash existed.
+  conversations.forEach(c => {
+    if (c.folderId === undefined) c.folderId = null;
+    if (!Array.isArray(c.tags)) c.tags = [];
+    if (c.archived === undefined) c.archived = false;
+    if (c.deleted === undefined) c.deleted = false;
+    if (c.deletedAt === undefined) c.deletedAt = null;
+  });
   renderHistory();
 }
 
@@ -1289,20 +1743,13 @@ function togglePinConversation(evt, id) {
   renderHistory(document.getElementById('chat-search').value);
 }
 
-function deleteConversation(evt, id) {
-  evt.stopPropagation();
-  closeAllHistoryMenus();
-  if (!confirm('Delete this chat? This cannot be undone.')) return;
-  conversations = conversations.filter(c => c.id !== id);
-  saveConversations();
-  if (currentConvId === id) newChat();
-  renderHistory(document.getElementById('chat-search').value);
-}
-
 document.addEventListener('click', (e) => {
   closeAllHistoryMenus();
   if (!e.target.closest('#export-wrap')) {
     document.getElementById('export-menu').classList.remove('open');
+  }
+  if (!e.target.closest('.lang-menu-wrap')) {
+    document.querySelectorAll('.lang-menu.open').forEach(m => m.classList.remove('open'));
   }
 });
 
@@ -1397,43 +1844,77 @@ function exportPDF() {
   setTimeout(() => win.print(), 300);
 }
 
+function highlightText(text, q) {
+  if (!q) return escapeHtml(text);
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return escapeHtml(text);
+  return escapeHtml(text.slice(0, idx)) + '<mark>' + escapeHtml(text.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(text.slice(idx + q.length));
+}
+
+function buildHistoryItemHtml(c, q) {
+  const tagsHtml = (c.tags || []).slice(0, 2).map(t => `<span class="tag-chip" title="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('');
+  return `
+    <div class="history-item ${c.id === currentConvId ? 'active' : ''}" tabindex="0" role="button" draggable="true"
+         ondragstart="onHistoryDragStart(event, '${c.id}')" ondragend="onHistoryDragEnd(event)"
+         onclick="loadConversation('${c.id}')" onkeydown="if(event.key==='Enter')loadConversation('${c.id}')">
+      ${c.pinned ? '<span class="pin-badge">📌</span>' : ''}
+      <span class="history-item-title">${highlightText(c.title, q)}</span>
+      ${tagsHtml}
+      <button class="kebab-btn" onclick="toggleHistoryMenu(event, '${c.id}')" aria-label="Chat options">${KEBAB_SVG}</button>
+      <div class="history-menu" id="menu-${c.id}">
+        <button onclick="togglePinConversation(event, '${c.id}')">${c.pinned ? '📌 Unpin' : '📌 Pin'}</button>
+        <button onclick="renameConversation(event, '${c.id}')">✏️ Rename</button>
+        <button onclick="duplicateConversation(event, '${c.id}')">⧉ Duplicate</button>
+        <button onclick="promptAddTag(event, '${c.id}')">🏷️ Add tag</button>
+        <button onclick="openMoveFolderMenu(event, '${c.id}')">📁 Move to folder</button>
+        <button onclick="archiveConversation(event, '${c.id}')">🗄️ Archive</button>
+        <button class="danger" onclick="trashConversation(event, '${c.id}')">🗑️ Move to Trash</button>
+      </div>
+    </div>`;
+}
+
+function renderFoldersSection(q, matchFn) {
+  const section = document.getElementById('folders-section');
+  if (folders.length === 0) { section.innerHTML = ''; return; }
+  section.innerHTML = folders.map(f => {
+    const items = conversations
+      .filter(c => !c.archived && !c.deleted && c.folderId === f.id && matchFn(c))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    if (q && items.length === 0) return '';
+    return `
+      <div class="folder-group ${f.collapsed ? 'collapsed' : ''}" data-folder-id="${f.id}">
+        <div class="folder-header" ondragover="onFolderDragOver(event, this)" ondragleave="onFolderDragLeave(event, this)" ondrop="onFolderDrop(event, '${f.id}')" onclick="toggleFolderCollapse('${f.id}')">
+          ${CHEV_SVG}
+          <span class="folder-dot" style="background:${f.color}"></span>
+          <span class="folder-name">${escapeHtml(f.name)}</span>
+          <span class="folder-count">${items.length}</span>
+          <button class="kebab-btn" onclick="renameFolder(event, '${f.id}')" data-tooltip="Rename folder" aria-label="Rename folder">✏️</button>
+          <button class="kebab-btn" onclick="deleteFolder(event, '${f.id}')" data-tooltip="Delete folder" aria-label="Delete folder">🗑️</button>
+        </div>
+        <div class="folder-items">${items.map(c => buildHistoryItemHtml(c, q)).join('') || '<div class="empty-hint" style="padding:4px 10px;">No chats yet — drag one here.</div>'}</div>
+      </div>`;
+  }).join('');
+}
+
 function renderHistory(filterText = '') {
   const list = document.getElementById('history-list');
   const q = filterText.trim().toLowerCase();
-  const sorted = [...conversations].sort((a, b) => b.updatedAt - a.updatedAt);
-  const filtered = q
-    ? sorted.filter(c =>
-        c.title.toLowerCase().includes(q) ||
-        c.messages.some(m => m.message.toLowerCase().includes(q)))
-    : sorted;
+  const visible = conversations.filter(c => !c.archived && !c.deleted);
+  const matchFn = (c) =>
+    !q ||
+    c.title.toLowerCase().includes(q) ||
+    c.messages.some(m => m.message.toLowerCase().includes(q)) ||
+    (c.tags || []).some(t => t.toLowerCase().includes(q));
+  const filtered = visible.filter(matchFn);
+  const unfiled = filtered.filter(c => !c.folderId).sort((a, b) => b.updatedAt - a.updatedAt);
+
+  renderFoldersSection(q, matchFn);
 
   if (filtered.length === 0) {
     list.innerHTML = `<div id="no-results">${q ? 'No chats match "' + escapeHtml(filterText) + '"' : 'No conversations yet'}</div>`;
     return;
   }
-
-  const highlight = (text) => {
-    if (!q) return escapeHtml(text);
-    const idx = text.toLowerCase().indexOf(q);
-    if (idx === -1) return escapeHtml(text);
-    return escapeHtml(text.slice(0, idx)) + '<mark>' + escapeHtml(text.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(text.slice(idx + q.length));
-  };
-
-  const CHEV = `<svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  const KEBAB = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>`;
-
-  const itemHtml = (c) => `
-    <div class="history-item ${c.id === currentConvId ? 'active' : ''}" tabindex="0" role="button"
-         onclick="loadConversation('${c.id}')" onkeydown="if(event.key==='Enter')loadConversation('${c.id}')">
-      ${c.pinned ? '<span class="pin-badge">📌</span>' : ''}
-      <span class="history-item-title">${highlight(c.title)}</span>
-      <button class="kebab-btn" onclick="toggleHistoryMenu(event, '${c.id}')" aria-label="Chat options">${KEBAB}</button>
-      <div class="history-menu" id="menu-${c.id}">
-        <button onclick="togglePinConversation(event, '${c.id}')">${c.pinned ? '📌 Unpin' : '📌 Pin'}</button>
-        <button onclick="renameConversation(event, '${c.id}')">✏️ Rename</button>
-        <button class="danger" onclick="deleteConversation(event, '${c.id}')">🗑️ Delete</button>
-      </div>
-    </div>`;
+  if (unfiled.length === 0) { list.innerHTML = ''; return; }
 
   const now = new Date();
   const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -1441,8 +1922,8 @@ function renderHistory(filterText = '') {
   const yesterday = today - 86400000;
   const weekAgo = today - 7 * 86400000;
 
-  const pinned = filtered.filter(c => c.pinned);
-  const rest = filtered.filter(c => !c.pinned);
+  const pinned = unfiled.filter(c => c.pinned);
+  const rest = unfiled.filter(c => !c.pinned);
 
   const groups = { Pinned: pinned, Today: [], Yesterday: [], 'Previous 7 days': [], Older: [] };
   rest.forEach(c => {
@@ -1457,8 +1938,8 @@ function renderHistory(filterText = '') {
     .filter(([, items]) => items.length)
     .map(([label, items]) => `
       <div class="history-group ${collapsedGroups[label] ? 'collapsed' : ''}">
-        <div class="history-group-label" onclick="toggleGroup('${label}')">${CHEV}${label}</div>
-        ${items.map(itemHtml).join('')}
+        <div class="history-group-label" onclick="toggleGroup('${label}')">${CHEV_SVG}${label}</div>
+        ${items.map(c => buildHistoryItemHtml(c, q)).join('')}
       </div>
     `).join('');
 }
@@ -1489,6 +1970,11 @@ function upsertConversation() {
       title: (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 40),
       messages: [],
       pinned: false,
+      folderId: null,
+      tags: [],
+      archived: false,
+      deleted: false,
+      deletedAt: null,
       updatedAt: Date.now()
     });
   }
@@ -1499,6 +1985,7 @@ function upsertConversation() {
   renderHistory(document.getElementById('chat-search').value);
 }
 
+loadFolders();
 loadConversations();
 loadProjects();
 loadTemplates();
@@ -1648,11 +2135,168 @@ function renderMarkdown(text) {
   return html;
 }
 
-// Wrap each rendered <pre><code> with a header + copy button, and each <img> with action buttons.
+// ---------- ARTIFACT PANEL ----------
+let artifactState = { code: '', lang: 'code', title: 'Artifact', type: 'code' };
+let artifactActiveTab = 'preview';
+
+const ARTIFACT_LANG_TYPE_MAP = {
+  html: 'html', xml: 'html',
+  svg: 'svg',
+  jsx: 'react', react: 'react', tsx: 'react',
+  mermaid: 'mermaid',
+  json: 'json',
+  markdown: 'markdown', md: 'markdown'
+};
+const ARTIFACT_EXT_MAP = {
+  html: 'html', svg: 'svg', react: 'jsx', mermaid: 'mmd', json: 'json', markdown: 'md',
+  python: 'py', javascript: 'js', typescript: 'ts', java: 'java', 'c++': 'cpp', c: 'c',
+  bash: 'sh', shell: 'sh', sql: 'sql', css: 'css', yaml: 'yaml', code: 'txt'
+};
+
+function detectArtifactType(langLabel, code) {
+  const l = (langLabel || '').toLowerCase().trim();
+  if (ARTIFACT_LANG_TYPE_MAP[l]) return ARTIFACT_LANG_TYPE_MAP[l];
+  const c = (code || '').trim();
+  if (/^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|mindmap)\b/.test(c)) return 'mermaid';
+  if (/^<svg[\s>]/i.test(c)) return 'svg';
+  if (/^<!DOCTYPE html>|^<html[\s>]/i.test(c)) return 'html';
+  return 'code';
+}
+
+function guessReactComponentName(code) {
+  const m = code.match(/(?:function|class)\s+([A-Z][A-Za-z0-9_]*)/) || code.match(/const\s+([A-Z][A-Za-z0-9_]*)\s*=/);
+  return (m && m[1]) ? m[1] : 'App';
+}
+
+function openArtifact(code, langLabel, titleHint) {
+  const type = detectArtifactType(langLabel, code);
+  artifactState = {
+    code: code || '',
+    lang: (langLabel || 'code').toLowerCase() || 'code',
+    title: titleHint || (langLabel ? langLabel.toUpperCase() + ' snippet' : 'Artifact'),
+    type
+  };
+  document.getElementById('artifact-badge').textContent = type.toUpperCase();
+  document.getElementById('artifact-title').textContent = artifactState.title;
+  renderArtifactTabs();
+  document.getElementById('artifact-backdrop').classList.add('show');
+  document.getElementById('artifact-panel').classList.add('show');
+}
+
+function closeArtifact() {
+  document.getElementById('artifact-backdrop').classList.remove('show');
+  document.getElementById('artifact-panel').classList.remove('show');
+  document.getElementById('artifact-panel').classList.remove('fullscreen');
+}
+
+function toggleArtifactFullscreen() {
+  document.getElementById('artifact-panel').classList.toggle('fullscreen');
+}
+
+function renderArtifactTabs() {
+  const tabsEl = document.getElementById('artifact-tabs');
+  const previewable = ['html', 'svg', 'react', 'mermaid', 'markdown'].includes(artifactState.type);
+  artifactActiveTab = previewable ? 'preview' : 'code';
+  if (previewable) {
+    tabsEl.innerHTML = `
+      <button class="artifact-tab active" data-tab="preview" onclick="setArtifactTab('preview')">Preview</button>
+      <button class="artifact-tab" data-tab="code" onclick="setArtifactTab('code')">Code</button>`;
+  } else {
+    tabsEl.innerHTML = `<button class="artifact-tab active" data-tab="code" onclick="setArtifactTab('code')">Code</button>`;
+  }
+  renderArtifactBody();
+}
+
+function setArtifactTab(tab) {
+  artifactActiveTab = tab;
+  document.querySelectorAll('.artifact-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderArtifactBody();
+}
+
+function renderArtifactBody() {
+  const body = document.getElementById('artifact-body');
+  const { code, type } = artifactState;
+
+  if (artifactActiveTab === 'code') {
+    body.innerHTML = '';
+    const pre = document.createElement('pre');
+    const codeEl = document.createElement('code');
+    codeEl.className = 'language-' + (artifactState.lang || 'plaintext');
+    codeEl.textContent = code;
+    pre.appendChild(codeEl);
+    body.appendChild(pre);
+    if (window.hljs) hljs.highlightElement(codeEl);
+    return;
+  }
+
+  if (type === 'html') {
+    body.innerHTML = `<iframe sandbox="allow-scripts allow-forms allow-modals allow-popups" srcdoc="${escapeHtml(code)}"></iframe>`;
+  } else if (type === 'svg') {
+    const doc = `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;}</style></head><body>${code}</body></html>`;
+    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+  } else if (type === 'react') {
+    const cleanCode = code.replace(/export\s+default\s+/g, '');
+    const compName = guessReactComponentName(cleanCode);
+    const doc = `<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"><\/script>
+<script src="https://cdn.tailwindcss.com"><\/script>
+<style>body{margin:0;padding:16px;font-family:-apple-system,sans-serif;background:#fff;}</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+${cleanCode}
+try {
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(${compName}));
+} catch (e) {
+  document.getElementById('root').innerHTML = '<pre style="color:red;white-space:pre-wrap;">' + e.message + '</pre>';
+}
+<\/script>
+</body></html>`;
+    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+  } else if (type === 'mermaid') {
+    const doc = `<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"><\/script>
+<style>body{margin:0;padding:16px;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;}</style>
+</head><body>
+<pre class="mermaid">${code}</pre>
+<script>mermaid.initialize({startOnLoad:true});<\/script>
+</body></html>`;
+    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+  } else if (type === 'markdown') {
+    body.innerHTML = `<div class="artifact-markdown">${renderMarkdown(code)}</div>`;
+  } else {
+    body.innerHTML = '';
+    let display = code;
+    if (type === 'json') {
+      try { display = JSON.stringify(JSON.parse(code), null, 2); } catch (e) {}
+    }
+    const pre = document.createElement('pre');
+    pre.textContent = display;
+    body.appendChild(pre);
+  }
+}
+
+function copyArtifactCode() {
+  navigator.clipboard.writeText(artifactState.code);
+}
+
+function downloadArtifact() {
+  const ext = ARTIFACT_EXT_MAP[artifactState.type] || ARTIFACT_EXT_MAP[artifactState.lang] || 'txt';
+  const blob = new Blob([artifactState.code], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'artifact.' + ext;
+  a.click();
+}
+
+// Wrap each rendered <pre><code> with a header + copy/artifact buttons, and each <img> with action buttons.
 function enhanceBubble(bubbleEl) {
   bubbleEl.querySelectorAll('pre').forEach(pre => {
     if (pre.parentElement.classList.contains('code-block-wrap')) return;
     const codeEl = pre.querySelector('code');
+    const rawCode = codeEl ? codeEl.textContent : pre.textContent;
     const lang = (codeEl && [...codeEl.classList].find(c => c.startsWith('language-'))) || '';
     const langLabel = lang ? lang.replace('language-', '') : 'code';
 
@@ -1661,18 +2305,31 @@ function enhanceBubble(bubbleEl) {
     const header = document.createElement('div');
     header.className = 'code-block-header';
     header.innerHTML = `<span>${escapeHtml(langLabel)}</span>`;
+
+    const actionsWrap = document.createElement('div');
+    actionsWrap.className = 'code-block-header-actions';
+
+    const artifactBtn = document.createElement('button');
+    artifactBtn.className = 'copy-code-btn open-artifact-btn';
+    artifactBtn.setAttribute('data-tooltip', 'Open in artifact panel');
+    artifactBtn.setAttribute('aria-label', 'Open in artifact panel');
+    artifactBtn.innerHTML = `${EXPAND_ICON}<span>Artifact</span>`;
+    artifactBtn.onclick = () => openArtifact(rawCode, langLabel === 'code' ? '' : langLabel);
+    actionsWrap.appendChild(artifactBtn);
+
     const btn = document.createElement('button');
     btn.className = 'copy-code-btn';
     btn.setAttribute('data-tooltip', 'Copy code');
     btn.setAttribute('aria-label', 'Copy code block');
     btn.innerHTML = `${COPY_ICON}<span>Copy code</span>`;
     btn.onclick = () => {
-      navigator.clipboard.writeText(codeEl ? codeEl.innerText : pre.innerText);
+      navigator.clipboard.writeText(rawCode);
       btn.classList.add('copied');
       btn.innerHTML = `${CHECK_ICON}<span>Copied!</span>`;
       setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = `${COPY_ICON}<span>Copy code</span>`; }, 1500);
     };
-    header.appendChild(btn);
+    actionsWrap.appendChild(btn);
+    header.appendChild(actionsWrap);
 
     pre.parentNode.insertBefore(wrap, pre);
     wrap.appendChild(header);
@@ -1803,6 +2460,68 @@ const SEND_ICON_CHAR = '➤';
 const PIN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 2l1.5 5.5L19 9l-4.5 3L16 18l-4-3.2L8 18l1.5-6L5 9l5.5-1.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 const EDIT_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 20h4l10-10-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
 
+// ---------- MESSAGE TOOLBAR EXTRAS: quote / translate / summarize ----------
+const LANGUAGES = ['Spanish', 'French', 'German', 'Hindi', 'Chinese (Simplified)', 'Japanese', 'Arabic', 'Portuguese', 'Russian', 'Italian', 'Korean', 'Bengali'];
+
+function quoteMessage(msgIndex) {
+  if (!history[msgIndex]) return;
+  const input = document.getElementById('user-input');
+  const text = history[msgIndex].message;
+  const quoted = text.split('\n').map(l => '> ' + l).join('\n');
+  input.value = quoted + '\n\n' + (input.value || '');
+  autoGrow(input);
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  closeSidebarOnMobile();
+}
+
+function toggleLangMenu(evt, bubbleId) {
+  evt.stopPropagation();
+  const menu = document.getElementById('langmenu-' + bubbleId);
+  if (!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.lang-menu.open').forEach(m => m.classList.remove('open'));
+  if (isOpen) return;
+  if (!menu.dataset.built) {
+    menu.innerHTML = LANGUAGES.map(l => `<button onclick="selectLanguage('${bubbleId}', '${l.replace(/'/g, "\\'")}')">${l}</button>`).join('');
+    menu.dataset.built = '1';
+  }
+  menu.classList.add('open');
+}
+
+function selectLanguage(bubbleId, lang) {
+  const menu = document.getElementById('langmenu-' + bubbleId);
+  if (menu) menu.classList.remove('open');
+  const row = document.getElementById(bubbleId).closest('.msg-row');
+  const idx = row ? parseInt(row.dataset.msgIndex, 10) : NaN;
+  if (!isNaN(idx)) quickTaskRequest(bubbleId, idx, 'translate', lang);
+}
+
+async function quickTaskRequest(bubbleId, msgIndex, task, targetLanguage) {
+  const bubble = document.getElementById(bubbleId);
+  if (!bubble || !history[msgIndex]) return;
+  const labelMap = { translate: 'Translation' + (targetLanguage ? ' (' + targetLanguage + ')' : ''), summarize: 'Summary', improve: 'Improved', explain: 'Explanation' };
+  let resultBox = document.getElementById(bubbleId + '-toolbar-result');
+  if (!resultBox) {
+    resultBox = document.createElement('div');
+    resultBox.id = bubbleId + '-toolbar-result';
+    resultBox.className = 'toolbar-result-box';
+    bubble.parentElement.appendChild(resultBox);
+  }
+  resultBox.innerHTML = `<div class="toolbar-result-label">${labelMap[task] || task}</div><span class="toolbar-spinner"></span> Working...`;
+  try {
+    const res = await fetch(API_URL + '/quick-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: history[msgIndex].message, task, target_language: targetLanguage, model: selectedModel })
+    });
+    const data = await res.json();
+    resultBox.innerHTML = `<div class="toolbar-result-label">${labelMap[task] || task}</div>${renderMarkdown(data.result || '(no result)')}`;
+  } catch (e) {
+    resultBox.innerHTML = `<div class="toolbar-result-label">${labelMap[task] || task}</div>⚠️ Could not reach the server.`;
+  }
+}
+
 function addMessage(role, text, msgIndex) {
   hideEmptyState();
   const messages = document.getElementById('messages');
@@ -1813,11 +2532,21 @@ function addMessage(role, text, msgIndex) {
   if (pinned) row.classList.add('pinned-msg');
 
   const bubbleId = 'bubble-' + Date.now() + Math.random().toString(36).slice(2);
+  const hasIndex = typeof msgIndex === 'number';
 
-  const pinBtn = (!isSharedView && typeof msgIndex === 'number')
+  const pinBtn = (!isSharedView && hasIndex)
     ? `<button data-tooltip="Pin message" aria-label="Pin message" onclick="toggleMsgPin(${msgIndex}, '${bubbleId}')">${PIN_ICON}<span>Pin</span></button>` : '';
-  const editBtn = (!isSharedView && role === 'user' && typeof msgIndex === 'number')
+  const editBtn = (!isSharedView && role === 'user' && hasIndex)
     ? `<button data-tooltip="Edit & resend" aria-label="Edit and resend" onclick="startEditMessage('${bubbleId}', ${msgIndex})">${EDIT_ICON}<span>Edit</span></button>` : '';
+  const quoteBtn = (hasIndex)
+    ? `<button data-tooltip="Quote in next message" aria-label="Quote message" onclick="quoteMessage(${msgIndex})">❝<span>Quote</span></button>` : '';
+  const summarizeBtn = (role === 'assistant' && hasIndex)
+    ? `<button data-tooltip="Summarize this response" aria-label="Summarize message" onclick="quickTaskRequest('${bubbleId}', ${msgIndex}, 'summarize')">📝<span>Summarize</span></button>` : '';
+  const translateBtn = (role === 'assistant' && hasIndex)
+    ? `<div class="lang-menu-wrap">
+         <button data-tooltip="Translate" aria-label="Translate message" onclick="toggleLangMenu(event, '${bubbleId}')">🌐<span>Translate</span></button>
+         <div class="lang-menu" id="langmenu-${bubbleId}"></div>
+       </div>` : '';
 
   row.innerHTML = `
     ${role === 'assistant' ? `<div class="avatar assistant">${BOT_ICON}</div>` : ''}
@@ -1827,9 +2556,12 @@ function addMessage(role, text, msgIndex) {
         <button data-tooltip="Copy message" aria-label="Copy message" onclick="copyText('${bubbleId}')">${COPY_ICON}<span>Copy</span></button>
         <button data-tooltip="Regenerate response" aria-label="Regenerate response" onclick="regenerateResponse(this)">${REGEN_ICON}<span>Regenerate</span></button>
         ${pinBtn}
+        ${quoteBtn}
+        ${summarizeBtn}
+        ${translateBtn}
         <button data-tooltip="Good response" aria-label="Good response">👍</button>
         <button data-tooltip="Bad response" aria-label="Bad response">👎</button>
-      </div>` : (!isSharedView ? `<div class="actions">${editBtn}${pinBtn}</div>` : '')}
+      </div>` : (!isSharedView ? `<div class="actions">${editBtn}${pinBtn}${quoteBtn}</div>` : '')}
     </div>
     ${role === 'user' ? `<div class="avatar user">${USER_ICON}</div>` : ''}
   `;
@@ -2090,7 +2822,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
-
 </script>
 </body>
 </html>
