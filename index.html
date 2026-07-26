@@ -487,27 +487,118 @@
   }
   #sidebar-backdrop.show { display: block; opacity: 1; }
 
-  /* Simple modal for Projects / Code / Discover placeholders */
-  #simple-modal-backdrop {
+  /* ===== Generic side/center panels (Projects, Code, Templates, Pinned) ===== */
+  .panel-backdrop {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    z-index: 50; align-items: center; justify-content: center;
+    z-index: 50; align-items: center; justify-content: center; padding: 20px;
   }
-  #simple-modal-backdrop.show { display: flex; }
-  #simple-modal {
+  .panel-backdrop.show { display: flex; }
+  .panel-box {
     background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
-    width: min(420px, 90vw); padding: 20px; text-align: center;
+    width: min(460px, 92vw); max-height: 80vh; display: flex; flex-direction: column;
+    overflow: hidden;
   }
-  #simple-modal .sm-icon {
-    width: 44px; height: 44px; border-radius: 12px; margin: 0 auto 12px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    display: flex; align-items: center; justify-content: center;
+  .panel-box.wide { width: min(640px, 94vw); }
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  #simple-modal .sm-icon svg { width: 22px; height: 22px; color: #fff; }
-  #simple-modal h3 { margin: 0 0 6px; font-size: 16px; }
-  #simple-modal p { margin: 0 0 16px; font-size: 13px; color: var(--text-dim); }
-  #simple-modal button {
-    background: var(--accent); border: none; color: #fff; padding: 9px 16px;
+  .panel-header h3 { margin: 0; font-size: 15px; }
+  .icon-close {
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    font-size: 15px; padding: 4px 8px; border-radius: 6px;
+  }
+  .icon-close:hover { background: var(--panel-2); color: var(--text); }
+  .panel-body { padding: 14px 16px; overflow-y: auto; }
+  .panel-body input[type="text"], .panel-body textarea {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 9px 10px; font-size: 13px;
+    outline: none; font-family: inherit; margin-bottom: 8px; resize: vertical;
+  }
+  .panel-body input[type="text"]:focus, .panel-body textarea:focus { border-color: var(--accent); }
+  .panel-body label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 4px; }
+  .panel-primary-btn {
+    background: var(--accent); border: none; color: #fff; padding: 9px 14px;
     border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600;
+  }
+  .panel-secondary-btn {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    padding: 9px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  }
+  .panel-divider { border-top: 1px solid var(--border); margin: 14px 0; padding-top: 14px; }
+  .empty-hint { color: var(--text-dim); font-size: 13px; padding: 6px 0 14px; }
+
+  .project-item, .template-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
+    cursor: default;
+  }
+  .project-item.active { border-color: var(--accent); background: rgba(124,92,255,.06); }
+  .project-item-main, .template-item-main { flex: 1; cursor: pointer; min-width: 0; }
+  .project-item-name, .template-item-title { font-size: 13.5px; font-weight: 600; }
+  .project-item-sub, .template-item-preview {
+    font-size: 12px; color: var(--text-dim); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .danger-link {
+    background: none; border: none; color: #f87171; font-size: 12px; cursor: pointer;
+    padding: 4px 6px; flex-shrink: 0;
+  }
+  .danger-link:hover { text-decoration: underline; }
+  #new-project-files-list, #new-project-files-list div { font-size: 12px; color: var(--text-dim); }
+
+  #active-project-badge {
+    display: none; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--accent); background: rgba(124,92,255,.1);
+    border: 1px solid rgba(124,92,255,.3); border-radius: 20px; padding: 4px 9px;
+    margin-left: 4px; cursor: pointer; white-space: nowrap;
+  }
+  #active-project-badge.show { display: inline-flex; }
+
+  /* Code sandbox */
+  .code-panel-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  #code-input {
+    width: 100%; min-height: 160px; background: var(--code-bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 10px; font-size: 13px;
+    font-family: "SF Mono", Menlo, monospace; outline: none; resize: vertical;
+  }
+  #code-input:focus { border-color: var(--accent); }
+  .code-panel-actions { display: flex; gap: 8px; }
+  #code-output {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; font-size: 12.5px; font-family: "SF Mono", Menlo, monospace;
+    color: #a7f3a0; white-space: pre-wrap; min-height: 50px; max-height: 200px; overflow-y: auto;
+  }
+
+  /* Pinned panel */
+  .pinned-item {
+    padding: 10px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
+    font-size: 13px; cursor: pointer;
+  }
+  .pinned-item:hover { border-color: var(--accent); }
+
+  /* Message edit mode */
+  .edit-textarea {
+    width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 10px; font-size: 15px; font-family: inherit; resize: none;
+    outline: none; min-height: 44px;
+  }
+  .edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+  .edit-actions button {
+    font-size: 12px; padding: 6px 12px; border-radius: 7px; cursor: pointer; border: none;
+  }
+  .edit-actions button:not(.primary) { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  .edit-actions button.primary { background: var(--accent); color: #fff; font-weight: 600; }
+
+  .msg-row.pinned-msg .bubble { position: relative; }
+  .msg-row.pinned-msg .bubble::before {
+    content: "📌"; position: absolute; top: -18px; left: 0; font-size: 11px;
+  }
+  .msg-row.user.pinned-msg .bubble::before { left: auto; right: 0; }
+
+  /* Web search toggle in input bar */
+  #websearch-btn.active {
+    background: var(--accent); border-color: var(--accent); color: #fff;
   }
 
   @media (max-width: 768px) {
@@ -599,9 +690,9 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Code
     </button>
-    <button class="nav-item" onclick="openDiscover()">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M15 9l-2 5-5 2 2-5 5-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      Discover
+    <button class="nav-item" onclick="openTemplates()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Templates
     </button>
   </div>
   <div id="chat-search-wrap">
@@ -632,7 +723,9 @@
         <option value="">Loading models...</option>
       </select>
     </div>
+    <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
+    <button class="new-chat-btn" style="width:auto;margin:0;padding:7px 11px;" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
     <div id="token-counter" data-tooltip="Estimated context usage">
       <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
       <span id="token-text">~0 tokens</span>
@@ -666,6 +759,7 @@
     <div id="file-chip"><span>📎</span><span id="file-name"></span><button onclick="clearFile()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button></div>
     <div id="input-wrap">
       <button id="attach-btn" onclick="document.getElementById('file-input').click()" data-tooltip="Attach file" aria-label="Attach file">📎</button>
+      <button id="websearch-btn" onclick="toggleWebSearch()" data-tooltip="Toggle web search" aria-label="Toggle web search">🌐</button>
       <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
       <textarea id="user-input" rows="1" placeholder="Message BiswaLex..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
       <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
@@ -677,12 +771,64 @@
   </div>
 </div>
 
-<div id="simple-modal-backdrop" onclick="if(event.target===this) closeSimpleModal()">
-  <div id="simple-modal">
-    <div class="sm-icon" id="simple-modal-icon"></div>
-    <h3 id="simple-modal-title"></h3>
-    <p id="simple-modal-text"></p>
-    <button onclick="closeSimpleModal()">Got it</button>
+<!-- Projects panel -->
+<div id="projects-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeProjectsPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>📁 Projects</h3><button class="icon-close" onclick="closeProjectsPanel()">✕</button></div>
+    <div class="panel-body">
+      <div id="projects-list"></div>
+      <div class="panel-divider">
+        <label>New project name</label>
+        <input type="text" id="new-project-name" placeholder="e.g. Client contracts">
+        <label>Custom instructions</label>
+        <textarea id="new-project-instructions" rows="3" placeholder="Instructions the assistant should follow for this project..."></textarea>
+        <label>Attach files (optional)</label>
+        <input type="file" id="new-project-file-input" multiple onchange="handleProjectFile(event)" style="margin-bottom:6px;">
+        <div id="new-project-files-list"></div>
+        <button class="panel-primary-btn" onclick="createProjectSubmit()">Create project</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Code sandbox panel -->
+<div id="code-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeCodePanel()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>💻 Code Sandbox (JavaScript)</h3><button class="icon-close" onclick="closeCodePanel()">✕</button></div>
+    <div class="code-panel-body">
+      <textarea id="code-input" spellcheck="false" placeholder="// Write JavaScript here and hit Run
+console.log('Hello world');"></textarea>
+      <div class="code-panel-actions">
+        <button class="panel-primary-btn" onclick="runCode()">▶ Run</button>
+        <button class="panel-secondary-btn" onclick="clearCodeOutput()">Clear output</button>
+      </div>
+      <div id="code-output">Output will appear here.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Templates panel -->
+<div id="templates-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeTemplatesPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🗂️ Prompt Templates</h3><button class="icon-close" onclick="closeTemplatesPanel()">✕</button></div>
+    <div class="panel-body">
+      <div id="templates-list"></div>
+      <div class="panel-divider">
+        <label>Title</label>
+        <input type="text" id="new-template-title" placeholder="e.g. Weekly report">
+        <label>Prompt text</label>
+        <textarea id="new-template-text" rows="3" placeholder="The prompt text to insert..."></textarea>
+        <button class="panel-primary-btn" onclick="addTemplateSubmit()">Save template</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pinned messages panel -->
+<div id="pinned-backdrop" class="panel-backdrop" onclick="if(event.target===this)closePinnedPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>📌 Pinned Messages</h3><button class="icon-close" onclick="closePinnedPanel()">✕</button></div>
+    <div class="panel-body" id="pinned-list"></div>
   </div>
 </div>
 
@@ -698,28 +844,264 @@ let conversations = [];
 let currentConvId = null;
 let selectedModel = localStorage.getItem('biswalex_model') || "";
 
-// ---------- SIDEBAR NAV: Projects / Code / Discover ----------
-function openSimpleModal(title, text, iconSvg) {
-  document.getElementById('simple-modal-title').textContent = title;
-  document.getElementById('simple-modal-text').textContent = text;
-  document.getElementById('simple-modal-icon').innerHTML = iconSvg;
-  document.getElementById('simple-modal-backdrop').classList.add('show');
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+// ---------- STATE: projects / templates / pin / web search / edit ----------
+let projects = [];
+let activeProjectId = null;
+let pendingProjectFiles = [];
+let templates = [];
+let webSearchEnabled = false;
+let isSharedView = false;
+
+const DEFAULT_TEMPLATES = [
+  { id: 't1', title: 'Summarize document', text: "Summarize the attached document in 5 bullet points." },
+  { id: 't2', title: 'Explain simply', text: "Explain this concept like I'm a beginner: " },
+  { id: 't3', title: 'Draft email', text: "Draft a professional email about: " },
+  { id: 't4', title: 'Debug code', text: "Here is my code and the error I'm getting. Help me fix it:\n\n" }
+];
+
+// ---- Projects ----
+function loadProjects() {
+  try { projects = JSON.parse(localStorage.getItem('biswalex_projects') || '[]'); } catch (e) { projects = []; }
 }
-function closeSimpleModal() {
-  document.getElementById('simple-modal-backdrop').classList.remove('show');
+function saveProjects() { localStorage.setItem('biswalex_projects', JSON.stringify(projects)); }
+
+function openProjects() { renderProjectsPanel(); document.getElementById('projects-backdrop').classList.add('show'); }
+function closeProjectsPanel() { document.getElementById('projects-backdrop').classList.remove('show'); }
+
+function renderProjectsPanel() {
+  const list = document.getElementById('projects-list');
+  if (projects.length === 0) {
+    list.innerHTML = '<div class="empty-hint">No projects yet. Create one below — projects bundle custom instructions and files for a chat.</div>';
+  } else {
+    list.innerHTML = projects.map(p => `
+      <div class="project-item ${p.id === activeProjectId ? 'active' : ''}">
+        <div class="project-item-main" onclick="useProject('${p.id}')">
+          <div class="project-item-name">${escapeHtml(p.name)}</div>
+          <div class="project-item-sub">${p.files.length} file(s) · ${p.instructions ? 'has instructions' : 'no instructions'}</div>
+        </div>
+        <button class="danger-link" onclick="deleteProject('${p.id}')">Delete</button>
+      </div>`).join('');
+  }
 }
-function openProjects() {
-  openSimpleModal('Projects', 'Group chats, files, and instructions into a project workspace. Coming soon.',
-    '<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>');
+
+function useProject(id) {
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  activeProjectId = id;
+  newChat();
+  const badge = document.getElementById('active-project-badge');
+  badge.textContent = '📁 ' + p.name + ' ✕';
+  badge.classList.add('show');
+  closeProjectsPanel();
 }
-function openCode() {
-  openSimpleModal('Code', 'A dedicated space for code generation, review, and sandboxed execution. Coming soon.',
-    '<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+
+function clearActiveProject() {
+  activeProjectId = null;
+  document.getElementById('active-project-badge').classList.remove('show');
 }
-function openDiscover() {
-  openSimpleModal('Discover', 'Browse trending topics, prompts, and community picks. Coming soon.',
-    '<svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.8"/><path d="M15 9l-2 5-5 2 2-5 5-2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>');
+
+async function handleProjectFile(e) {
+  const files = Array.from(e.target.files || []);
+  for (const f of files) {
+    let text = '';
+    try { text = await f.text(); } catch (err) { text = ''; }
+    pendingProjectFiles.push({ name: f.name, content: text.slice(0, 20000) });
+  }
+  document.getElementById('new-project-files-list').innerHTML =
+    pendingProjectFiles.map(f => `<div>📄 ${escapeHtml(f.name)}</div>`).join('');
+}
+
+function createProjectSubmit() {
+  const name = document.getElementById('new-project-name').value.trim();
+  const instructions = document.getElementById('new-project-instructions').value.trim();
+  if (!name) { alert('Give the project a name.'); return; }
+  projects.push({ id: 'p-' + Date.now(), name, instructions, files: pendingProjectFiles.slice(), createdAt: Date.now() });
+  saveProjects();
+  pendingProjectFiles = [];
+  document.getElementById('new-project-name').value = '';
+  document.getElementById('new-project-instructions').value = '';
+  document.getElementById('new-project-files-list').innerHTML = '';
+  document.getElementById('new-project-file-input').value = '';
+  renderProjectsPanel();
+}
+
+function deleteProject(id) {
+  if (!confirm('Delete this project?')) return;
+  projects = projects.filter(p => p.id !== id);
+  saveProjects();
+  if (activeProjectId === id) clearActiveProject();
+  renderProjectsPanel();
+}
+
+function getActiveProjectContext() {
+  if (!activeProjectId) return null;
+  const p = projects.find(x => x.id === activeProjectId);
+  if (!p) return null;
+  let ctx = p.instructions || '';
+  if (p.files.length) {
+    ctx += '\n\nAttached files:\n' + p.files.map(f => `--- ${f.name} ---\n${f.content}`).join('\n\n');
+  }
+  return ctx;
+}
+
+// ---- Code sandbox (JS execution, in-page) ----
+function openCode() { document.getElementById('code-backdrop').classList.add('show'); }
+function closeCodePanel() { document.getElementById('code-backdrop').classList.remove('show'); }
+function clearCodeOutput() { document.getElementById('code-output').textContent = 'Output will appear here.'; }
+
+function runCode() {
+  const code = document.getElementById('code-input').value;
+  const outputEl = document.getElementById('code-output');
+  const logs = [];
+  const sandboxConsole = {
+    log: (...args) => logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')),
+    error: (...args) => logs.push('Error: ' + args.join(' ')),
+    warn: (...args) => logs.push('Warn: ' + args.join(' '))
+  };
+  try {
+    const fn = new Function('console', code);
+    const result = fn(sandboxConsole);
+    if (result !== undefined) logs.push('=> ' + (typeof result === 'object' ? JSON.stringify(result) : String(result)));
+    outputEl.textContent = logs.length ? logs.join('\n') : '(no output)';
+  } catch (err) {
+    outputEl.textContent = '⚠️ ' + err.message;
+  }
+}
+
+// ---- Prompt templates ----
+function loadTemplates() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('biswalex_templates'));
+    templates = Array.isArray(saved) ? saved : DEFAULT_TEMPLATES.slice();
+  } catch (e) { templates = DEFAULT_TEMPLATES.slice(); }
+  if (!localStorage.getItem('biswalex_templates')) saveTemplates();
+}
+function saveTemplates() { localStorage.setItem('biswalex_templates', JSON.stringify(templates)); }
+
+function openTemplates() { renderTemplatesPanel(); document.getElementById('templates-backdrop').classList.add('show'); }
+function closeTemplatesPanel() { document.getElementById('templates-backdrop').classList.remove('show'); }
+
+function renderTemplatesPanel() {
+  const list = document.getElementById('templates-list');
+  if (templates.length === 0) {
+    list.innerHTML = '<div class="empty-hint">No templates yet.</div>';
+    return;
+  }
+  list.innerHTML = templates.map(t => `
+    <div class="template-item">
+      <div class="template-item-main" onclick="useTemplate('${t.id}')">
+        <div class="template-item-title">${escapeHtml(t.title)}</div>
+        <div class="template-item-preview">${escapeHtml(t.text.slice(0, 60))}</div>
+      </div>
+      <button class="danger-link" onclick="deleteTemplate('${t.id}')">Delete</button>
+    </div>`).join('');
+}
+
+function useTemplate(id) {
+  const t = templates.find(x => x.id === id);
+  if (!t) return;
+  const input = document.getElementById('user-input');
+  input.value = t.text;
+  autoGrow(input);
+  closeTemplatesPanel();
+  input.focus();
+}
+
+function deleteTemplate(id) {
+  templates = templates.filter(t => t.id !== id);
+  saveTemplates();
+  renderTemplatesPanel();
+}
+
+function addTemplateSubmit() {
+  const title = document.getElementById('new-template-title').value.trim();
+  const text = document.getElementById('new-template-text').value.trim();
+  if (!title || !text) { alert('Fill in both fields.'); return; }
+  templates.push({ id: 't-' + Date.now(), title, text });
+  saveTemplates();
+  document.getElementById('new-template-title').value = '';
+  document.getElementById('new-template-text').value = '';
+  renderTemplatesPanel();
+}
+
+// ---- Web search toggle ----
+function toggleWebSearch() {
+  webSearchEnabled = !webSearchEnabled;
+  document.getElementById('websearch-btn').classList.toggle('active', webSearchEnabled);
+}
+
+// ---- Pinned messages ----
+function openPinnedPanel() {
+  const pinnedList = history.map((m, i) => ({ ...m, idx: i })).filter(m => m.pinned);
+  const panel = document.getElementById('pinned-list');
+  if (pinnedList.length === 0) {
+    panel.innerHTML = '<div class="empty-hint">No pinned messages yet. Click the 📌 icon under any message to pin it.</div>';
+  } else {
+    panel.innerHTML = pinnedList.map(m => `
+      <div class="pinned-item" onclick="jumpToMsg(${m.idx})">
+        <b>${m.role === 'user' ? 'You' : 'BiswaLex'}:</b> ${escapeHtml(m.message.slice(0, 90))}${m.message.length > 90 ? '…' : ''}
+      </div>`).join('');
+  }
+  document.getElementById('pinned-backdrop').classList.add('show');
+}
+function closePinnedPanel() { document.getElementById('pinned-backdrop').classList.remove('show'); }
+function jumpToMsg(idx) {
+  closePinnedPanel();
+  const row = document.querySelector(`.msg-row[data-msg-index="${idx}"]`);
+  if (row) {
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.style.outline = '2px solid var(--accent)';
+    row.style.borderRadius = '10px';
+    setTimeout(() => { row.style.outline = ''; }, 1200);
+  }
+}
+function toggleMsgPin(idx, bubbleId) {
+  if (!history[idx]) return;
+  history[idx].pinned = !history[idx].pinned;
+  const row = document.getElementById(bubbleId).closest('.msg-row');
+  if (row) row.classList.toggle('pinned-msg', history[idx].pinned);
+  upsertConversation();
+}
+
+// ---- Edit & resend (user messages) ----
+function startEditMessage(bubbleId, idx) {
+  if (isStreaming || isSharedView) return;
+  const bubble = document.getElementById(bubbleId);
+  const original = history[idx] ? history[idx].message : '';
+  bubble.innerHTML = '';
+  const ta = document.createElement('textarea');
+  ta.className = 'edit-textarea';
+  ta.value = original;
+  const actions = document.createElement('div');
+  actions.className = 'edit-actions';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = () => cancelEditMessage(bubbleId, idx);
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'primary';
+  saveBtn.textContent = 'Save & submit';
+  saveBtn.onclick = () => saveEditMessage(bubbleId, idx, ta.value);
+  actions.appendChild(cancelBtn);
+  actions.appendChild(saveBtn);
+  bubble.appendChild(ta);
+  bubble.appendChild(actions);
+  autoGrow(ta);
+  ta.focus();
+}
+function cancelEditMessage(bubbleId, idx) {
+  document.getElementById(bubbleId).innerHTML = escapeHtml(history[idx] ? history[idx].message : '');
+}
+async function saveEditMessage(bubbleId, idx, newText) {
+  newText = newText.trim();
+  if (!newText || isStreaming) return;
+  history[idx].message = newText;
+  history = history.slice(0, idx + 1);
+  const bubble = document.getElementById(bubbleId);
+  bubble.innerHTML = escapeHtml(newText);
+  const row = bubble.closest('.msg-row');
+  let next = row.nextElementSibling;
+  while (next) { const rm = next; next = next.nextElementSibling; rm.remove(); }
+  await streamAssistantReply(newText);
 }
 
 // ---------- MODEL SELECTOR ----------
@@ -927,6 +1309,7 @@ function tryRenderSharedView() {
   try {
     const encoded = hash.slice(7);
     const payload = JSON.parse(b64DecodeUnicode(encoded));
+    isSharedView = true;
     document.getElementById('sidebar').style.display = 'none';
     document.getElementById('sidebar-backdrop').style.display = 'none';
     document.getElementById('input-area').style.display = 'none';
@@ -1036,7 +1419,7 @@ function loadConversation(id) {
   currentConvId = id;
   history = JSON.parse(JSON.stringify(conv.messages));
   document.getElementById('messages').innerHTML = "";
-  history.forEach(m => addMessage(m.role, m.role === 'user' ? escapeHtml(m.message) : renderMarkdown(m.message)));
+  history.forEach((m, i) => addMessage(m.role, m.role === 'user' ? escapeHtml(m.message) : renderMarkdown(m.message), i));
   renderHistory(document.getElementById('chat-search').value);
   closeSidebarOnMobile();
   updateTokenCounter();
@@ -1063,6 +1446,8 @@ function upsertConversation() {
 }
 
 loadConversations();
+loadProjects();
+loadTemplates();
 tryRenderSharedView();
 updateTokenCounter();
 
@@ -1361,14 +1746,24 @@ const REGEN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13">
 const STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>`;
 const SEND_ICON_CHAR = '➤';
 
-function addMessage(role, text, forQuery) {
+const PIN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 2l1.5 5.5L19 9l-4.5 3L16 18l-4-3.2L8 18l1.5-6L5 9l5.5-1.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+const EDIT_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 20h4l10-10-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+
+function addMessage(role, text, msgIndex) {
   hideEmptyState();
   const messages = document.getElementById('messages');
   const row = document.createElement('div');
   row.className = 'msg-row ' + role;
+  if (typeof msgIndex === 'number') row.dataset.msgIndex = msgIndex;
+  const pinned = (!isSharedView && typeof msgIndex === 'number' && history[msgIndex] && history[msgIndex].pinned);
+  if (pinned) row.classList.add('pinned-msg');
 
   const bubbleId = 'bubble-' + Date.now() + Math.random().toString(36).slice(2);
-  if (forQuery) row.dataset.forQuery = forQuery;
+
+  const pinBtn = (!isSharedView && typeof msgIndex === 'number')
+    ? `<button data-tooltip="Pin message" aria-label="Pin message" onclick="toggleMsgPin(${msgIndex}, '${bubbleId}')">${PIN_ICON}<span>Pin</span></button>` : '';
+  const editBtn = (!isSharedView && role === 'user' && typeof msgIndex === 'number')
+    ? `<button data-tooltip="Edit & resend" aria-label="Edit and resend" onclick="startEditMessage('${bubbleId}', ${msgIndex})">${EDIT_ICON}<span>Edit</span></button>` : '';
 
   row.innerHTML = `
     ${role === 'assistant' ? `<div class="avatar assistant">${BOT_ICON}</div>` : ''}
@@ -1377,9 +1772,10 @@ function addMessage(role, text, forQuery) {
       ${role === 'assistant' ? `<div class="actions">
         <button data-tooltip="Copy message" aria-label="Copy message" onclick="copyText('${bubbleId}')">${COPY_ICON}<span>Copy</span></button>
         <button data-tooltip="Regenerate response" aria-label="Regenerate response" onclick="regenerateResponse(this)">${REGEN_ICON}<span>Regenerate</span></button>
+        ${pinBtn}
         <button data-tooltip="Good response" aria-label="Good response">👍</button>
         <button data-tooltip="Bad response" aria-label="Bad response">👎</button>
-      </div>` : ''}
+      </div>` : (!isSharedView ? `<div class="actions">${editBtn}${pinBtn}</div>` : '')}
     </div>
     ${role === 'user' ? `<div class="avatar user">${USER_ICON}</div>` : ''}
   `;
@@ -1452,7 +1848,7 @@ async function sendMessage() {
   const query = input.value.trim();
   if (!query) return;
 
-  addMessage('user', escapeHtml(query));
+  addMessage('user', escapeHtml(query), history.length);
   history.push({ role: 'user', message: query });
   input.value = "";
   autoGrow(input);
@@ -1475,7 +1871,7 @@ async function regenerateResponse(btn) {
 }
 
 async function streamAssistantReply(query) {
-  const bubbleId = addMessage('assistant', '<div class="typing-dots"><span></span><span></span><span></span></div>');
+  const bubbleId = addMessage('assistant', '<div class="typing-dots"><span></span><span></span><span></span></div>', history.length);
   const bubbleEl = document.getElementById(bubbleId);
   isStreaming = true;
   setSendButtonMode(true);
@@ -1490,7 +1886,7 @@ async function streamAssistantReply(query) {
     const res = await fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, web_search: webSearchEnabled, project_context: getActiveProjectContext() }),
       signal: currentAbortController.signal
     });
 
