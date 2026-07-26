@@ -924,7 +924,9 @@
 
 <div id="main">
   <div id="topbar">
-    <button id="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
+    <button id="menu-toggle" onclick="toggleSidebar()" data-tooltip="Toggle sidebar" aria-label="Toggle sidebar">
+  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
+</button>
     <div id="model-name">BiswaLex</div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
