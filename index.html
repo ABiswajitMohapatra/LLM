@@ -118,35 +118,17 @@
     width: 100%;
     background: none;
     border: none;
-    color: var(--text);
-    padding: 8px 6px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13.5px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    text-align: left;
-  }
-  .new-chat-btn:hover { background: var(--panel-2); }
-  .new-chat-btn .nc-icon {
-    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    display: flex; align-items: center; justify-content: center;
-  }
-  .new-chat-btn svg { width: 14px; height: 14px; color: #fff; }
-  .topbar-icon-btn {
-    display: flex; align-items: center; gap: 10px;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 7px 11px;
-    border-radius: 10px;
+    color: var(--text-dim);
+    padding: 8px 10px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 13.5px;
     font-weight: 500;
+    margin-bottom: 2px;
     text-align: left;
   }
-  .topbar-icon-btn:hover { background: var(--panel-2); }
+  .new-chat-btn:hover { background: var(--panel-2); color: var(--text); }
+  .new-chat-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
   #nav-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
   .nav-item {
     display: flex; align-items: center; gap: 10px;
@@ -233,41 +215,6 @@
     font-size: 18px; padding: 6px;
   }
   #model-name { font-weight: 600; font-size: 14px; }
-  #model-sub { color: var(--text-dim); font-size: 12px; }
-  #model-picker-wrap { position: relative; margin-top: 2px; }
-  #model-picker-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: var(--panel-2); color: var(--text-dim); border: 1px solid var(--border);
-    border-radius: 6px; font-size: 12px; padding: 3px 7px;
-    cursor: pointer; outline: none; max-width: 220px;
-  }
-  #model-picker-btn span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
-  #model-picker-btn:hover, #model-picker-btn[aria-expanded="true"] { color: var(--text); border-color: var(--accent); }
-  #model-picker-btn .chev { flex-shrink: 0; }
-  #model-picker-menu {
-    display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 45;
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
-    width: 240px; max-height: 280px; overflow: hidden; flex-direction: column;
-    box-shadow: 0 8px 24px rgba(0,0,0,.3);
-  }
-  #model-picker-menu.open { display: flex; }
-  #model-picker-search-wrap { position: relative; padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  #model-picker-search-wrap svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
-  #model-picker-search {
-    width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text);
-    border-radius: 7px; padding: 6px 8px 6px 26px; font-size: 12.5px; outline: none;
-  }
-  #model-picker-search:focus { border-color: var(--accent); }
-  #model-picker-list { overflow-y: auto; padding: 4px; }
-  .model-picker-item {
-    display: flex; align-items: center; justify-content: space-between; gap: 6px;
-    width: 100%; text-align: left; background: none; border: none; color: var(--text);
-    font-size: 13px; padding: 8px 9px; border-radius: 7px; cursor: pointer;
-  }
-  .model-picker-item:hover { background: var(--border); }
-  .model-picker-item.active { color: var(--accent); font-weight: 600; }
-  .model-picker-check { color: var(--accent); flex-shrink: 0; }
-  .model-picker-empty { padding: 12px; font-size: 12.5px; color: var(--text-dim); text-align: center; }
   #topbar-spacer { flex: 1; }
   #token-counter {
     font-size: 11px; color: var(--text-dim); background: var(--panel-2);
@@ -492,27 +439,31 @@
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 10px 12px;
-    display: flex; align-items: flex-end; gap: 8px;
+    padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 4px;
   }
   #input-wrap:focus-within { border-color: var(--accent); }
+  #input-top-row { display: flex; align-items: flex-end; gap: 8px; }
+  #input-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px; }
   #user-input {
     flex: 1; background: none; border: none; outline: none;
     color: var(--text); font-size: 15px; resize: none;
     max-height: 200px; font-family: inherit; padding: 6px 4px;
   }
-  #send-btn, #attach-btn {
-    background: var(--accent);
-    border: none; color: white; width: 34px; height: 34px;
-    border-radius: 10px; cursor: pointer; flex-shrink: 0;
+  #send-btn, #attach-btn, #mic-btn {
+    background: none;
+    border: none; color: var(--text-dim); width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 16px;
   }
-  #attach-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); }
-  #mic-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); }
+  #attach-btn:hover, #mic-btn:hover { background: var(--panel); color: var(--text); }
+  #send-btn { color: var(--accent); }
+  #send-btn:hover { background: var(--panel); }
+  #send-btn svg, #attach-btn svg, #mic-btn svg { width: 18px; height: 18px; }
   #mic-btn.recording { background: #ef4444; border-color: #ef4444; color: #fff; animation: mic-pulse 1.2s infinite; }
   @keyframes mic-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
-  #send-btn.stop-mode { background: #ef4444; }
+  #send-btn.stop-mode { color: #ef4444; }
   #send-btn:disabled { opacity: .4; cursor: not-allowed; }
   #hint { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 8px; }
   #file-chip {
@@ -520,6 +471,31 @@
     display: none; align-items: center; gap: 6px;
   }
   #file-chip.show { display: flex; }
+
+  /* Model picker pill (moved into the input bar) */
+  #model-pill-wrap { position: relative; }
+  #model-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 10px 5px 9px; border-radius: 20px; font-size: 12px; cursor: pointer;
+    max-width: 220px;
+  }
+  #model-pill:hover { color: var(--text); border-color: var(--accent); }
+  #model-pill svg.chev { width: 10px; height: 10px; flex-shrink: 0; }
+  #model-pill-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #model-pill-menu {
+    position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 41;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px; min-width: 200px; max-height: 260px; overflow-y: auto;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); display: none;
+  }
+  #model-pill-menu.open { display: block; }
+  #model-pill-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: var(--text); font-size: 13px; padding: 8px 9px; border-radius: 7px; cursor: pointer;
+  }
+  #model-pill-menu button:hover { background: var(--border); }
+  #model-pill-menu button.selected { color: var(--accent); font-weight: 600; }
 
   /* Backdrop for mobile drawer */
   #sidebar-backdrop {
@@ -669,7 +645,7 @@
       padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
     }
     #user-input { font-size: 16px; }
-    #send-btn, #attach-btn, #mic-btn { width: 40px; height: 40px; }
+    #send-btn, #attach-btn, #mic-btn { width: 38px; height: 38px; }
 
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
@@ -856,9 +832,7 @@
     <button data-theme-btn="system" onclick="setTheme('system')" data-tooltip="Match system" aria-label="System theme">💻</button>
   </div>
   <button class="new-chat-btn" onclick="newChat()">
-    <span class="nc-icon">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
-    </span>
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     New chat
   </button>
   <div id="nav-list">
@@ -912,25 +886,10 @@
 <div id="main">
   <div id="topbar">
     <button id="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
-    <div>
-      <div id="model-name">BiswaLex</div>
-      <div id="model-picker-wrap">
-        <button id="model-picker-btn" onclick="toggleModelPicker(event)" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose AI model">
-          <span id="model-picker-label">Loading models...</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" width="10" height="10"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div id="model-picker-menu" role="listbox">
-          <div id="model-picker-search-wrap">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <input id="model-picker-search" type="text" placeholder="Search models..." oninput="filterModelPicker(this.value)" autocomplete="off">
-          </div>
-          <div id="model-picker-list"></div>
-        </div>
-      </div>
-    </div>
+    <div id="model-name">BiswaLex</div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
-    <button class="topbar-icon-btn" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
+    <button class="new-chat-btn" style="width:auto;margin:0;padding:7px 11px;" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
     <div id="token-counter" data-tooltip="Estimated context usage">
       <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
       <span id="token-text">~0 tokens</span>
@@ -963,13 +922,32 @@
   <div id="input-area">
     <div id="file-chip"><span>📎</span><span id="file-name"></span><button onclick="clearFile()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button></div>
     <div id="input-wrap">
-      <button id="attach-btn" onclick="document.getElementById('file-input').click()" data-tooltip="Attach file" aria-label="Attach file">📎</button>
-      <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
-      <textarea id="user-input" rows="1" placeholder="Message BiswaLex..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
-      <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
-        <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
-      <button id="send-btn" onclick="sendOrStop()">➤</button>
+      <div id="input-top-row">
+        <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
+        <textarea id="user-input" rows="1" placeholder="Message BiswaLex..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+      </div>
+      <div id="input-bottom-row">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button id="attach-btn" onclick="document.getElementById('file-input').click()" data-tooltip="Attach file" aria-label="Attach file">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <div id="model-pill-wrap">
+            <button id="model-pill" onclick="toggleModelPill(event)" data-tooltip="Choose model" aria-label="Choose model">
+              <span id="model-pill-label">Model</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div id="model-pill-menu"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button id="send-btn" onclick="sendOrStop()" data-tooltip="Send" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
     <div id="hint">BiswaLex can make mistakes. Verify important info.</div>
   </div>
@@ -1012,7 +990,7 @@
       </div>
     </div>
     <div class="code-panel-body">
-      <textarea id="code-input" spellcheck="false" placeholder="Write your code here and hit Run. (Java uses a public class named Main.)"></textarea>
+      <textarea id="code-input" spellcheck="false" placeholder="Write code here and hit Run. Python/JavaScript run locally in your browser; Java/C/C++ run via a free public compiler service (Wandbox)."></textarea>
       <div class="code-panel-actions">
         <button class="panel-primary-btn" onclick="runCode()">▶ Run</button>
         <button class="panel-secondary-btn" onclick="clearCodeOutput()">Clear output</button>
@@ -1085,6 +1063,8 @@
 <script>
 // ====== CONFIG ======
 const API_URL = "https://biswajitmohapatra-biswalex-llm.hf.space";
+const WANDBOX_LIST_URL = "https://wandbox.org/api/list.json";
+const WANDBOX_COMPILE_URL = "https://wandbox.org/api/compile.json";
 // =====================
 
 let history = [];
@@ -1093,6 +1073,7 @@ let isStreaming = false;
 let conversations = [];
 let currentConvId = null;
 let selectedModel = localStorage.getItem('biswalex_model') || "";
+let availableModels = [];
 
 // ---------- STATE: projects / templates / pin / web search / edit ----------
 let projects = [];
@@ -1201,7 +1182,7 @@ function getActiveProjectContext() {
   return ctx;
 }
 
-// ---- Code sandbox (JS/Python execution in-page, C/C++/Java via Piston public API) ----
+// ---- Code sandbox (JS/Python execution in-page; C/C++/Java via Wandbox public API) ----
 function openCode() { document.getElementById('code-backdrop').classList.add('show'); }
 function closeCodePanel() { document.getElementById('code-backdrop').classList.remove('show'); }
 function clearCodeOutput() { document.getElementById('code-output').textContent = 'Output will appear here.'; }
@@ -1265,43 +1246,64 @@ async function runPython(code, outputEl) {
   }
 }
 
-// Piston (https://github.com/engineer-man/piston) is a free, public, no-key-required
-// code execution API with CORS enabled — used here for compiled languages (C, C++, Java)
-// that can't run inside the browser.
-const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
-const PISTON_LANG_CONFIG = {
-  'c++': { language: 'c++', version: '10.2.0', filename: 'main.cpp' },
-  'c':   { language: 'c',   version: '10.2.0', filename: 'main.c' },
-  'java':{ language: 'java',version: '15.0.2', filename: 'Main.java' }
-};
+// Wandbox is a free, public, CORS-enabled compile/run service (no API key needed).
+// We cache its compiler list and pick the latest suitable compiler per language.
+let wandboxCompilersPromise = null;
+function getWandboxCompilers() {
+  if (!wandboxCompilersPromise) {
+    wandboxCompilersPromise = fetch(WANDBOX_LIST_URL).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  return wandboxCompilersPromise;
+}
 
-async function runViaPiston(code, lang, outputEl) {
-  const cfg = PISTON_LANG_CONFIG[lang];
-  outputEl.textContent = 'Compiling & running (via public Piston API)...';
+function pickWandboxCompiler(list, language) {
+  const candidates = list.filter(c => c.language === language && c["switches"] !== undefined);
+  if (candidates.length === 0) return null;
+  // Prefer a "head"/latest, non-legacy build; otherwise just take the first one.
+  const head = candidates.find(c => /head/i.test(c.name));
+  return (head || candidates[0]).name;
+}
+
+const WANDBOX_LANGUAGE_MAP = { 'c++': 'C++', 'c': 'C', 'java': 'Java' };
+
+async function runViaWandbox(code, lang, outputEl) {
+  outputEl.textContent = 'Connecting to compiler service...';
   try {
-    const res = await fetch(PISTON_URL, {
+    const list = await getWandboxCompilers();
+    const language = WANDBOX_LANGUAGE_MAP[lang];
+    const compilerName = pickWandboxCompiler(list, language);
+    if (!compilerName) {
+      outputEl.textContent = '⚠️ No available compiler found for ' + language + ' right now. Please try again later.';
+      return;
+    }
+    outputEl.textContent = 'Compiling & running (' + compilerName + ')...';
+    const res = await fetch(WANDBOX_COMPILE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        language: cfg.language,
-        version: cfg.version,
-        files: [{ name: cfg.filename, content: code }]
+        code,
+        compiler: compilerName,
+        save: false,
+        options: lang === 'java' ? '' : undefined
       })
     });
     if (!res.ok) {
-      outputEl.textContent = '⚠️ Execution service returned an error (HTTP ' + res.status + ').';
+      outputEl.textContent = '⚠️ Compiler service returned an error (HTTP ' + res.status + '). It may be temporarily unavailable — please try again in a moment.';
       return;
     }
     const data = await res.json();
-    if (data.compile && data.compile.code !== 0) {
-      outputEl.textContent = '⚠️ Compile error:\n' + (data.compile.stderr || data.compile.output || '(unknown compile error)');
-      return;
-    }
-    const run = data.run || {};
-    const out = (run.stdout || '') + (run.stderr ? '\n' + run.stderr : '');
+    let out = '';
+    if (data.compiler_output) out += data.compiler_output;
+    if (data.compiler_error) out += (out ? '\n' : '') + data.compiler_error;
+    if (data.program_output) out += (out ? '\n' : '') + data.program_output;
+    if (data.program_error) out += (out ? '\n' : '') + data.program_error;
+    if (data.signal) out += (out ? '\n' : '') + 'Signal: ' + data.signal;
     outputEl.textContent = out.trim() || '(no output)';
   } catch (err) {
-    outputEl.textContent = '⚠️ Could not reach the code execution service. ' + err.message;
+    outputEl.textContent = '⚠️ Could not reach the compiler service (' + err.message + '). Check your connection and try again.';
   }
 }
 
@@ -1315,8 +1317,8 @@ function runCode() {
     runJavaScriptLocally(code, outputEl);
   } else if (lang === 'python') {
     runPython(code, outputEl);
-  } else if (PISTON_LANG_CONFIG[lang]) {
-    runViaPiston(code, lang, outputEl);
+  } else if (lang === 'java' || lang === 'c++' || lang === 'c') {
+    runViaWandbox(code, lang, outputEl);
   } else {
     outputEl.textContent = '⚠️ Unsupported language.';
   }
@@ -1472,10 +1474,9 @@ async function saveEditMessage(bubbleId, idx, newText) {
   await streamAssistantReply(newText);
 }
 
-// ---------- MODEL SELECTOR (searchable picker) ----------
-let availableModels = [];
-
+// ---------- MODEL SELECTOR (pill dropdown inside the input bar) ----------
 async function loadModels() {
+  const label = document.getElementById('model-pill-label');
   try {
     const res = await fetch(API_URL + "/models");
     const data = await res.json();
@@ -1483,61 +1484,44 @@ async function loadModels() {
     const saved = localStorage.getItem('biswalex_model');
     const validIds = availableModels.map(m => m.id);
     selectedModel = (saved && validIds.includes(saved)) ? saved : data.default;
-    renderModelPickerList(availableModels);
-    updateModelPickerLabel();
+    renderModelPillMenu();
+    updateModelPillLabel();
   } catch (e) {
-    document.getElementById('model-picker-label').textContent = 'Default model';
+    label.textContent = 'Default model';
   }
 }
 
-function updateModelPickerLabel() {
+function updateModelPillLabel() {
+  const label = document.getElementById('model-pill-label');
   const m = availableModels.find(x => x.id === selectedModel);
-  document.getElementById('model-picker-label').textContent = m ? m.label : 'Choose model';
+  label.textContent = m ? m.label : (selectedModel || 'Model');
 }
 
-function renderModelPickerList(list) {
-  const listEl = document.getElementById('model-picker-list');
-  if (!list || list.length === 0) {
-    listEl.innerHTML = '<div class="model-picker-empty">No models match.</div>';
+function renderModelPillMenu() {
+  const menu = document.getElementById('model-pill-menu');
+  if (!availableModels.length) {
+    menu.innerHTML = '<div class="empty-hint" style="padding:8px;">No models available.</div>';
     return;
   }
-  listEl.innerHTML = list.map(m => `
-    <button type="button" class="model-picker-item ${m.id === selectedModel ? 'active' : ''}" role="option" aria-selected="${m.id === selectedModel}" onclick="pickModel('${m.id}')">
-      <span>${escapeHtml(m.label)}</span>
-      ${m.id === selectedModel ? '<span class="model-picker-check">✓</span>' : ''}
-    </button>`).join('');
+  menu.innerHTML = availableModels.map(m =>
+    `<button class="${m.id === selectedModel ? 'selected' : ''}" onclick="onModelChange('${m.id}')">${escapeHtml(m.label)}</button>`
+  ).join('');
 }
 
-function filterModelPicker(q) {
-  q = (q || '').trim().toLowerCase();
-  const filtered = !q ? availableModels : availableModels.filter(m =>
-    (m.label || '').toLowerCase().includes(q) || (m.id || '').toLowerCase().includes(q));
-  renderModelPickerList(filtered);
-}
-
-function pickModel(id) {
-  selectedModel = id;
-  localStorage.setItem('biswalex_model', id);
-  updateModelPickerLabel();
-  closeModelPicker();
-}
-
-function toggleModelPicker(evt) {
+function toggleModelPill(evt) {
   evt.stopPropagation();
-  const menu = document.getElementById('model-picker-menu');
-  const btn = document.getElementById('model-picker-btn');
-  if (menu.classList.contains('open')) { closeModelPicker(); return; }
-  menu.classList.add('open');
-  btn.setAttribute('aria-expanded', 'true');
-  const search = document.getElementById('model-picker-search');
-  search.value = '';
-  renderModelPickerList(availableModels);
-  setTimeout(() => search.focus(), 0);
+  const menu = document.getElementById('model-pill-menu');
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.lang-menu.open, #model-pill-menu.open').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
 }
 
-function closeModelPicker() {
-  document.getElementById('model-picker-menu').classList.remove('open');
-  document.getElementById('model-picker-btn').setAttribute('aria-expanded', 'false');
+function onModelChange(modelId) {
+  selectedModel = modelId;
+  localStorage.setItem('biswalex_model', modelId);
+  updateModelPillLabel();
+  renderModelPillMenu();
+  document.getElementById('model-pill-menu').classList.remove('open');
 }
 
 loadModels();
@@ -1887,8 +1871,8 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.lang-menu-wrap')) {
     document.querySelectorAll('.lang-menu.open').forEach(m => m.classList.remove('open'));
   }
-  if (!e.target.closest('#model-picker-wrap')) {
-    closeModelPicker();
+  if (!e.target.closest('#model-pill-wrap')) {
+    document.getElementById('model-pill-menu').classList.remove('open');
   }
 });
 
@@ -2594,10 +2578,10 @@ showEmptyState();
 
 const REGEN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 4v5h5M20 20v-5h-5M4.5 15a8 8 0 0 0 14.5 3.5M19.5 9A8 8 0 0 0 5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>`;
-const SEND_ICON_CHAR = '➤';
 
 const PIN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 2l1.5 5.5L19 9l-4.5 3L16 18l-4-3.2L8 18l1.5-6L5 9l5.5-1.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 const EDIT_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 20h4l10-10-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // ---------- MESSAGE TOOLBAR EXTRAS: quote / translate / summarize ----------
 const LANGUAGES = ['Spanish', 'French', 'German', 'Hindi', 'Chinese (Simplified)', 'Japanese', 'Arabic', 'Portuguese', 'Russian', 'Italian', 'Korean', 'Bengali'];
@@ -2752,7 +2736,7 @@ function setSendButtonMode(streaming) {
     btn.setAttribute('data-tooltip', 'Stop generating');
     btn.disabled = false;
   } else {
-    btn.innerHTML = SEND_ICON_CHAR;
+    btn.innerHTML = SEND_ICON;
     btn.classList.remove('stop-mode');
     btn.setAttribute('data-tooltip', 'Send');
     btn.disabled = false;
