@@ -61,6 +61,18 @@
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  /* ===== Live animated background (dots) ===== */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   /* Sidebar */
@@ -73,6 +85,8 @@
     padding: 12px;
     flex-shrink: 0;
     transition: margin-left .25s ease;
+    position: relative;
+    z-index: 1;
   }
   #sidebar.hidden { margin-left: -260px; }
   #brand {
@@ -155,7 +169,7 @@
   }
 
   /* Main */
-  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
   #topbar {
     height: 52px;
     display: flex;
@@ -478,9 +492,16 @@
   @media (display-mode: standalone) {
     #hint { padding-bottom: env(safe-area-inset-bottom); }
   }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    #bg-canvas { display: none; }
+  }
 </style>
 </head>
 <body>
+
+<canvas id="bg-canvas"></canvas>
 
 <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 <div id="sidebar">
@@ -1392,6 +1413,72 @@ async function streamAssistantReply(query) {
   upsertConversation();
   updateTokenCounter();
 }
+
+// ---------- LIVE ANIMATED BACKGROUND (dots) ----------
+// Runs behind everything (z-index:0), pointer-events:none, so it never
+// interferes with clicks/typing/scrolling or any existing feature above.
+(function () {
+  const canvas = document.getElementById('bg-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, dots = [];
+  const DOT_COUNT = 60;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function initDots() {
+    dots = [];
+    for (let i = 0; i < DOT_COUNT; i++) {
+      dots.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.8 + 0.6,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        alpha: Math.random() * 0.5 + 0.15,
+        pulseSpeed: Math.random() * 0.015 + 0.005,
+        pulseDir: 1
+      });
+    }
+  }
+  initDots();
+
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function draw() {
+    if (!canvas.isConnected) return;
+    ctx.clearRect(0, 0, w, h);
+
+    dots.forEach(d => {
+      // gentle drift
+      d.x += d.vx;
+      d.y += d.vy;
+      if (d.x < 0) d.x = w;
+      if (d.x > w) d.x = 0;
+      if (d.y < 0) d.y = h;
+      if (d.y > h) d.y = 0;
+
+      // slow blink/pulse
+      d.alpha += d.pulseSpeed * d.pulseDir;
+      if (d.alpha > 0.6) d.pulseDir = -1;
+      if (d.alpha < 0.1) d.pulseDir = 1;
+
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(124,92,255,${d.alpha})`; // matches --accent
+      ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  if (!reducedMotion) draw();
+})();
 
 // ---------- PWA ----------
 if ('serviceWorker' in navigator) {
