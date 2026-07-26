@@ -504,6 +504,61 @@ def stream_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str = None):
         yield f"\n\n[Error: {str(e)}]"
 
 
+QUICK_TASK_MAX_TOKENS = {
+    "translate": 1200,
+    "summarize": 450,
+    "improve": 1200,
+    "explain": 700,
+}
+
+
+def quick_task(text: str, task: str, target_language: str = None, model: str = None) -> str:
+    """
+    One-off, non-chat text transformations used by the message toolbar
+    (Translate / Summarize / Improve Writing / Explain). Deliberately
+    stateless - no chat history, no RAG, no web search - just a direct
+    instruction + the message text, so it's fast and predictable.
+    """
+    text = (text or "").strip()
+    if not text:
+        return "Nothing to work with - the message is empty."
+
+    text = text[:8000]
+
+    if task == "translate":
+        lang = (target_language or "Spanish").strip() or "Spanish"
+        prompt = (
+            f"Translate the following text into {lang}. "
+            f"Return ONLY the translated text with no preamble, no notes, no quotation marks.\n\n"
+            f"Text:\n{text}"
+        )
+    elif task == "summarize":
+        prompt = (
+            "Summarize the following text in 3-5 concise bullet points, keeping key facts, "
+            "names, and numbers. Return ONLY the bullet points.\n\n"
+            f"Text:\n{text}"
+        )
+    elif task == "improve":
+        prompt = (
+            "Improve the grammar, clarity, and tone of the following text while fully preserving "
+            "its meaning and intent. Return ONLY the improved text, no preamble, no notes, no "
+            "quotation marks.\n\n"
+            f"Text:\n{text}"
+        )
+    elif task == "explain":
+        prompt = (
+            "Explain the following text in simple, plain terms, as if to someone with no "
+            "background in the subject. Keep it concise.\n\n"
+            f"Text:\n{text}"
+        )
+    else:
+        return f"Unsupported task: {task}"
+
+    max_tokens = QUICK_TASK_MAX_TOKENS.get(task, 600)
+    result = query_groq(prompt, max_tokens=max_tokens, model=model)
+    return result["answer"]
+
+
 def summarize_messages(messages):
     if not messages:
         return ""
