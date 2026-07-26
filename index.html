@@ -2712,6 +2712,8 @@ const STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" width="16" height="16"><
 
 const PIN_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 2l1.5 5.5L19 9l-4.5 3L16 18l-4-3.2L8 18l1.5-6L5 9l5.5-1.5L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 const EDIT_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 20h4l10-10-4-4L4 16v4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const SPEAKER_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+const SPEAKER_STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor"/></svg>`;
 const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // ---------- MESSAGE TOOLBAR EXTRAS: quote / translate / summarize ----------
@@ -2789,16 +2791,18 @@ function addMessage(role, text, msgIndex) {
   const hasIndex = typeof msgIndex === 'number';
 
   const pinBtn = (!isSharedView && hasIndex)
-    ? `<button data-tooltip="Pin message" aria-label="Pin message" onclick="toggleMsgPin(${msgIndex}, '${bubbleId}')">${PIN_ICON}<span>Pin</span></button>` : '';
+    ? `<button data-tooltip="Pin message" aria-label="Pin message" onclick="toggleMsgPin(${msgIndex}, '${bubbleId}')">${PIN_ICON}</button>` : '';
   const editBtn = (!isSharedView && role === 'user' && hasIndex)
-    ? `<button data-tooltip="Edit & resend" aria-label="Edit and resend" onclick="startEditMessage('${bubbleId}', ${msgIndex})">${EDIT_ICON}<span>Edit</span></button>` : '';
+    ? `<button data-tooltip="Edit & resend" aria-label="Edit and resend" onclick="startEditMessage('${bubbleId}', ${msgIndex})">${EDIT_ICON}</button>` : '';
   const quoteBtn = (hasIndex)
-    ? `<button data-tooltip="Quote in next message" aria-label="Quote message" onclick="quoteMessage(${msgIndex})">❝<span>Quote</span></button>` : '';
+    ? `<button data-tooltip="Quote in next message" aria-label="Quote message" onclick="quoteMessage(${msgIndex})">❝</button>` : '';
   const summarizeBtn = (role === 'assistant' && hasIndex)
-    ? `<button data-tooltip="Summarize this response" aria-label="Summarize message" onclick="quickTaskRequest('${bubbleId}', ${msgIndex}, 'summarize')">📝<span>Summarize</span></button>` : '';
+    ? `<button data-tooltip="Summarize this response" aria-label="Summarize message" onclick="quickTaskRequest('${bubbleId}', ${msgIndex}, 'summarize')">📝</button>` : '';
+  const speakBtn = (role === 'assistant' && hasIndex)
+    ? `<button id="speak-${bubbleId}" data-tooltip="Listen" aria-label="Listen to message" onclick="toggleSpeak('${bubbleId}')">${SPEAKER_ICON}</button>` : '';
   const translateBtn = (role === 'assistant' && hasIndex)
     ? `<div class="lang-menu-wrap">
-         <button data-tooltip="Translate" aria-label="Translate message" onclick="toggleLangMenu(event, '${bubbleId}')">🌐<span>Translate</span></button>
+         <button data-tooltip="Translate" aria-label="Translate message" onclick="toggleLangMenu(event, '${bubbleId}')">🌐</button>
          <div class="lang-menu" id="langmenu-${bubbleId}"></div>
        </div>` : '';
 
@@ -2807,8 +2811,9 @@ function addMessage(role, text, msgIndex) {
     <div>
       <div class="bubble" id="${bubbleId}">${text}</div>
       ${role === 'assistant' ? `<div class="actions">
-        <button data-tooltip="Copy message" aria-label="Copy message" onclick="copyText('${bubbleId}')">${COPY_ICON}<span>Copy</span></button>
-        <button data-tooltip="Regenerate response" aria-label="Regenerate response" onclick="regenerateResponse(this)">${REGEN_ICON}<span>Regenerate</span></button>
+        <button data-tooltip="Copy message" aria-label="Copy message" onclick="copyText('${bubbleId}')">${COPY_ICON}</button>
+        <button data-tooltip="Regenerate response" aria-label="Regenerate response" onclick="regenerateResponse(this)">${REGEN_ICON}</button>
+        ${speakBtn}
         ${pinBtn}
         ${quoteBtn}
         ${summarizeBtn}
@@ -2831,9 +2836,45 @@ function copyText(id) {
   const btn = el.parentElement.querySelector('.actions button[aria-label="Copy message"]');
   if (btn) {
     const original = btn.innerHTML;
-    btn.innerHTML = `${CHECK_ICON}<span>Copied!</span>`;
+    btn.innerHTML = CHECK_ICON;
     setTimeout(() => btn.innerHTML = original, 1500);
   }
+}
+
+// ---- Text-to-speech (Web Speech API — free, built into the browser) ----
+let currentUtterance = null;
+let speakingBubbleId = null;
+
+function toggleSpeak(bubbleId) {
+  if (!('speechSynthesis' in window)) { alert('Speech not supported in this browser.'); return; }
+  const btn = document.getElementById('speak-' + bubbleId);
+  if (speakingBubbleId === bubbleId) {
+    window.speechSynthesis.cancel();
+    speakingBubbleId = null;
+    if (btn) btn.innerHTML = SPEAKER_ICON;
+    return;
+  }
+  window.speechSynthesis.cancel();
+  if (speakingBubbleId) {
+    const prevBtn = document.getElementById('speak-' + speakingBubbleId);
+    if (prevBtn) prevBtn.innerHTML = SPEAKER_ICON;
+  }
+  const el = document.getElementById(bubbleId);
+  const text = el ? el.innerText : '';
+  if (!text.trim()) return;
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  currentUtterance.rate = 1;
+  currentUtterance.onend = () => {
+    speakingBubbleId = null;
+    if (btn) btn.innerHTML = SPEAKER_ICON;
+  };
+  currentUtterance.onerror = () => {
+    speakingBubbleId = null;
+    if (btn) btn.innerHTML = SPEAKER_ICON;
+  };
+  speakingBubbleId = bubbleId;
+  if (btn) btn.innerHTML = SPEAKER_STOP_ICON;
+  window.speechSynthesis.speak(currentUtterance);
 }
 
 function escapeHtml(str) {
