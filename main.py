@@ -36,6 +36,13 @@ class ChatRequest(BaseModel):
     model: str = None
 
 
+class QuickTaskRequest(BaseModel):
+    text: str
+    task: str  # "translate" | "summarize" | "improve" | "explain"
+    target_language: str = None
+    model: str = None
+
+
 @app.get("/")
 def health():
     return {
@@ -113,6 +120,22 @@ def chat(req: ChatRequest):
         event_stream(),
         media_type="text/event-stream"
     )
+
+
+@app.post("/quick-task")
+def quick_task(req: QuickTaskRequest):
+    """
+    Powers the message toolbar's Translate / Summarize / Improve Writing /
+    Explain buttons. Stateless single-shot completion, no chat history or
+    RAG involved.
+    """
+    result = engine.quick_task(
+        req.text,
+        req.task,
+        target_language=req.target_language,
+        model=req.model,
+    )
+    return {"result": result, "task": req.task}
 
 
 @app.post("/upload")
