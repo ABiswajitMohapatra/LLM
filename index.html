@@ -596,11 +596,6 @@
   }
   .msg-row.user.pinned-msg .bubble::before { left: auto; right: 0; }
 
-  /* Web search toggle in input bar */
-  #websearch-btn.active {
-    background: var(--accent); border-color: var(--accent); color: #fff;
-  }
-
   @media (max-width: 768px) {
     #sidebar {
       position: fixed; z-index: 20; top: 0; left: 0; height: 100dvh;
@@ -759,7 +754,6 @@
     <div id="file-chip"><span>📎</span><span id="file-name"></span><button onclick="clearFile()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button></div>
     <div id="input-wrap">
       <button id="attach-btn" onclick="document.getElementById('file-input').click()" data-tooltip="Attach file" aria-label="Attach file">📎</button>
-      <button id="websearch-btn" onclick="toggleWebSearch()" data-tooltip="Toggle web search" aria-label="Toggle web search">🌐</button>
       <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
       <textarea id="user-input" rows="1" placeholder="Message BiswaLex..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
       <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
@@ -794,10 +788,21 @@
 <!-- Code sandbox panel -->
 <div id="code-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeCodePanel()">
   <div class="panel-box wide">
-    <div class="panel-header"><h3>💻 Code Sandbox (JavaScript)</h3><button class="icon-close" onclick="closeCodePanel()">✕</button></div>
+    <div class="panel-header">
+      <h3>💻 Code Sandbox</h3>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="code-lang" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px;">
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="c++">C++</option>
+          <option value="c">C</option>
+          <option value="javascript">JavaScript</option>
+        </select>
+        <button class="icon-close" onclick="closeCodePanel()">✕</button>
+      </div>
+    </div>
     <div class="code-panel-body">
-      <textarea id="code-input" spellcheck="false" placeholder="// Write JavaScript here and hit Run
-console.log('Hello world');"></textarea>
+      <textarea id="code-input" spellcheck="false" placeholder="Write code here and hit Run..."></textarea>
       <div class="code-panel-actions">
         <button class="panel-primary-btn" onclick="runCode()">▶ Run</button>
         <button class="panel-secondary-btn" onclick="clearCodeOutput()">Clear output</button>
@@ -849,7 +854,6 @@ let projects = [];
 let activeProjectId = null;
 let pendingProjectFiles = [];
 let templates = [];
-let webSearchEnabled = false;
 let isSharedView = false;
 
 const DEFAULT_TEMPLATES = [
@@ -951,21 +955,45 @@ function clearCodeOutput() { document.getElementById('code-output').textContent 
 
 function runCode() {
   const code = document.getElementById('code-input').value;
+  const lang = document.getElementById('code-lang').value;
   const outputEl = document.getElementById('code-output');
-  const logs = [];
-  const sandboxConsole = {
-    log: (...args) => logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')),
-    error: (...args) => logs.push('Error: ' + args.join(' ')),
-    warn: (...args) => logs.push('Warn: ' + args.join(' '))
-  };
-  try {
-    const fn = new Function('console', code);
-    const result = fn(sandboxConsole);
-    if (result !== undefined) logs.push('=> ' + (typeof result === 'object' ? JSON.stringify(result) : String(result)));
-    outputEl.textContent = logs.length ? logs.join('\n') : '(no output)';
-  } catch (err) {
-    outputEl.textContent = '⚠️ ' + err.message;
-  }
+  if (!code.trim()) { outputEl.textContent = 'Write some code first.'; return; }
+  outputEl.textContent = 'Running...';
+
+  const filename = lang === 'java' ? javaFileName(code) : {
+    python: 'main.py', 'c++': 'main.cpp', c: 'main.c', javascript: 'main.js'
+  }[lang] || 'main.txt';
+
+  fetch('https://emkc.org/api/v2/piston/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      language: lang,
+      version: '*',
+      files: [{ name: filename, content: code }]
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      let out = '';
+      if (data.compile && (data.compile.stdout || data.compile.stderr)) {
+        out += (data.compile.stderr || data.compile.stdout || '').trim() + '\n';
+      }
+      if (data.run) {
+        out += (data.run.stdout || '') + (data.run.stderr || '');
+        if (data.run.code !== 0 && data.run.code != null) out += `\n\n(exited with code ${data.run.code})`;
+      }
+      if (data.message) out += data.message;
+      outputEl.textContent = out.trim() || '(no output)';
+    })
+    .catch(err => {
+      outputEl.textContent = '⚠️ Could not reach the code execution service. ' + err.message;
+    });
+}
+
+function javaFileName(code) {
+  const m = code.match(/public\s+class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
+  return (m ? m[1] : 'Main') + '.java';
 }
 
 // ---- Prompt templates ----
@@ -1022,12 +1050,6 @@ function addTemplateSubmit() {
   document.getElementById('new-template-title').value = '';
   document.getElementById('new-template-text').value = '';
   renderTemplatesPanel();
-}
-
-// ---- Web search toggle ----
-function toggleWebSearch() {
-  webSearchEnabled = !webSearchEnabled;
-  document.getElementById('websearch-btn').classList.toggle('active', webSearchEnabled);
 }
 
 // ---- Pinned messages ----
@@ -1886,7 +1908,7 @@ async function streamAssistantReply(query) {
     const res = await fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, web_search: webSearchEnabled, project_context: getActiveProjectContext() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext() }),
       signal: currentAbortController.signal
     });
 
