@@ -117,23 +117,36 @@
     display: flex; align-items: center; gap: 10px;
     width: 100%;
     background: none;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text);
-    padding: 10px 11px;
+    padding: 8px 6px;
     border-radius: 10px;
     cursor: pointer;
     font-size: 13.5px;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 8px;
     text-align: left;
   }
-  .new-chat-btn:hover { background: var(--panel-2); border-color: var(--line-2, var(--border)); }
+  .new-chat-btn:hover { background: var(--panel-2); }
   .new-chat-btn .nc-icon {
     width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     display: flex; align-items: center; justify-content: center;
   }
   .new-chat-btn svg { width: 14px; height: 14px; color: #fff; }
+  .topbar-icon-btn {
+    display: flex; align-items: center; gap: 10px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 11px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+  }
+  .topbar-icon-btn:hover { background: var(--panel-2); }
   #nav-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
   .nav-item {
     display: flex; align-items: center; gap: 10px;
@@ -221,12 +234,40 @@
   }
   #model-name { font-weight: 600; font-size: 14px; }
   #model-sub { color: var(--text-dim); font-size: 12px; }
-  #model-select {
+  #model-picker-wrap { position: relative; margin-top: 2px; }
+  #model-picker-btn {
+    display: flex; align-items: center; gap: 5px;
     background: var(--panel-2); color: var(--text-dim); border: 1px solid var(--border);
-    border-radius: 6px; font-size: 12px; padding: 2px 6px; margin-top: 2px;
+    border-radius: 6px; font-size: 12px; padding: 3px 7px;
     cursor: pointer; outline: none; max-width: 220px;
   }
-  #model-select:hover, #model-select:focus { color: var(--text); border-color: var(--accent); }
+  #model-picker-btn span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+  #model-picker-btn:hover, #model-picker-btn[aria-expanded="true"] { color: var(--text); border-color: var(--accent); }
+  #model-picker-btn .chev { flex-shrink: 0; }
+  #model-picker-menu {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 45;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    width: 240px; max-height: 280px; overflow: hidden; flex-direction: column;
+    box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  }
+  #model-picker-menu.open { display: flex; }
+  #model-picker-search-wrap { position: relative; padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  #model-picker-search-wrap svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+  #model-picker-search {
+    width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 7px; padding: 6px 8px 6px 26px; font-size: 12.5px; outline: none;
+  }
+  #model-picker-search:focus { border-color: var(--accent); }
+  #model-picker-list { overflow-y: auto; padding: 4px; }
+  .model-picker-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    width: 100%; text-align: left; background: none; border: none; color: var(--text);
+    font-size: 13px; padding: 8px 9px; border-radius: 7px; cursor: pointer;
+  }
+  .model-picker-item:hover { background: var(--border); }
+  .model-picker-item.active { color: var(--accent); font-weight: 600; }
+  .model-picker-check { color: var(--accent); flex-shrink: 0; }
+  .model-picker-empty { padding: 12px; font-size: 12.5px; color: var(--text-dim); text-align: center; }
   #topbar-spacer { flex: 1; }
   #token-counter {
     font-size: 11px; color: var(--text-dim); background: var(--panel-2);
@@ -873,13 +914,23 @@
     <button id="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
     <div>
       <div id="model-name">BiswaLex</div>
-      <select id="model-select" onchange="onModelChange(this.value)" aria-label="Choose AI model">
-        <option value="">Loading models...</option>
-      </select>
+      <div id="model-picker-wrap">
+        <button id="model-picker-btn" onclick="toggleModelPicker(event)" aria-haspopup="listbox" aria-expanded="false" aria-label="Choose AI model">
+          <span id="model-picker-label">Loading models...</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" width="10" height="10"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="model-picker-menu" role="listbox">
+          <div id="model-picker-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="model-picker-search" type="text" placeholder="Search models..." oninput="filterModelPicker(this.value)" autocomplete="off">
+          </div>
+          <div id="model-picker-list"></div>
+        </div>
+      </div>
     </div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
-    <button class="new-chat-btn" style="width:auto;margin:0;padding:7px 11px;" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
+    <button class="topbar-icon-btn" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
     <div id="token-counter" data-tooltip="Estimated context usage">
       <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
       <span id="token-text">~0 tokens</span>
@@ -961,7 +1012,7 @@
       </div>
     </div>
     <div class="code-panel-body">
-      <textarea id="code-input" spellcheck="false" placeholder="Write Python or JavaScript here and hit Run. (Java/C++/C need a backend compiler.)"></textarea>
+      <textarea id="code-input" spellcheck="false" placeholder="Write your code here and hit Run. (Java uses a public class named Main.)"></textarea>
       <div class="code-panel-actions">
         <button class="panel-primary-btn" onclick="runCode()">▶ Run</button>
         <button class="panel-secondary-btn" onclick="clearCodeOutput()">Clear output</button>
@@ -1150,7 +1201,7 @@ function getActiveProjectContext() {
   return ctx;
 }
 
-// ---- Code sandbox (JS execution, in-page) ----
+// ---- Code sandbox (JS/Python execution in-page, C/C++/Java via Piston public API) ----
 function openCode() { document.getElementById('code-backdrop').classList.add('show'); }
 function closeCodePanel() { document.getElementById('code-backdrop').classList.remove('show'); }
 function clearCodeOutput() { document.getElementById('code-output').textContent = 'Output will appear here.'; }
@@ -1214,6 +1265,46 @@ async function runPython(code, outputEl) {
   }
 }
 
+// Piston (https://github.com/engineer-man/piston) is a free, public, no-key-required
+// code execution API with CORS enabled — used here for compiled languages (C, C++, Java)
+// that can't run inside the browser.
+const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+const PISTON_LANG_CONFIG = {
+  'c++': { language: 'c++', version: '10.2.0', filename: 'main.cpp' },
+  'c':   { language: 'c',   version: '10.2.0', filename: 'main.c' },
+  'java':{ language: 'java',version: '15.0.2', filename: 'Main.java' }
+};
+
+async function runViaPiston(code, lang, outputEl) {
+  const cfg = PISTON_LANG_CONFIG[lang];
+  outputEl.textContent = 'Compiling & running (via public Piston API)...';
+  try {
+    const res = await fetch(PISTON_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: cfg.language,
+        version: cfg.version,
+        files: [{ name: cfg.filename, content: code }]
+      })
+    });
+    if (!res.ok) {
+      outputEl.textContent = '⚠️ Execution service returned an error (HTTP ' + res.status + ').';
+      return;
+    }
+    const data = await res.json();
+    if (data.compile && data.compile.code !== 0) {
+      outputEl.textContent = '⚠️ Compile error:\n' + (data.compile.stderr || data.compile.output || '(unknown compile error)');
+      return;
+    }
+    const run = data.run || {};
+    const out = (run.stdout || '') + (run.stderr ? '\n' + run.stderr : '');
+    outputEl.textContent = out.trim() || '(no output)';
+  } catch (err) {
+    outputEl.textContent = '⚠️ Could not reach the code execution service. ' + err.message;
+  }
+}
+
 function runCode() {
   const code = document.getElementById('code-input').value;
   const lang = document.getElementById('code-lang').value;
@@ -1224,9 +1315,10 @@ function runCode() {
     runJavaScriptLocally(code, outputEl);
   } else if (lang === 'python') {
     runPython(code, outputEl);
+  } else if (PISTON_LANG_CONFIG[lang]) {
+    runViaPiston(code, lang, outputEl);
   } else {
-    outputEl.textContent =
-      `⚠️ ${lang.toUpperCase()} needs a real compiler on a server — browsers can't compile it directly, and public compiler APIs (Piston, JDoodle) require a backend holding API keys for security reasons.\n\nJavaScript and Python run right here with no setup. To add ${lang.toUpperCase()} support, I can wire a small /execute endpoint into your BiswaLex backend using a compiler service — just ask.`;
+    outputEl.textContent = '⚠️ Unsupported language.';
   }
 }
 
@@ -1380,28 +1472,72 @@ async function saveEditMessage(bubbleId, idx, newText) {
   await streamAssistantReply(newText);
 }
 
-// ---------- MODEL SELECTOR ----------
+// ---------- MODEL SELECTOR (searchable picker) ----------
+let availableModels = [];
+
 async function loadModels() {
-  const select = document.getElementById('model-select');
   try {
     const res = await fetch(API_URL + "/models");
     const data = await res.json();
-    select.innerHTML = data.models.map(m =>
-      `<option value="${m.id}">${m.label}</option>`
-    ).join('');
-    // Restore saved choice if still valid, else fall back to server default.
+    availableModels = data.models || [];
     const saved = localStorage.getItem('biswalex_model');
-    const validIds = data.models.map(m => m.id);
+    const validIds = availableModels.map(m => m.id);
     selectedModel = (saved && validIds.includes(saved)) ? saved : data.default;
-    select.value = selectedModel;
+    renderModelPickerList(availableModels);
+    updateModelPickerLabel();
   } catch (e) {
-    select.innerHTML = `<option value="">Default model</option>`;
+    document.getElementById('model-picker-label').textContent = 'Default model';
   }
 }
 
-function onModelChange(modelId) {
-  selectedModel = modelId;
-  localStorage.setItem('biswalex_model', modelId);
+function updateModelPickerLabel() {
+  const m = availableModels.find(x => x.id === selectedModel);
+  document.getElementById('model-picker-label').textContent = m ? m.label : 'Choose model';
+}
+
+function renderModelPickerList(list) {
+  const listEl = document.getElementById('model-picker-list');
+  if (!list || list.length === 0) {
+    listEl.innerHTML = '<div class="model-picker-empty">No models match.</div>';
+    return;
+  }
+  listEl.innerHTML = list.map(m => `
+    <button type="button" class="model-picker-item ${m.id === selectedModel ? 'active' : ''}" role="option" aria-selected="${m.id === selectedModel}" onclick="pickModel('${m.id}')">
+      <span>${escapeHtml(m.label)}</span>
+      ${m.id === selectedModel ? '<span class="model-picker-check">✓</span>' : ''}
+    </button>`).join('');
+}
+
+function filterModelPicker(q) {
+  q = (q || '').trim().toLowerCase();
+  const filtered = !q ? availableModels : availableModels.filter(m =>
+    (m.label || '').toLowerCase().includes(q) || (m.id || '').toLowerCase().includes(q));
+  renderModelPickerList(filtered);
+}
+
+function pickModel(id) {
+  selectedModel = id;
+  localStorage.setItem('biswalex_model', id);
+  updateModelPickerLabel();
+  closeModelPicker();
+}
+
+function toggleModelPicker(evt) {
+  evt.stopPropagation();
+  const menu = document.getElementById('model-picker-menu');
+  const btn = document.getElementById('model-picker-btn');
+  if (menu.classList.contains('open')) { closeModelPicker(); return; }
+  menu.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+  const search = document.getElementById('model-picker-search');
+  search.value = '';
+  renderModelPickerList(availableModels);
+  setTimeout(() => search.focus(), 0);
+}
+
+function closeModelPicker() {
+  document.getElementById('model-picker-menu').classList.remove('open');
+  document.getElementById('model-picker-btn').setAttribute('aria-expanded', 'false');
 }
 
 loadModels();
@@ -1750,6 +1886,9 @@ document.addEventListener('click', (e) => {
   }
   if (!e.target.closest('.lang-menu-wrap')) {
     document.querySelectorAll('.lang-menu.open').forEach(m => m.classList.remove('open'));
+  }
+  if (!e.target.closest('#model-picker-wrap')) {
+    closeModelPicker();
   }
 });
 
