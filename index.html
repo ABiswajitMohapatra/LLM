@@ -106,9 +106,7 @@ body.sidebar-collapsed #sidebar-rail { display: flex; }
 }
 #sidebar-rail button:hover { background: var(--panel-2); color: var(--text); }
 #sidebar-rail button svg { width: 18px; height: 18px; }
-@media (max-width: 768px) {
-  #sidebar-rail { display: none !important; }
-}
+
   /* Sidebar */
 #sidebar {
     width: 260px;
@@ -2175,6 +2173,7 @@ function closeSidebarOnMobile() {
 function initSidebar() {
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.add('hidden');
+    document.body.classList.add('sidebar-collapsed');
   }
 }
 initSidebar();
