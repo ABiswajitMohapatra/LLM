@@ -390,17 +390,16 @@
 
   /* Theme toggle */
   #theme-toggle {
-    display: flex; gap: 4px; background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 3px; margin-bottom: 10px;
+    display: flex; gap: 14px; margin-bottom: 10px; padding: 2px 4px;
   }
   #theme-toggle button {
-    flex: 1; background: none; border: none; color: var(--text-dim); cursor: pointer;
-    font-size: 12px; padding: 6px 0; border-radius: 6px; display: flex;
-    align-items: center; justify-content: center; gap: 4px;
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    font-size: 16px; padding: 2px; border-radius: 6px; display: flex;
+    align-items: center; justify-content: center; opacity: .55;
+    transition: opacity .15s ease, transform .15s ease;
   }
-  #theme-toggle button.active { background: var(--accent); color: #fff; }
-  #theme-toggle button:hover:not(.active) { color: var(--text); }
-
+  #theme-toggle button.active { opacity: 1; transform: scale(1.15); }
+  #theme-toggle button:hover:not(.active) { opacity: .85; }
   /* Sidebar search */
   #chat-search-wrap { position: relative; margin-bottom: 10px; }
   #chat-search {
