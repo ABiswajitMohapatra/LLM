@@ -792,17 +792,17 @@
       <h3>💻 Code Sandbox</h3>
       <div style="display:flex;align-items:center;gap:8px;">
         <select id="code-lang" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px;">
-          <option value="python">Python</option>
+          <option value="python" selected>Python</option>
+          <option value="javascript">JavaScript</option>
           <option value="java">Java</option>
           <option value="c++">C++</option>
           <option value="c">C</option>
-          <option value="javascript">JavaScript</option>
         </select>
         <button class="icon-close" onclick="closeCodePanel()">✕</button>
       </div>
     </div>
     <div class="code-panel-body">
-      <textarea id="code-input" spellcheck="false" placeholder="Write code here and hit Run..."></textarea>
+      <textarea id="code-input" spellcheck="false" placeholder="Write Python or JavaScript here and hit Run. (Java/C++/C need a backend compiler.)"></textarea>
       <div class="code-panel-actions">
         <button class="panel-primary-btn" onclick="runCode()">▶ Run</button>
         <button class="panel-secondary-btn" onclick="clearCodeOutput()">Clear output</button>
@@ -953,47 +953,79 @@ function openCode() { document.getElementById('code-backdrop').classList.add('sh
 function closeCodePanel() { document.getElementById('code-backdrop').classList.remove('show'); }
 function clearCodeOutput() { document.getElementById('code-output').textContent = 'Output will appear here.'; }
 
+let pyodideInstance = null;
+let pyodideLoadingPromise = null;
+
+function ensurePyodide() {
+  if (pyodideInstance) return Promise.resolve(pyodideInstance);
+  if (!pyodideLoadingPromise) {
+    pyodideLoadingPromise = (async () => {
+      if (!window.loadPyodide) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Failed to load Python runtime.'));
+          document.head.appendChild(s);
+        });
+      }
+      pyodideInstance = await window.loadPyodide();
+      return pyodideInstance;
+    })();
+  }
+  return pyodideLoadingPromise;
+}
+
+function runJavaScriptLocally(code, outputEl) {
+  const logs = [];
+  const sandboxConsole = {
+    log: (...args) => logs.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')),
+    error: (...args) => logs.push('Error: ' + args.join(' ')),
+    warn: (...args) => logs.push('Warn: ' + args.join(' '))
+  };
+  try {
+    const fn = new Function('console', code);
+    const result = fn(sandboxConsole);
+    if (result !== undefined) logs.push('=> ' + (typeof result === 'object' ? JSON.stringify(result) : String(result)));
+    outputEl.textContent = logs.length ? logs.join('\n') : '(no output)';
+  } catch (err) {
+    outputEl.textContent = '⚠️ ' + err.message;
+  }
+}
+
+async function runPython(code, outputEl) {
+  outputEl.textContent = pyodideInstance ? 'Running...' : 'Loading Python runtime (first run only, ~10s)...';
+  try {
+    const pyodide = await ensurePyodide();
+    outputEl.textContent = 'Running...';
+    let captured = '';
+    pyodide.setStdout({ batched: (s) => { captured += s + '\n'; } });
+    pyodide.setStderr({ batched: (s) => { captured += s + '\n'; } });
+    try {
+      await pyodide.runPythonAsync(code);
+      outputEl.textContent = captured.trim() || '(no output)';
+    } catch (err) {
+      outputEl.textContent = (captured ? captured + '\n' : '') + '⚠️ ' + err.message;
+    }
+  } catch (err) {
+    outputEl.textContent = '⚠️ Could not load the Python runtime. ' + err.message;
+  }
+}
+
 function runCode() {
   const code = document.getElementById('code-input').value;
   const lang = document.getElementById('code-lang').value;
   const outputEl = document.getElementById('code-output');
   if (!code.trim()) { outputEl.textContent = 'Write some code first.'; return; }
-  outputEl.textContent = 'Running...';
 
-  const filename = lang === 'java' ? javaFileName(code) : {
-    python: 'main.py', 'c++': 'main.cpp', c: 'main.c', javascript: 'main.js'
-  }[lang] || 'main.txt';
-
-  fetch('https://emkc.org/api/v2/piston/execute', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      language: lang,
-      version: '*',
-      files: [{ name: filename, content: code }]
-    })
-  })
-    .then(res => res.json())
-    .then(data => {
-      let out = '';
-      if (data.compile && (data.compile.stdout || data.compile.stderr)) {
-        out += (data.compile.stderr || data.compile.stdout || '').trim() + '\n';
-      }
-      if (data.run) {
-        out += (data.run.stdout || '') + (data.run.stderr || '');
-        if (data.run.code !== 0 && data.run.code != null) out += `\n\n(exited with code ${data.run.code})`;
-      }
-      if (data.message) out += data.message;
-      outputEl.textContent = out.trim() || '(no output)';
-    })
-    .catch(err => {
-      outputEl.textContent = '⚠️ Could not reach the code execution service. ' + err.message;
-    });
-}
-
-function javaFileName(code) {
-  const m = code.match(/public\s+class\s+([A-Za-z_$][A-Za-z0-9_$]*)/);
-  return (m ? m[1] : 'Main') + '.java';
+  if (lang === 'javascript') {
+    runJavaScriptLocally(code, outputEl);
+  } else if (lang === 'python') {
+    runPython(code, outputEl);
+  } else {
+    outputEl.textContent =
+      `⚠️ ${lang.toUpperCase()} needs a real compiler on a server — browsers can't compile it directly, and public compiler APIs (Piston, JDoodle) require a backend holding API keys for security reasons.\n\nJavaScript and Python run right here with no setup. To add ${lang.toUpperCase()} support, I can wire a small /execute endpoint into your BiswaLex backend using a compiler service — just ask.`;
+  }
 }
 
 // ---- Prompt templates ----
