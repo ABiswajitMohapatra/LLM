@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
+  
   :root {
     --bg: #0f0f11;
     --panel: #17171a;
@@ -84,7 +85,30 @@
       radial-gradient(ellipse at 85% 25%, rgba(90,63,224,0.06), transparent 55%),
       radial-gradient(ellipse at 50% 100%, rgba(124,92,255,0.04), transparent 60%);
   }
-
+#sidebar-rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 56px;
+  padding-top: 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+body.sidebar-collapsed #sidebar-rail { display: flex; }
+#sidebar-rail button {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+#sidebar-rail button:hover { background: var(--panel-2); color: var(--text); }
+#sidebar-rail button svg { width: 18px; height: 18px; }
+@media (max-width: 768px) {
+  #sidebar-rail { display: none !important; }
+}
   /* Sidebar */
 #sidebar {
     width: 260px;
@@ -818,6 +842,17 @@
 <div id="bg-glow"></div>
 
 <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+  <div id="sidebar-rail">
+  <button onclick="toggleSidebar()" data-tooltip="Open sidebar" aria-label="Open sidebar">
+    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
+  </button>
+  <button onclick="newChat()" data-tooltip="New chat" aria-label="New chat">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <button onclick="toggleSidebar(); document.getElementById('chat-search').focus();" data-tooltip="Search chats" aria-label="Search chats">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+</div>
 <div id="sidebar">
   <div id="brand">
     <div id="brand-mark">
@@ -2124,6 +2159,7 @@ updateTokenCounter();
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   sidebar.classList.toggle('hidden');
+  document.body.classList.toggle('sidebar-collapsed', sidebar.classList.contains('hidden'));
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar-backdrop').classList.toggle('show', !sidebar.classList.contains('hidden'));
   }
