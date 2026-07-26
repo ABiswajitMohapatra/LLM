@@ -86,7 +86,7 @@
   }
 
   /* Sidebar */
-#sidebar {
+  #sidebar {
     width: 260px;
     background: var(--panel);
     border-right: 1px solid var(--border);
@@ -111,15 +111,7 @@
     padding: 6px 6px 16px;
     margin-bottom: 4px;
   }
-  #brand-mark {
-    width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 10px rgba(124,92,255,.35);
-  }
-  #brand-mark svg { width: 19px; height: 19px; display: block; }
   #brand-name { font-weight: 700; font-size: 15px; letter-spacing: -.2px; }
-  #brand-tag { font-size: 11px; color: var(--text-dim); }
   .new-chat-btn {
     display: flex; align-items: center; gap: 10px;
     width: 100%;
@@ -146,7 +138,7 @@
   .nav-item:hover { background: var(--panel-2); color: var(--text); }
   .nav-item.active { background: var(--panel-2); color: var(--text); }
   .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-#history-list { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  #history-list { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .history-group-label {
     font-size: 11px; font-weight: 600; color: var(--text-dim);
     text-transform: uppercase; letter-spacing: .04em;
@@ -510,26 +502,7 @@
     z-index: 19; opacity: 0; transition: opacity .25s ease;
   }
   #sidebar-backdrop.show { display: block; opacity: 1; }
-#sidebar-rail {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    width: 56px;
-    padding-top: 14px;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 5;
-  }
-  #sidebar-rail button {
-    background: none; border: none; color: var(--text-dim); cursor: pointer;
-    width: 36px; height: 36px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  #sidebar-rail button:hover { background: var(--panel-2); color: var(--text); }
-  #sidebar-rail button svg { width: 18px; height: 18px; }
+
   /* ===== Generic side/center panels (Projects, Code, Templates, Pinned) ===== */
   .panel-backdrop {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
@@ -837,22 +810,8 @@
 <div id="bg-glow"></div>
 
 <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
-<div id="sidebar-rail">
-  <button onclick="toggleSidebar()" data-tooltip="Open sidebar" aria-label="Open sidebar">
-    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
-  </button>
-  <button onclick="newChat()" data-tooltip="New chat" aria-label="New chat">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-  </button>
-  <button onclick="toggleSidebar(); setTimeout(()=>document.getElementById('chat-search').focus(),300);" data-tooltip="Search chats" aria-label="Search chats">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-  </button>
-  <button onclick="toggleSidebar()" data-tooltip="History" aria-label="History">
-    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-  </button>
-</div>
 <div id="sidebar">
-  <div id="brand" style="justify-content:space-between;">
+  <div id="brand">
     <div id="brand-name">BiswaLex</div>
   </div>
   <div id="theme-toggle" role="group" aria-label="Theme selector">
@@ -914,6 +873,7 @@
 
 <div id="main">
   <div id="topbar">
+    <button id="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
     <div id="model-name" style="display:none;"></div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
@@ -2145,12 +2105,9 @@ updateTokenCounter();
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
-  const rail = document.getElementById('sidebar-rail');
   sidebar.classList.toggle('hidden');
-  const isHidden = sidebar.classList.contains('hidden');
-  rail.style.display = isHidden ? 'flex' : 'none';
   if (window.innerWidth <= 768) {
-    document.getElementById('sidebar-backdrop').classList.toggle('show', !isHidden);
+    document.getElementById('sidebar-backdrop').classList.toggle('show', !sidebar.classList.contains('hidden'));
   }
 }
 
