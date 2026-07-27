@@ -1073,7 +1073,7 @@
       <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
       <span id="token-text">~0 tokens</span>
     </div>
-    <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
+    <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">🧭 Navigate</button>
     <div id="export-wrap">
       <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
         <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1260,7 +1260,7 @@
 <!-- Piri navigation panel -->
 <div id="piri-panel">
   <div id="piri-header">
-    <span class="piri-title">Piri</span>
+    <span class="piri-title">🧭 Navigate</span>
     <button onclick="togglePiriDock()" data-tooltip="Toggle docked/floating" aria-label="Toggle docked or floating">⧉</button>
     <button onclick="togglePiriPanel()" aria-label="Close">✕</button>
   </div>
@@ -1926,11 +1926,31 @@ function analyzePiri() {
     if (m.role !== 'user') continue;
     const reply = history[i + 1] && history[i + 1].role === 'assistant' ? history[i + 1].message : '';
     const heads = extractHeadings(reply);
-    const label = heads.length ? heads[0] : (m.message || '').slice(0, 42) + ((m.message || '').length > 42 ? '…' : '');
-    sections.push({ title: label, msgIndex: i });
+    if (heads.length) {
+      heads.forEach(h => sections.push({ title: h, msgIndex: i + 1, heading: h }));
+    } else {
+      const label = (m.message || '').slice(0, 42) + ((m.message || '').length > 42 ? '…' : '');
+      sections.push({ title: label, msgIndex: i, heading: null });
+    }
   }
   piriSections = sections;
   if (piriTab === 'sections') renderPiriSections(piriSections);
+}
+function jumpToPiriHeading(msgIndex, heading) {
+  const row = document.querySelector(`.msg-row[data-msg-index="${msgIndex}"]`);
+  if (!row) return;
+  let target = row;
+  if (heading) {
+    const needle = heading.trim().toLowerCase();
+    const els = row.querySelectorAll('h1,h2,h3,h4,strong,b');
+    for (const el of els) {
+      if (el.textContent.trim().toLowerCase().startsWith(needle.slice(0, 20))) { target = el; break; }
+    }
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.style.outline = '2px solid var(--accent)';
+  target.style.borderRadius = '6px';
+  setTimeout(() => { target.style.outline = ''; }, 1200);
 }
 function renderPiriSections(sections) {
   const body = document.getElementById('piri-body');
@@ -1939,7 +1959,7 @@ function renderPiriSections(sections) {
     return;
   }
   body.innerHTML = sections.map(s => `
-    <div class="piri-section-item" onclick="jumpToMsg(${s.msgIndex})">
+    <div class="piri-section-item" onclick="jumpToPiriHeading(${s.msgIndex}, ${s.heading ? JSON.stringify(s.heading) : 'null'})">
       <span class="dot">●</span><span>${escapeHtml(s.title)}</span>
     </div>`).join('');
 }
