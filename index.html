@@ -1165,7 +1165,7 @@
   </div>
 </div>
 
-<!-- AI Studio panel (diagrams/flowcharts/mindmaps via Mermaid.js, presentations via pptxgenjs — both free) -->
+<!-- AI Studio panel (diagrams/flowcharts/mindmaps via Mermaid.js, presentations via python-pptx backend — both free) -->
 <div id="studio-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeStudioPanel()">
   <div class="panel-box wide">
     <div class="panel-header">
@@ -1452,14 +1452,17 @@ function insertImageToChat() {
   updateTokenCounter();
 }
 
-// ---- AI Studio (diagram/flowchart/mindmap via Mermaid.js, presentation via pptxgenjs — both free) ----
+// ---- AI Studio (diagram/flowchart/mindmap via Mermaid.js — free; presentation via backend python-pptx — free) ----
 let studioLastSlides = null;
+let lastPptBlob = null;
+let lastPptTopic = '';
 
 function openAIStudio() { document.getElementById('studio-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeStudioPanel() { document.getElementById('studio-backdrop').classList.remove('show'); }
 function onStudioModeChange() {
   document.getElementById('studio-output').textContent = 'Output will appear here.';
   document.getElementById('studio-download-btn').style.display = 'none';
+  lastPptBlob = null;
 }
 
 async function ensureMermaidLib() {
@@ -1471,16 +1474,6 @@ async function ensureMermaidLib() {
     document.head.appendChild(s);
   });
   if (window.mermaid) mermaid.initialize({ startOnLoad: false });
-}
-
-async function ensurePptxLib() {
-  if (window.PptxGenJS) return;
-  await new Promise((res) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js';
-    s.onload = res; s.onerror = res;
-    document.head.appendChild(s);
-  });
 }
 
 async function askLLMFull(prompt) {
@@ -1534,20 +1527,34 @@ async function runStudio() {
       out.textContent = '⚠️ ' + e.message;
     }
   } else {
+    // PPT mode: calls the real backend (/generate-ppt), which uses Groq +
+    // python-pptx to build an actual styled, editable .pptx file — no
+    // client-side JSON outline / pptxgenjs involved anymore.
+    lastPptTopic = prompt;
+    lastPptBlob = null;
+    out.innerHTML = '<span class="toolbar-spinner"></span> Building your slides (this can take 15-30s)...';
     try {
-      const raw = await askLLMFull(`Create a presentation outline as strict JSON only (no markdown, no explanation), format {"slides":[{"title":"...","bullets":["...","..."]}]}, for: ${prompt}`);
-      const jsonStr = raw.replace(/```json|```/g, '').trim();
-      const data = JSON.parse(jsonStr);
-      studioLastSlides = data.slides || [];
-      out.innerHTML = studioLastSlides.map(s => `<div style="margin-bottom:10px;"><b>${escapeHtml(s.title || '')}</b><ul>${(s.bullets || []).map(b => '<li>' + escapeHtml(b) + '</li>').join('')}</ul></div>`).join('');
+      const res = await fetch(API_URL + '/generate-ppt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: prompt, slides: 8, template: 'business', model: selectedModel })
+      });
+      if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.json()).detail || ''; } catch (e) {}
+        throw new Error('Server returned ' + res.status + (detail ? ' — ' + detail : ''));
+      }
+      lastPptBlob = await res.blob();
+      out.innerHTML = '✅ Presentation ready — click Download to save the .pptx file.';
       dlBtn.style.display = 'inline-block';
     } catch (e) {
-      out.textContent = '⚠️ Could not parse presentation content. ' + e.message;
+      out.textContent = '⚠️ Could not generate presentation: ' + e.message;
+      dlBtn.style.display = 'none';
     }
   }
 }
 
-async function downloadStudioResult() {
+function downloadStudioResult() {
   const mode = document.getElementById('studio-mode').value;
   if (mode === 'diagram') {
     const svgEl = document.querySelector('#studio-output svg');
@@ -1558,16 +1565,12 @@ async function downloadStudioResult() {
     a.download = 'diagram.svg';
     a.click();
   } else {
-    if (!studioLastSlides || !studioLastSlides.length) return;
-    await ensurePptxLib();
-    if (!window.PptxGenJS) return;
-    const pptx = new PptxGenJS();
-    studioLastSlides.forEach(s => {
-      const slide = pptx.addSlide();
-      slide.addText(s.title || '', { x: 0.5, y: 0.4, fontSize: 24, bold: true });
-      slide.addText((s.bullets || []).map(b => ({ text: b, options: { bullet: true, breakLine: true } })), { x: 0.5, y: 1.2, fontSize: 16 });
-    });
-    pptx.writeFile({ fileName: 'presentation.pptx' });
+    if (!lastPptBlob) return;
+    const safeName = (lastPptTopic || 'presentation').slice(0, 40).replace(/[^a-z0-9 _-]/gi, '').trim() || 'presentation';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(lastPptBlob);
+    a.download = safeName + '.pptx';
+    a.click();
   }
 }
 
