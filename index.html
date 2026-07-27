@@ -45,6 +45,41 @@
     --code-bg: #f2f2f4;
     --inline-code-bg: #e8e8eb;
   }
+  html[data-theme="oled"] {
+    --bg: #000000; --panel: #0a0a0a; --panel-2: #141414; --border: #232323;
+    --text: #eeeeee; --text-dim: #8f8f8f; --accent: #7c5cff; --accent-2: #5a3fe0;
+    --user-bubble: #161616; --code-bg: #000000; --inline-code-bg: #161616;
+  }
+  html[data-theme="purple"] {
+    --bg: #1a1025; --panel: #241a33; --panel-2: #2d2140; --border: #3a2b52;
+    --text: #f0e9fb; --text-dim: #b9a8d1; --accent: #b388ff; --accent-2: #7c4dff;
+    --user-bubble: #2d2140; --code-bg: #150c1f; --inline-code-bg: #2d2140;
+  }
+  html[data-theme="blue"] {
+    --bg: #0b1220; --panel: #101a2e; --panel-2: #16223b; --border: #1f2f4d;
+    --text: #e6edf7; --text-dim: #8fa3c2; --accent: #4f9dff; --accent-2: #2f6fd6;
+    --user-bubble: #16223b; --code-bg: #080f1c; --inline-code-bg: #16223b;
+  }
+  html[data-theme="green"] {
+    --bg: #0c1512; --panel: #12201b; --panel-2: #182b23; --border: #223a30;
+    --text: #e6f2ec; --text-dim: #8fb3a3; --accent: #3ddc84; --accent-2: #22b364;
+    --user-bubble: #182b23; --code-bg: #08100c; --inline-code-bg: #182b23;
+  }
+  html[data-theme="nord"] {
+    --bg: #2e3440; --panel: #3b4252; --panel-2: #434c5e; --border: #4c566a;
+    --text: #eceff4; --text-dim: #b6bed2; --accent: #88c0d0; --accent-2: #5e81ac;
+    --user-bubble: #434c5e; --code-bg: #272c36; --inline-code-bg: #434c5e;
+  }
+  html[data-theme="dracula"] {
+    --bg: #282a36; --panel: #2f3142; --panel-2: #383a4c; --border: #44475a;
+    --text: #f8f8f2; --text-dim: #b3b6c4; --accent: #bd93f9; --accent-2: #ff79c6;
+    --user-bubble: #383a4c; --code-bg: #21222c; --inline-code-bg: #383a4c;
+  }
+  html[data-theme="catppuccin"] {
+    --bg: #1e1e2e; --panel: #24273a; --panel-2: #313244; --border: #45475a;
+    --text: #cdd6f4; --text-dim: #a6adc8; --accent: #cba6f7; --accent-2: #f5c2e7;
+    --user-bubble: #313244; --code-bg: #181825; --inline-code-bg: #313244;
+  }
   * { box-sizing: border-box; }
   html, body, #sidebar, #topbar, .bubble pre, .bubble :not(pre) > code,
   .msg-row.user .bubble, #input-wrap, .history-item, #theme-toggle button {
@@ -390,7 +425,8 @@
 
   /* Theme toggle */
   #theme-toggle {
-    display: flex; gap: 14px; margin-bottom: 10px; padding: 2px 4px;
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; padding: 6px;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
   }
   #theme-toggle button {
     background: none; border: none; color: var(--text-dim); cursor: pointer;
@@ -400,6 +436,12 @@
   }
   #theme-toggle button.active { opacity: 1; transform: scale(1.15); }
   #theme-toggle button:hover:not(.active) { opacity: .85; }
+  .theme-swatch {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent !important;
+    cursor: pointer; padding: 0 !important; flex-shrink: 0; opacity: 1 !important;
+    transform: none !important; font-size: 10px !important;
+  }
+  .theme-swatch.active { border-color: var(--text) !important; box-shadow: 0 0 0 2px var(--accent); }
   /* Sidebar search */
   #chat-search-wrap { position: relative; margin-bottom: 10px; }
   #chat-search {
@@ -494,6 +536,13 @@
   #attach-menu button:hover { background: var(--border); }
 
   #model-pill-wrap { position: relative; }
+  #research-toggle {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  }
+  #research-toggle:hover { color: var(--text); border-color: var(--accent); }
+  #research-toggle.active { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; }
   #model-pill {
     display: flex; align-items: center; gap: 5px;
     background: none; border: 1px solid var(--border); color: var(--text-dim);
@@ -589,6 +638,10 @@
   }
   .panel-divider { border-top: 1px solid var(--border); margin: 14px 0; padding-top: 14px; }
   .empty-hint { color: var(--text-dim); font-size: 13px; padding: 6px 0 14px; }
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dash-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .dash-num { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .dash-label { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 
   .project-item, .template-item {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -869,6 +922,9 @@
   <button onclick="openImagePanel()" data-tooltip="Generate image" aria-label="Generate image">
     <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
   </button>
+  <button onclick="openDashboard()" data-tooltip="Dashboard" aria-label="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V10M10 19V5M16 19v-7M20 19H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <button onclick="toggleSidebar()" data-tooltip="History" aria-label="History">
     <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
   </button>
@@ -890,9 +946,15 @@
     </button>
   </div>
   <div id="theme-toggle" role="group" aria-label="Theme selector">
-    <button data-theme-btn="light" onclick="setTheme('light')" data-tooltip="Light theme" aria-label="Light theme">☀️</button>
-    <button data-theme-btn="dark" onclick="setTheme('dark')" data-tooltip="Dark theme" aria-label="Dark theme">🌙</button>
-    <button data-theme-btn="system" onclick="setTheme('system')" data-tooltip="Match system" aria-label="System theme">💻</button>
+    <button class="theme-swatch" data-theme-btn="light" onclick="setTheme('light')" data-tooltip="Light" aria-label="Light theme" style="background:linear-gradient(135deg,#fff,#e2e2e5);"></button>
+    <button class="theme-swatch" data-theme-btn="dark" onclick="setTheme('dark')" data-tooltip="Dark" aria-label="Dark theme" style="background:linear-gradient(135deg,#2a2a2e,#0f0f11);"></button>
+    <button class="theme-swatch" data-theme-btn="oled" onclick="setTheme('oled')" data-tooltip="OLED" aria-label="OLED theme" style="background:#000;"></button>
+    <button class="theme-swatch" data-theme-btn="purple" onclick="setTheme('purple')" data-tooltip="Purple" aria-label="Purple theme" style="background:linear-gradient(135deg,#b388ff,#1a1025);"></button>
+    <button class="theme-swatch" data-theme-btn="blue" onclick="setTheme('blue')" data-tooltip="Blue" aria-label="Blue theme" style="background:linear-gradient(135deg,#4f9dff,#0b1220);"></button>
+    <button class="theme-swatch" data-theme-btn="green" onclick="setTheme('green')" data-tooltip="Green" aria-label="Green theme" style="background:linear-gradient(135deg,#3ddc84,#0c1512);"></button>
+    <button class="theme-swatch" data-theme-btn="nord" onclick="setTheme('nord')" data-tooltip="Nord" aria-label="Nord theme" style="background:linear-gradient(135deg,#88c0d0,#2e3440);"></button>
+    <button class="theme-swatch" data-theme-btn="dracula" onclick="setTheme('dracula')" data-tooltip="Dracula" aria-label="Dracula theme" style="background:linear-gradient(135deg,#bd93f9,#282a36);"></button>
+    <button class="theme-swatch" data-theme-btn="catppuccin" onclick="setTheme('catppuccin')" data-tooltip="Catppuccin" aria-label="Catppuccin theme" style="background:linear-gradient(135deg,#cba6f7,#1e1e2e);"></button>
   </div>
   <button class="new-chat-btn" onclick="newChat()">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -914,6 +976,10 @@
     <button class="nav-item" onclick="openImagePanel()">
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       Generate Image
+    </button>
+    <button class="nav-item" onclick="openDashboard()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V10M10 19V5M16 19v-7M20 19H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Dashboard
     </button>
     <button class="nav-item" onclick="openArchivePanel()">
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 7h18M5 7v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7M9 11h6M3 4h18v3H3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
@@ -1013,6 +1079,9 @@
             </button>
             <div id="model-pill-menu"></div>
           </div>
+          <button id="research-toggle" onclick="toggleResearchMode()" data-tooltip="AI Research Mode: web search, compare sources, cite references" aria-label="Toggle research mode">
+            🌐 Research
+          </button>
         </div>
         <div style="display:flex;align-items:center;gap:4px;">
           <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
@@ -1142,6 +1211,14 @@
   </div>
 </div>
 
+<!-- AI Dashboard panel -->
+<div id="dashboard-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeDashboard()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>📊 AI Dashboard</h3><button class="icon-close" onclick="closeDashboard()">✕</button></div>
+    <div class="panel-body" id="dashboard-body"></div>
+  </div>
+</div>
+
 <!-- Artifact panel -->
 <div id="artifact-backdrop" onclick="closeArtifact()"></div>
 <div id="artifact-panel">
@@ -1169,6 +1246,7 @@ const WANDBOX_COMPILE_URL = "https://wandbox.org/api/compile.json";
 let history = [];
 let extraFileContent = "";
 let isStreaming = false;
+let researchModeOn = false;
 let conversations = [];
 let currentConvId = null;
 let selectedModel = localStorage.getItem('biswalex_model') || "";
@@ -1662,6 +1740,16 @@ function toggleModelPill(evt) {
   if (!isOpen) menu.classList.add('open');
 }
 
+function toggleResearchMode() {
+  researchModeOn = !researchModeOn;
+  const btn = document.getElementById('research-toggle');
+  btn.classList.toggle('active', researchModeOn);
+  const input = document.getElementById('user-input');
+  input.placeholder = researchModeOn
+    ? 'Research question... (web search + cited report)'
+    : 'Message BiswaLex...';
+}
+
 function onModelChange(modelId) {
   selectedModel = modelId;
   localStorage.setItem('biswalex_model', modelId);
@@ -1690,6 +1778,67 @@ function updateTokenCounter() {
   fill.style.background = pct > 85 ? '#ef4444' : pct > 60 ? '#f59e0b' : 'var(--accent)';
   text.textContent = `~${tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'k' : tokens} tokens`;
 }
+
+// ---------- STATS / AI DASHBOARD ----------
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('biswalex_stats')) || { messagesByDate: {}, modelUsage: {}, responseTimes: [] }; }
+  catch (e) { return { messagesByDate: {}, modelUsage: {}, responseTimes: [] }; }
+}
+function saveStats(s) { localStorage.setItem('biswalex_stats', JSON.stringify(s)); }
+
+function recordStats(responseTimeMs) {
+  const s = loadStats();
+  const d = todayStr();
+  s.messagesByDate[d] = (s.messagesByDate[d] || 0) + 1;
+  const m = selectedModel || 'unknown';
+  s.modelUsage[m] = (s.modelUsage[m] || 0) + 1;
+  if (responseTimeMs != null) {
+    s.responseTimes.push(responseTimeMs);
+    if (s.responseTimes.length > 50) s.responseTimes.shift();
+  }
+  saveStats(s);
+}
+
+function getStorageUsedKB() {
+  let total = 0;
+  for (const key in localStorage) {
+    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+      total += (localStorage[key].length + key.length);
+    }
+  }
+  return (total / 1024).toFixed(1);
+}
+
+function openDashboard() {
+  const s = loadStats();
+  const msgsToday = s.messagesByDate[todayStr()] || 0;
+  const totalTokens = conversations.reduce((sum, c) =>
+    sum + c.messages.reduce((t, m) => t + Math.round((m.message || '').length / 4), 0), 0);
+  const avgMs = s.responseTimes.length
+    ? Math.round(s.responseTimes.reduce((a, b) => a + b, 0) / s.responseTimes.length) : 0;
+  const topModelEntry = Object.entries(s.modelUsage).sort((a, b) => b[1] - a[1])[0];
+  const topModel = topModelEntry ? (availableModels.find(m => m.id === topModelEntry[0])?.label || topModelEntry[0]) : '—';
+  const recent = [...conversations].filter(c => !c.deleted).sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5);
+
+  const body = document.getElementById('dashboard-body');
+  body.innerHTML = `
+    <div class="dash-grid">
+      <div class="dash-card"><div class="dash-num">${msgsToday}</div><div class="dash-label">Messages today</div></div>
+      <div class="dash-card"><div class="dash-num">${totalTokens >= 1000 ? (totalTokens / 1000).toFixed(1) + 'k' : totalTokens}</div><div class="dash-label">Tokens used (est.)</div></div>
+      <div class="dash-card"><div class="dash-num">${avgMs ? (avgMs / 1000).toFixed(1) + 's' : '—'}</div><div class="dash-label">Avg response time</div></div>
+      <div class="dash-card"><div class="dash-num">${getStorageUsedKB()} KB</div><div class="dash-label">Storage used</div></div>
+      <div class="dash-card" style="grid-column:span 2;"><div class="dash-num" style="font-size:15px;">${escapeHtml(topModel)}</div><div class="dash-label">Most-used model</div></div>
+    </div>
+    <div class="panel-divider">
+      <label>Recent activity</label>
+      ${recent.length ? recent.map(c => `<div class="pinned-item" onclick="loadConversation('${c.id}'); closeDashboard();">${escapeHtml(c.title)} <span style="color:var(--text-dim);font-size:11px;">— ${new Date(c.updatedAt).toLocaleString()}</span></div>`).join('') : '<div class="empty-hint">No activity yet.</div>'}
+    </div>`;
+  document.getElementById('dashboard-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closeDashboard() { document.getElementById('dashboard-backdrop').classList.remove('show'); }
 
 // ---------- THEME ----------
 function applyTheme(theme) {
@@ -1952,6 +2101,7 @@ function loadConversations() {
     if (c.archived === undefined) c.archived = false;
     if (c.deleted === undefined) c.deleted = false;
     if (c.deletedAt === undefined) c.deletedAt = null;
+    if (c.parentId === undefined) c.parentId = null;
   });
   renderHistory();
 }
@@ -2130,6 +2280,7 @@ function buildHistoryItemHtml(c, q) {
          ondragstart="onHistoryDragStart(event, '${c.id}')" ondragend="onHistoryDragEnd(event)"
          onclick="loadConversation('${c.id}')" onkeydown="if(event.key==='Enter')loadConversation('${c.id}')">
       ${c.pinned ? '<span class="pin-badge">📌</span>' : ''}
+      ${c.parentId ? '<span class="pin-badge" data-tooltip="Branched chat">🌳</span>' : ''}
       <span class="history-item-title">${highlightText(c.title, q)}</span>
       ${tagsHtml}
       <button class="kebab-btn" onclick="toggleHistoryMenu(event, '${c.id}')" aria-label="Chat options">${KEBAB_SVG}</button>
@@ -2247,6 +2398,7 @@ function upsertConversation() {
       archived: false,
       deleted: false,
       deletedAt: null,
+      parentId: null,
       updatedAt: Date.now()
     });
   }
@@ -2255,6 +2407,29 @@ function upsertConversation() {
   conv.updatedAt = Date.now();
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
+}
+
+// ---- Chat branching: fork the conversation from a specific message ----
+function branchFromMessage(msgIndex) {
+  if (isStreaming) return;
+  const sourceTitle = (conversations.find(c => c.id === currentConvId) || {}).title || 'Chat';
+  const branchedHistory = JSON.parse(JSON.stringify(history.slice(0, msgIndex + 1)));
+  const newId = 'c-' + Date.now();
+  conversations.push({
+    id: newId,
+    title: (sourceTitle + ' (branch)').slice(0, 60),
+    messages: branchedHistory,
+    pinned: false,
+    folderId: null,
+    tags: [],
+    archived: false,
+    deleted: false,
+    deletedAt: null,
+    parentId: currentConvId,
+    updatedAt: Date.now()
+  });
+  saveConversations();
+  loadConversation(newId);
 }
 
 loadFolders();
@@ -2756,6 +2931,7 @@ const EDIT_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><
 const SPEAKER_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M4 9v6h4l5 4V5L8 9H4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M17 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 const SPEAKER_STOP_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor"/></svg>`;
 const SEND_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const BRANCH_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="6" cy="6" r="2.2" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="2.2" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="12" r="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M6 8.2V15.8M8.2 6.5c4 .3 6 2 7.6 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
 
 // ---------- MESSAGE TOOLBAR EXTRAS: quote / translate / summarize ----------
 const LANGUAGES = ['Spanish', 'French', 'German', 'Hindi', 'Chinese (Simplified)', 'Japanese', 'Arabic', 'Portuguese', 'Russian', 'Italian', 'Korean', 'Bengali'];
@@ -2837,6 +3013,8 @@ function addMessage(role, text, msgIndex) {
     ? `<button data-tooltip="Edit & resend" aria-label="Edit and resend" onclick="startEditMessage('${bubbleId}', ${msgIndex})">${EDIT_ICON}</button>` : '';
   const quoteBtn = (hasIndex)
     ? `<button data-tooltip="Quote in next message" aria-label="Quote message" onclick="quoteMessage(${msgIndex})">❝</button>` : '';
+  const branchBtn = (!isSharedView && hasIndex)
+    ? `<button data-tooltip="Branch from here" aria-label="Branch conversation from here" onclick="branchFromMessage(${msgIndex})">${BRANCH_ICON}</button>` : '';
   const summarizeBtn = (role === 'assistant' && hasIndex)
     ? `<button data-tooltip="Summarize this response" aria-label="Summarize message" onclick="quickTaskRequest('${bubbleId}', ${msgIndex}, 'summarize')">📝</button>` : '';
   const speakBtn = (role === 'assistant' && hasIndex)
@@ -2857,11 +3035,12 @@ function addMessage(role, text, msgIndex) {
         ${speakBtn}
         ${pinBtn}
         ${quoteBtn}
+        ${branchBtn}
         ${summarizeBtn}
         ${translateBtn}
         <button data-tooltip="Good response" aria-label="Good response">👍</button>
         <button data-tooltip="Bad response" aria-label="Bad response">👎</button>
-      </div>` : (!isSharedView ? `<div class="actions">${editBtn}${pinBtn}${quoteBtn}</div>` : '')}
+      </div>` : (!isSharedView ? `<div class="actions">${editBtn}${pinBtn}${quoteBtn}${branchBtn}</div>` : '')}
     </div>
     ${role === 'user' ? `<div class="avatar user">${USER_ICON}</div>` : ''}
   `;
@@ -3029,6 +3208,8 @@ async function streamAssistantReply(query) {
   isStreaming = true;
   setSendButtonMode(true);
   setStreamingTitle(true);
+  const _statsStart = Date.now();
+  let _firstChunkAt = null;
 
   currentAbortController = new AbortController();
   let fullText = "";
@@ -3039,7 +3220,7 @@ async function streamAssistantReply(query) {
     const res = await fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn }),
       signal: currentAbortController.signal
     });
 
@@ -3060,7 +3241,7 @@ async function streamAssistantReply(query) {
         try {
           const payload = JSON.parse(jsonStr);
           if (payload.type === "chunk") {
-            if (firstChunk) { fullText = ""; firstChunk = false; }
+            if (firstChunk) { fullText = ""; firstChunk = false; _firstChunkAt = Date.now(); }
             fullText += payload.text;
             bubbleEl.innerHTML = renderMarkdown(fullText) + '<span class="cursor"></span>';
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
@@ -3086,6 +3267,7 @@ async function streamAssistantReply(query) {
   currentAbortController = null;
   setSendButtonMode(false);
   setStreamingTitle(false);
+  recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
   updateTokenCounter();
 }
