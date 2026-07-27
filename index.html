@@ -962,6 +962,10 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       Templates
     </button>
+    <button class="nav-item" onclick="openAIStudio()">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      AI Studio
+    </button>
     <button class="nav-item" onclick="openImagePanel()">
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       Generate Image
@@ -1157,6 +1161,30 @@
         <button class="panel-secondary-btn" onclick="regenerateImage()">🔁 Regenerate</button>
         <button class="panel-primary-btn" onclick="insertImageToChat()">💬 Send to chat</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Studio panel (diagrams/flowcharts/mindmaps via Mermaid.js, presentations via pptxgenjs — both free) -->
+<div id="studio-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeStudioPanel()">
+  <div class="panel-box wide">
+    <div class="panel-header">
+      <h3>🎨 AI Studio</h3>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <select id="studio-mode" onchange="onStudioModeChange()" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px;">
+          <option value="diagram">Diagram / Flowchart / Mindmap</option>
+          <option value="ppt">Presentation</option>
+        </select>
+        <button class="icon-close" onclick="closeStudioPanel()">✕</button>
+      </div>
+    </div>
+    <div class="code-panel-body">
+      <textarea id="studio-input" spellcheck="false" placeholder="e.g. 'flowchart of user login process' or 'presentation on solar energy, 6 slides'" style="min-height:70px;"></textarea>
+      <div class="code-panel-actions">
+        <button class="panel-primary-btn" onclick="runStudio()">✨ Generate</button>
+        <button class="panel-secondary-btn" id="studio-download-btn" style="display:none" onclick="downloadStudioResult()">⬇ Download</button>
+      </div>
+      <div id="studio-output" style="background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:120px;max-height:320px;overflow:auto;">Output will appear here.</div>
     </div>
   </div>
 </div>
@@ -1423,6 +1451,126 @@ function insertImageToChat() {
   upsertConversation();
   updateTokenCounter();
 }
+
+// ---- AI Studio (diagram/flowchart/mindmap via Mermaid.js, presentation via pptxgenjs — both free) ----
+let studioLastSlides = null;
+
+function openAIStudio() { document.getElementById('studio-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeStudioPanel() { document.getElementById('studio-backdrop').classList.remove('show'); }
+function onStudioModeChange() {
+  document.getElementById('studio-output').textContent = 'Output will appear here.';
+  document.getElementById('studio-download-btn').style.display = 'none';
+}
+
+async function ensureMermaidLib() {
+  if (window.mermaid) return;
+  await new Promise((res) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js';
+    s.onload = res; s.onerror = res;
+    document.head.appendChild(s);
+  });
+  if (window.mermaid) mermaid.initialize({ startOnLoad: false });
+}
+
+async function ensurePptxLib() {
+  if (window.PptxGenJS) return;
+  await new Promise((res) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js';
+    s.onload = res; s.onerror = res;
+    document.head.appendChild(s);
+  });
+}
+
+async function askLLMFull(prompt) {
+  const res = await fetch(API_URL + "/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: prompt, history: [], extra_file_content: "", model: selectedModel, project_context: null })
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "", fullText = "", first = true;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      try {
+        const payload = JSON.parse(line.slice(6));
+        if (payload.type === "chunk") { if (first) { fullText = ""; first = false; } fullText += payload.text; }
+      } catch (e) {}
+    }
+  }
+  return fullText;
+}
+
+async function runStudio() {
+  const mode = document.getElementById('studio-mode').value;
+  const prompt = document.getElementById('studio-input').value.trim();
+  const out = document.getElementById('studio-output');
+  const dlBtn = document.getElementById('studio-download-btn');
+  if (!prompt) { out.textContent = 'Describe what you want first.'; return; }
+  dlBtn.style.display = 'none';
+  out.textContent = 'Generating...';
+
+  if (mode === 'diagram') {
+    try {
+      const raw = await askLLMFull(`Generate ONLY valid Mermaid.js diagram syntax (choose flowchart/mindmap/sequenceDiagram as fits best), no explanation, no markdown code fences, for: ${prompt}`);
+      const code = raw.replace(/```mermaid|```/g, '').trim();
+      await ensureMermaidLib();
+      if (window.mermaid) {
+        const { svg } = await mermaid.render('studioMermaidSvg', code);
+        out.innerHTML = svg;
+        dlBtn.style.display = 'inline-block';
+      } else {
+        out.textContent = 'Could not load diagram renderer.';
+      }
+    } catch (e) {
+      out.textContent = '⚠️ ' + e.message;
+    }
+  } else {
+    try {
+      const raw = await askLLMFull(`Create a presentation outline as strict JSON only (no markdown, no explanation), format {"slides":[{"title":"...","bullets":["...","..."]}]}, for: ${prompt}`);
+      const jsonStr = raw.replace(/```json|```/g, '').trim();
+      const data = JSON.parse(jsonStr);
+      studioLastSlides = data.slides || [];
+      out.innerHTML = studioLastSlides.map(s => `<div style="margin-bottom:10px;"><b>${escapeHtml(s.title || '')}</b><ul>${(s.bullets || []).map(b => '<li>' + escapeHtml(b) + '</li>').join('')}</ul></div>`).join('');
+      dlBtn.style.display = 'inline-block';
+    } catch (e) {
+      out.textContent = '⚠️ Could not parse presentation content. ' + e.message;
+    }
+  }
+}
+
+async function downloadStudioResult() {
+  const mode = document.getElementById('studio-mode').value;
+  if (mode === 'diagram') {
+    const svgEl = document.querySelector('#studio-output svg');
+    if (!svgEl) return;
+    const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'diagram.svg';
+    a.click();
+  } else {
+    if (!studioLastSlides || !studioLastSlides.length) return;
+    await ensurePptxLib();
+    if (!window.PptxGenJS) return;
+    const pptx = new PptxGenJS();
+    studioLastSlides.forEach(s => {
+      const slide = pptx.addSlide();
+      slide.addText(s.title || '', { x: 0.5, y: 0.4, fontSize: 24, bold: true });
+      slide.addText((s.bullets || []).map(b => ({ text: b, options: { bullet: true, breakLine: true } })), { x: 0.5, y: 1.2, fontSize: 16 });
+    });
+    pptx.writeFile({ fileName: 'presentation.pptx' });
+  }
+}
+
 function clearCodeOutput() { document.getElementById('code-output').textContent = 'Output will appear here.'; }
 
 let pyodideInstance = null;
