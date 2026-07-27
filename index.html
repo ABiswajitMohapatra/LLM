@@ -1958,10 +1958,15 @@ function renderPiriSections(sections) {
     body.innerHTML = '<div class="piri-empty">No sections yet.<br>Sections appear automatically as you chat.</div>';
     return;
   }
-  body.innerHTML = sections.map(s => `
-    <div class="piri-section-item" onclick="jumpToPiriHeading(${s.msgIndex}, ${s.heading ? JSON.stringify(s.heading) : 'null'})">
+  body.innerHTML = sections.map((s, i) => `
+    <div class="piri-section-item" onclick="jumpToPiriSection(${i})">
       <span class="dot">●</span><span>${escapeHtml(s.title)}</span>
     </div>`).join('');
+}
+function jumpToPiriSection(i) {
+  const s = piriSections[i];
+  if (!s) return;
+  jumpToPiriHeading(s.msgIndex, s.heading);
 }
 function renderPiriBookmarks() {
   const bookmarked = history.map((m, i) => ({ ...m, idx: i })).filter(m => m.pinned);
