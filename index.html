@@ -945,17 +945,6 @@
       <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
     </button>
   </div>
-  <div id="theme-toggle" role="group" aria-label="Theme selector">
-    <button class="theme-swatch" data-theme-btn="light" onclick="setTheme('light')" data-tooltip="Light" aria-label="Light theme" style="background:linear-gradient(135deg,#fff,#e2e2e5);"></button>
-    <button class="theme-swatch" data-theme-btn="dark" onclick="setTheme('dark')" data-tooltip="Dark" aria-label="Dark theme" style="background:linear-gradient(135deg,#2a2a2e,#0f0f11);"></button>
-    <button class="theme-swatch" data-theme-btn="oled" onclick="setTheme('oled')" data-tooltip="OLED" aria-label="OLED theme" style="background:#000;"></button>
-    <button class="theme-swatch" data-theme-btn="purple" onclick="setTheme('purple')" data-tooltip="Purple" aria-label="Purple theme" style="background:linear-gradient(135deg,#b388ff,#1a1025);"></button>
-    <button class="theme-swatch" data-theme-btn="blue" onclick="setTheme('blue')" data-tooltip="Blue" aria-label="Blue theme" style="background:linear-gradient(135deg,#4f9dff,#0b1220);"></button>
-    <button class="theme-swatch" data-theme-btn="green" onclick="setTheme('green')" data-tooltip="Green" aria-label="Green theme" style="background:linear-gradient(135deg,#3ddc84,#0c1512);"></button>
-    <button class="theme-swatch" data-theme-btn="nord" onclick="setTheme('nord')" data-tooltip="Nord" aria-label="Nord theme" style="background:linear-gradient(135deg,#88c0d0,#2e3440);"></button>
-    <button class="theme-swatch" data-theme-btn="dracula" onclick="setTheme('dracula')" data-tooltip="Dracula" aria-label="Dracula theme" style="background:linear-gradient(135deg,#bd93f9,#282a36);"></button>
-    <button class="theme-swatch" data-theme-btn="catppuccin" onclick="setTheme('catppuccin')" data-tooltip="Catppuccin" aria-label="Catppuccin theme" style="background:linear-gradient(135deg,#cba6f7,#1e1e2e);"></button>
-  </div>
   <button class="new-chat-btn" onclick="newChat()">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     New chat
@@ -988,6 +977,10 @@
     <button class="nav-item" onclick="openTrashPanel()">
       <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       Trash
+    </button>
+    <button class="nav-item" onclick="openThemePanel()">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="10" r="1.3" fill="currentColor"/><circle cx="12" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="11" r="1.3" fill="currentColor"/><circle cx="10" cy="15" r="1.3" fill="currentColor"/></svg>
+      Theme
     </button>
   </div>
   <div id="chat-search-wrap">
@@ -1202,6 +1195,27 @@
 </div>
 
 <!-- Trash panel -->
+<!-- Theme picker panel -->
+<div id="theme-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeThemePanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🎨 Theme</h3><button class="icon-close" onclick="closeThemePanel()">✕</button></div>
+    <div class="panel-body">
+      <div id="theme-toggle" role="group" aria-label="Theme selector" style="margin-bottom:0;">
+        <button class="theme-swatch" data-theme-btn="light" onclick="setTheme('light')" data-tooltip="Light" aria-label="Light theme" style="background:linear-gradient(135deg,#fff,#e2e2e5);"></button>
+        <button class="theme-swatch" data-theme-btn="dark" onclick="setTheme('dark')" data-tooltip="Dark" aria-label="Dark theme" style="background:linear-gradient(135deg,#2a2a2e,#0f0f11);"></button>
+        <button class="theme-swatch" data-theme-btn="oled" onclick="setTheme('oled')" data-tooltip="OLED" aria-label="OLED theme" style="background:#000;"></button>
+        <button class="theme-swatch" data-theme-btn="purple" onclick="setTheme('purple')" data-tooltip="Purple" aria-label="Purple theme" style="background:linear-gradient(135deg,#b388ff,#1a1025);"></button>
+        <button class="theme-swatch" data-theme-btn="blue" onclick="setTheme('blue')" data-tooltip="Blue" aria-label="Blue theme" style="background:linear-gradient(135deg,#4f9dff,#0b1220);"></button>
+        <button class="theme-swatch" data-theme-btn="green" onclick="setTheme('green')" data-tooltip="Green" aria-label="Green theme" style="background:linear-gradient(135deg,#3ddc84,#0c1512);"></button>
+        <button class="theme-swatch" data-theme-btn="nord" onclick="setTheme('nord')" data-tooltip="Nord" aria-label="Nord theme" style="background:linear-gradient(135deg,#88c0d0,#2e3440);"></button>
+        <button class="theme-swatch" data-theme-btn="dracula" onclick="setTheme('dracula')" data-tooltip="Dracula" aria-label="Dracula theme" style="background:linear-gradient(135deg,#bd93f9,#282a36);"></button>
+        <button class="theme-swatch" data-theme-btn="catppuccin" onclick="setTheme('catppuccin')" data-tooltip="Catppuccin" aria-label="Catppuccin theme" style="background:linear-gradient(135deg,#cba6f7,#1e1e2e);"></button>
+        <button data-theme-btn="system" onclick="setTheme('system')" data-tooltip="Match system" aria-label="System theme">💻</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="trash-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeTrashPanel()">
   <div class="panel-box">
     <div class="panel-header"><h3>🗑️ Trash</h3><button class="icon-close" onclick="closeTrashPanel()">✕</button></div>
@@ -2037,6 +2051,9 @@ function renderArchiveList() {
       <button class="restore-link" onclick="unarchiveConversation('${c.id}')">Unarchive</button>
     </div>`).join('');
 }
+
+function openThemePanel() { document.getElementById('theme-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
 
 function openTrashPanel() {
   renderTrashList();
