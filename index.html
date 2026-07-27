@@ -1568,6 +1568,29 @@ async function askLLMFull(prompt) {
   return fullText;
 }
 
+// Cleans up LLM output for Mermaid: strips any prose/preamble the model
+// added despite instructions, pulls code out of ```mermaid fences if
+// present, and — if the model squished every statement onto one line
+// (the "No diagram type detected for text: To create a diagram..." failure
+// mode) — reinserts line breaks before each new statement so the Mermaid
+// parser can read it.
+function sanitizeMermaidCode(raw) {
+  let code = (raw || '').trim();
+  const fenced = code.match(/```(?:mermaid)?\s*([\s\S]*?)```/i);
+  if (fenced) code = fenced[1].trim();
+  const kwMatch = code.match(/\b(graph\s+(TD|LR|RL|BT|TB)|flowchart\s+(TD|LR|RL|BT|TB)|sequenceDiagram|classDiagram|stateDiagram(-v2)?|erDiagram|gantt|pie|journey|mindmap)\b/i);
+  if (kwMatch) code = code.slice(kwMatch.index);
+  const lineCount = code.split('\n').filter(l => l.trim()).length;
+  if (lineCount <= 2 && code.length > 60) {
+    code = code
+      .replace(/^(graph|flowchart)\s+(TD|LR|RL|BT|TB)\s+/i, '$1 $2\n')
+      .replace(/\s+(subgraph\b)/gi, '\n$1')
+      .replace(/\s+(end)\b/gi, '\nend')
+      .replace(/([\]\)])\s+([A-Za-z][\w]*\s*-->)/g, '$1\n$2');
+  }
+  return code.trim();
+}
+
 async function runStudio() {
   const mode = document.getElementById('studio-mode').value;
   const prompt = document.getElementById('studio-input').value.trim();
@@ -1578,19 +1601,32 @@ async function runStudio() {
   out.textContent = 'Generating...';
 
   if (mode === 'diagram') {
+    const diagramPrompt = `Generate Mermaid.js diagram syntax (choose flowchart/mindmap/sequenceDiagram as fits best) for: ${prompt}\n\n`
+      + `Rules:\n- Output ONLY the Mermaid code, wrapped in a \`\`\`mermaid code fence.\n`
+      + `- No explanation before or after the code fence.\n`
+      + `- Put EVERY node/edge/subgraph statement on its own line — never combine statements on one line.\n\n`
+      + `Example of the required format:\n\`\`\`mermaid\nflowchart TD\n    A[Start] --> B[Step One]\n    B --> C[Step Two]\n    C --> D[End]\n\`\`\``;
     try {
-      const raw = await askLLMFull(`Generate ONLY valid Mermaid.js diagram syntax (choose flowchart/mindmap/sequenceDiagram as fits best), no explanation, no markdown code fences, for: ${prompt}`);
-      const code = raw.replace(/```mermaid|```/g, '').trim();
+      const raw = await askLLMFull(diagramPrompt);
+      let code = sanitizeMermaidCode(raw);
       await ensureMermaidLib();
-      if (window.mermaid) {
+      if (!window.mermaid) { out.textContent = 'Could not load diagram renderer.'; return; }
+      try {
         const { svg } = await mermaid.render('studioMermaidSvg', code);
         out.innerHTML = svg;
         dlBtn.style.display = 'inline-block';
-      } else {
-        out.textContent = 'Could not load diagram renderer.';
+      } catch (renderErr) {
+        // One retry: ask the model again, explicitly telling it the first
+        // attempt failed to parse, rather than showing a dead end.
+        out.textContent = 'First attempt had a syntax issue, retrying...';
+        const retryRaw = await askLLMFull(diagramPrompt + `\n\nYour previous attempt failed to parse. Double-check the syntax is valid Mermaid.js and follow the format exactly.`);
+        code = sanitizeMermaidCode(retryRaw);
+        const { svg } = await mermaid.render('studioMermaidSvg2', code);
+        out.innerHTML = svg;
+        dlBtn.style.display = 'inline-block';
       }
     } catch (e) {
-      out.textContent = '⚠️ ' + e.message;
+      out.textContent = '⚠️ Could not generate a valid diagram. Try rephrasing your request.';
     }
   } else {
     // PPT mode: calls the real backend (/generate-ppt), which uses Groq +
