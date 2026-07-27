@@ -684,12 +684,6 @@
   .piri-section-item:hover { background: var(--panel-2); }
   .piri-section-item .dot { color: var(--accent); flex-shrink: 0; margin-top: 2px; }
   .piri-empty { color: var(--text-dim); font-size: 12.5px; padding: 20px 10px; text-align: center; line-height: 1.6; }
-  #piri-refresh-btn {
-    margin: 0 14px 10px; padding: 8px; background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 12.5px; cursor: pointer; text-align: center;
-  }
-  #piri-refresh-btn:hover { border-color: var(--accent); }
-  #piri-refresh-btn:disabled { opacity: .5; cursor: default; }
   @media (max-width: 700px) {
     #piri-panel { width: 88vw; }
     #piri-panel.floating { right: 6vw; width: 88vw; }
@@ -1275,7 +1269,6 @@
     <button class="piri-tab active" id="piri-tab-sections" onclick="switchPiriTab('sections')">Sections</button>
     <button class="piri-tab" id="piri-tab-bookmarks" onclick="switchPiriTab('bookmarks')">Bookmarks</button>
   </div>
-  <button id="piri-refresh-btn" onclick="analyzePiri()">🔄 Analyze conversation</button>
   <div id="piri-body"></div>
 </div>
 
@@ -1884,8 +1877,7 @@ function togglePiriPanel() {
   const panel = document.getElementById('piri-panel');
   const wasOpen = panel.classList.contains('open');
   panel.classList.toggle('open');
-  if (!wasOpen && piriSections.length === 0 && history.length >= 2) analyzePiri();
-  if (!wasOpen) renderPiriTab();
+  if (!wasOpen) { analyzePiri(); renderPiriTab(); }
 }
 function togglePiriDock() {
   piriDocked = !piriDocked;
@@ -1902,30 +1894,48 @@ function renderPiriTab() {
   if (piriTab === 'bookmarks') renderPiriBookmarks();
   else renderPiriSections(piriSections);
 }
-async function analyzePiri() {
-  const btn = document.getElementById('piri-refresh-btn');
-  if (!history.length) { renderPiriSections([]); return; }
-  btn.disabled = true;
-  btn.textContent = '⏳ Analyzing...';
-  try {
-    const res = await fetch(API_URL + '/analyze-conversation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history, model: selectedModel })
-    });
-    const data = await res.json();
-    piriSections = data.sections || [];
-  } catch (e) {
-    piriSections = [];
+
+// Extracts real headings/bold-labels/numbered-labels already present in an
+// assistant reply's markdown (## Heading, **Bold Label**, "1. Title") - the
+// same signal Claude/GPT/Piri-style navigators use, so no extra API call,
+// no extra tokens, and it updates instantly as replies stream in.
+function extractHeadings(md) {
+  if (!md) return [];
+  const heads = [];
+  for (const raw of md.split('\n')) {
+    const l = raw.trim();
+    if (!l) continue;
+    let m = l.match(/^#{1,4}\s+(.{2,60})$/);
+    if (m) { heads.push(m[1].replace(/[*`]/g, '').trim()); continue; }
+    m = l.match(/^\*\*([^*]{2,60})\*\*:?$/);
+    if (m) { heads.push(m[1].trim()); continue; }
+    m = l.match(/^\d+\.\s+\*{0,2}([A-Z][^.:*]{2,50})\*{0,2}[.:]?$/);
+    if (m) { heads.push(m[1].trim()); continue; }
   }
-  btn.disabled = false;
-  btn.textContent = '🔄 Analyze conversation';
+  return [...new Set(heads)];
+}
+
+// Groups the whole conversation into a small set of major sections: one
+// entry per user turn (using headings from its assistant reply if present,
+// otherwise the question itself), so long chats collapse into ~a handful of
+// jump points instead of one row per heading.
+function analyzePiri() {
+  const sections = [];
+  for (let i = 0; i < history.length; i++) {
+    const m = history[i];
+    if (m.role !== 'user') continue;
+    const reply = history[i + 1] && history[i + 1].role === 'assistant' ? history[i + 1].message : '';
+    const heads = extractHeadings(reply);
+    const label = heads.length ? heads[0] : (m.message || '').slice(0, 42) + ((m.message || '').length > 42 ? '…' : '');
+    sections.push({ title: label, msgIndex: i });
+  }
+  piriSections = sections;
   if (piriTab === 'sections') renderPiriSections(piriSections);
 }
 function renderPiriSections(sections) {
   const body = document.getElementById('piri-body');
   if (!sections || sections.length === 0) {
-    body.innerHTML = '<div class="piri-empty">No sections yet.<br>Click "Analyze conversation" to build a table of contents.</div>';
+    body.innerHTML = '<div class="piri-empty">No sections yet.<br>Sections appear automatically as you chat.</div>';
     return;
   }
   body.innerHTML = sections.map(s => `
@@ -3596,6 +3606,7 @@ async function streamAssistantReply(query) {
   recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
   updateTokenCounter();
+  analyzePiri();
 }
 
 // ---------- LIVE ANIMATED BACKGROUND (flowing particles) ----------
