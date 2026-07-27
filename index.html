@@ -1073,7 +1073,7 @@
       <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
       <span id="token-text">~0 tokens</span>
     </div>
-    <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">🧭 Navigate</button>
+    <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
     <div id="export-wrap">
       <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
         <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1260,7 +1260,7 @@
 <!-- Piri navigation panel -->
 <div id="piri-panel">
   <div id="piri-header">
-    <span class="piri-title">🧭 Navigate</span>
+    <span class="piri-title">Piri</span>
     <button onclick="togglePiriDock()" data-tooltip="Toggle docked/floating" aria-label="Toggle docked or floating">⧉</button>
     <button onclick="togglePiriPanel()" aria-label="Close">✕</button>
   </div>
@@ -1899,38 +1899,57 @@ function renderPiriTab() {
 // assistant reply's markdown (## Heading, **Bold Label**, "1. Title") - the
 // same signal Claude/GPT/Piri-style navigators use, so no extra API call,
 // no extra tokens, and it updates instantly as replies stream in.
+// Also flags "important" lines: sentences with inline **bold**, blockquotes,
+// or lines containing note/important/key/warning-style keywords.
+const IMPORTANT_KEYWORDS = /\b(important|note:|key point|remember|caution|warning|critical|crucial|must\b)/i;
 function extractHeadings(md) {
   if (!md) return [];
-  const heads = [];
+  const items = [];
   for (const raw of md.split('\n')) {
     const l = raw.trim();
     if (!l) continue;
     let m = l.match(/^#{1,4}\s+(.{2,60})$/);
-    if (m) { heads.push(m[1].replace(/[*`]/g, '').trim()); continue; }
+    if (m) { items.push({ text: m[1].replace(/[*`]/g, '').trim(), type: 'heading' }); continue; }
     m = l.match(/^\*\*([^*]{2,60})\*\*:?$/);
-    if (m) { heads.push(m[1].trim()); continue; }
+    if (m) { items.push({ text: m[1].trim(), type: 'heading' }); continue; }
     m = l.match(/^\d+\.\s+\*{0,2}([A-Z][^.:*]{2,50})\*{0,2}[.:]?$/);
-    if (m) { heads.push(m[1].trim()); continue; }
+    if (m) { items.push({ text: m[1].trim(), type: 'heading' }); continue; }
+    m = l.match(/^>\s*(.{2,120})$/);
+    if (m) { items.push({ text: m[1].replace(/[*`]/g, '').trim().slice(0, 60), type: 'important' }); continue; }
+    if (IMPORTANT_KEYWORDS.test(l) && l.length < 180) {
+      items.push({ text: l.replace(/[*_`#>]/g, '').trim().slice(0, 60), type: 'important' });
+      continue;
+    }
+    const bold = l.match(/\*\*([^*]{4,50})\*\*/);
+    if (bold && l.length > bold[0].length + 6) {
+      items.push({ text: bold[1].trim(), type: 'important' });
+    }
   }
-  return [...new Set(heads)];
+  const seen = new Set();
+  return items.filter(h => {
+    const k = h.text.toLowerCase();
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 // Groups the whole conversation into a small set of major sections: one
-// entry per user turn (using headings from its assistant reply if present,
-// otherwise the question itself), so long chats collapse into ~a handful of
-// jump points instead of one row per heading.
+// entry per heading/important line found in each assistant reply (falling
+// back to the question itself if none), so long chats collapse into ~a
+// handful of jump points instead of one row per heading.
 function analyzePiri() {
   const sections = [];
   for (let i = 0; i < history.length; i++) {
     const m = history[i];
     if (m.role !== 'user') continue;
     const reply = history[i + 1] && history[i + 1].role === 'assistant' ? history[i + 1].message : '';
-    const heads = extractHeadings(reply);
-    if (heads.length) {
-      heads.forEach(h => sections.push({ title: h, msgIndex: i + 1, heading: h }));
+    const items = extractHeadings(reply);
+    if (items.length) {
+      items.forEach(h => sections.push({ title: h.text, msgIndex: i + 1, heading: h.text, type: h.type }));
     } else {
       const label = (m.message || '').slice(0, 42) + ((m.message || '').length > 42 ? '…' : '');
-      sections.push({ title: label, msgIndex: i, heading: null });
+      sections.push({ title: label, msgIndex: i, heading: null, type: 'question' });
     }
   }
   piriSections = sections;
@@ -1942,9 +1961,10 @@ function jumpToPiriHeading(msgIndex, heading) {
   let target = row;
   if (heading) {
     const needle = heading.trim().toLowerCase();
-    const els = row.querySelectorAll('h1,h2,h3,h4,strong,b');
+    const els = row.querySelectorAll('h1,h2,h3,h4,strong,b,blockquote,li,p');
     for (const el of els) {
-      if (el.textContent.trim().toLowerCase().startsWith(needle.slice(0, 20))) { target = el; break; }
+      const t = el.textContent.trim().toLowerCase();
+      if (t.startsWith(needle.slice(0, 20)) || t.includes(needle.slice(0, 25))) { target = el; break; }
     }
   }
   target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1958,9 +1978,10 @@ function renderPiriSections(sections) {
     body.innerHTML = '<div class="piri-empty">No sections yet.<br>Sections appear automatically as you chat.</div>';
     return;
   }
+  const dotFor = t => t === 'important' ? '⭐' : (t === 'question' ? '❔' : '●');
   body.innerHTML = sections.map((s, i) => `
     <div class="piri-section-item" onclick="jumpToPiriSection(${i})">
-      <span class="dot">●</span><span>${escapeHtml(s.title)}</span>
+      <span class="dot">${dotFor(s.type)}</span><span>${escapeHtml(s.title)}</span>
     </div>`).join('');
 }
 function jumpToPiriSection(i) {
