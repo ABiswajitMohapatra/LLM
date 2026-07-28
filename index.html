@@ -1045,6 +1045,18 @@
   #lt-calendar-grid .lt-cal-day { padding: 6px 0; border-radius: 6px; }
   #lt-calendar-grid .lt-cal-day.today { background: var(--accent); color: #fff; font-weight: 700; }
   #lt-calendar-title { font-size: 13px; margin-bottom: 8px; color: var(--text-dim); }
+
+  /* Smart follow-up suggestion chips */
+  .followup-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px 44px; }
+  .followup-chip {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    font-size: 12.5px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+    max-width: 100%; text-align: left;
+  }
+  .followup-chip:hover { background: var(--border); border-color: var(--accent); }
+  @media (max-width: 600px) {
+    .followup-chips { margin-left: 0; }
+  }
 </style>
 </head>
 <body>
@@ -3945,6 +3957,43 @@ async function streamAssistantReply(query) {
   upsertConversation();
   updateTokenCounter();
   analyzePiri();
+  if (!wasAborted && !isSharedView && fullText.trim()) {
+    renderFollowupChips(bubbleId, query, fullText);
+  }
+}
+
+async function renderFollowupChips(bubbleId, query, answer) {
+  try {
+    const res = await fetch(API_URL + '/suggest-followups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, answer, model: selectedModel })
+    });
+    const data = await res.json();
+    const suggestions = data.suggestions || [];
+    if (!suggestions.length) return;
+    const bubbleEl = document.getElementById(bubbleId);
+    const row = bubbleEl && bubbleEl.closest('.msg-row');
+    if (!row) return;
+    const chipsWrap = document.createElement('div');
+    chipsWrap.className = 'followup-chips';
+    suggestions.forEach(s => {
+      const chip = document.createElement('button');
+      chip.className = 'followup-chip';
+      chip.textContent = s;
+      chip.onclick = () => sendFollowup(s);
+      chipsWrap.appendChild(chip);
+    });
+    row.appendChild(chipsWrap);
+  } catch (e) {}
+}
+
+async function sendFollowup(text) {
+  if (isStreaming) return;
+  document.querySelectorAll('.followup-chips').forEach(el => el.remove());
+  addMessage('user', escapeHtml(text), history.length);
+  history.push({ role: 'user', message: text });
+  await streamAssistantReply(text);
 }
 
 // ---------- LIVE ANIMATED BACKGROUND (flowing particles) ----------
