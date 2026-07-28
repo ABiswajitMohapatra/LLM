@@ -1206,6 +1206,8 @@
         <div class="tm-divider"></div>
         <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt">🎭 Persona</button>
         <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar">🧰 Live tools</button>
+        <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions">🧭 Discover</button>
+        <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs">🔌 Plugins</button>
         <div class="tm-divider"></div>
         <div id="export-wrap">
           <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
@@ -1509,6 +1511,42 @@
   <div class="panel-box wide">
     <div class="panel-header"><h3>📊 AI Dashboard</h3><button class="icon-close" onclick="closeDashboard()">✕</button></div>
     <div class="panel-body" id="dashboard-body"></div>
+  </div>
+</div>
+
+<!-- Discover feed panel: curated trending topics/questions, cached daily on the backend -->
+<div id="discover-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeDiscoverPanel()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>🧭 Discover</h3><button class="icon-close" onclick="closeDiscoverPanel()">✕</button></div>
+    <div class="panel-body" id="discover-body">
+      <div class="empty-hint">Loading today's topics...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Plugins panel: user-defined custom tools/APIs callable mid-chat via /pluginname command -->
+<div id="plugins-backdrop" class="panel-backdrop" onclick="if(event.target===this)closePluginsPanel()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>🔌 Plugins</h3><button class="icon-close" onclick="closePluginsPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="empty-hint">Define a custom API to call mid-chat. Type <code>/pluginname your text</code> in the message box to trigger it - its response is added as context before your question is sent.</div>
+      <div id="plugins-list"></div>
+      <div class="panel-divider">
+        <label>Plugin name (used as /command, letters/numbers only)</label>
+        <input type="text" id="new-plugin-name" placeholder="e.g. weather">
+        <label>Description</label>
+        <input type="text" id="new-plugin-desc" placeholder="e.g. Look up current weather for a city">
+        <label>API URL</label>
+        <input type="text" id="new-plugin-url" placeholder="https://api.example.com/endpoint?q={query}">
+        <label>Method</label>
+        <select id="new-plugin-method" style="width:100%;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px;margin-bottom:8px;">
+          <option value="GET" selected>GET</option>
+          <option value="POST">POST</option>
+        </select>
+        <div class="empty-hint" style="padding:0 0 8px;">Use <code>{query}</code> in the URL where the text after the plugin name should be inserted (it will be URL-encoded automatically).</div>
+        <button class="panel-primary-btn" onclick="createPluginSubmit()">Save plugin</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2801,6 +2839,115 @@ function openLiveToolsPanel() {
 }
 function closeLiveToolsPanel() { document.getElementById('livetools-backdrop').classList.remove('show'); }
 
+/* ===================== Discover feed: trending topics ===================== */
+function openDiscoverPanel() { 
+  document.getElementById('discover-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+  renderDiscoverFeed();
+}
+
+async function renderDiscoverFeed() {
+  const body = document.getElementById('discover-body');
+  body.innerHTML = '<div class="empty-hint">Loading today\'s topics...</div>';
+  try {
+    const res = await fetch(API_URL + '/discover-topics');
+    const data = await res.json();
+    const topics = data.topics || [];
+    if (topics.length === 0) {
+      body.innerHTML = '<div class="empty-hint">No topics available right now.</div>';
+      return;
+    }
+    body.innerHTML = topics.map((t, i) => `
+      <div class="project-item" onclick="useSuggestion('${(t.title || '').replace(/'/g, "\\'")}')" style="cursor:pointer;border-color:var(--accent);background:rgba(124,92,255,.06);">
+        <div class="project-item-main">
+          <div class="project-item-name">🔥 ${escapeHtml(t.title || '')}</div>
+          <div class="project-item-sub">${escapeHtml(t.desc || '')}</div>
+        </div>
+        <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:18px;opacity:0.7;">→</button>
+      </div>`).join('');
+  } catch (e) {
+    body.innerHTML = '<div class="empty-hint">⚠️ Could not load topics. Check your connection.</div>';
+  }
+}
+
+function closeDiscoverPanel() { document.getElementById('discover-backdrop').classList.remove('show'); }
+
+/* ===================== Plugins: user-defined custom APIs ===================== */
+function getPlugins() {
+  try { 
+    return JSON.parse(localStorage.getItem('biswalex_plugins') || '[]'); 
+  } catch (e) { 
+    return []; 
+  }
+}
+
+function savePlugins(list) { 
+  localStorage.setItem('biswalex_plugins', JSON.stringify(list)); 
+}
+
+function openPluginsPanel() {
+  document.getElementById('plugins-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+  renderPluginsList();
+}
+
+function closePluginsPanel() { document.getElementById('plugins-backdrop').classList.remove('show'); }
+
+function renderPluginsList() {
+  const list = document.getElementById('plugins-list');
+  const plugins = getPlugins();
+  if (plugins.length === 0) {
+    list.innerHTML = '<div class="empty-hint">No plugins yet. Create one below!</div>';
+    return;
+  }
+  list.innerHTML = plugins.map((p, i) => `
+    <div class="project-item">
+      <div class="project-item-main">
+        <div class="project-item-name">/${escapeHtml(p.name)}</div>
+        <div class="project-item-sub">${escapeHtml(p.desc || 'No description')}</div>
+      </div>
+      <button class="icon-close" onclick="deletePlugin(${i})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button>
+    </div>`).join('');
+}
+
+function createPluginSubmit() {
+  const name = document.getElementById('new-plugin-name').value.trim();
+  const desc = document.getElementById('new-plugin-desc').value.trim();
+  const url = document.getElementById('new-plugin-url').value.trim();
+  const method = document.getElementById('new-plugin-method').value;
+
+  if (!name || !url) {
+    alert('Please fill in name and URL');
+    return;
+  }
+  if (!/^[a-z0-9_]+$/i.test(name)) {
+    alert('Plugin name must be letters, numbers, or underscore only');
+    return;
+  }
+
+  const plugins = getPlugins();
+  if (plugins.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    alert('Plugin with this name already exists');
+    return;
+  }
+
+  plugins.push({ name, desc, url, method });
+  savePlugins(plugins);
+  renderPluginsList();
+
+  document.getElementById('new-plugin-name').value = '';
+  document.getElementById('new-plugin-desc').value = '';
+  document.getElementById('new-plugin-url').value = '';
+  document.getElementById('new-plugin-method').value = 'GET';
+}
+
+function deletePlugin(index) {
+  const plugins = getPlugins();
+  plugins.splice(index, 1);
+  savePlugins(plugins);
+  renderPluginsList();
+}
+
 function openTrashPanel() {
   renderTrashList();
   document.getElementById('trash-backdrop').classList.add('show');
@@ -3980,8 +4127,39 @@ function sendOrStop() {
 async function sendMessage() {
   if (isStreaming) return;
   const input = document.getElementById('user-input');
-  const query = input.value.trim();
+  let query = input.value.trim();
   if (!query) return;
+
+  // ===== PLUGIN EXECUTION =====
+  // Detect /pluginname text format and execute plugin before sending query
+  let pluginContextAdded = false;
+  const pluginMatch = query.match(/^\/([a-z0-9_]+)\s+(.+)$/i);
+  if (pluginMatch) {
+    const pluginName = pluginMatch[1];
+    const pluginText = pluginMatch[2];
+    const plugins = getPlugins();
+    const plugin = plugins.find(p => p.name.toLowerCase() === pluginName.toLowerCase());
+    
+    if (plugin) {
+      // Execute plugin API call before main query
+      try {
+        const execRes = await fetch(API_URL + '/execute-plugin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plugin_name: pluginName, query: pluginText })
+        });
+        const execData = await execRes.json();
+        if (execData.success && execData.result) {
+          // Prepend plugin result as context
+          query = '**Plugin result from ' + pluginName + ':**\n\n' + execData.result + '\n\n**User follow-up question:**\n' + pluginText;
+          pluginContextAdded = true;
+        }
+      } catch (e) {
+        // Plugin call failed, continue with original query
+      }
+    }
+  }
+  // ===== END PLUGIN EXECUTION =====
 
   addMessage('user', escapeHtml(query), history.length);
   history.push({ role: 'user', message: query });
