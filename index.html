@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Buddhi</title>
+<title>BiswaLex AI</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f0f11">
 <meta name="mobile-web-app-capable" content="yes">
@@ -543,6 +543,19 @@
   }
   #research-toggle:hover { color: var(--text); border-color: var(--accent); }
   #research-toggle.active { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; }
+  #compare-toggle {
+    display: flex; align-items: center; gap: 4px;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  }
+  #compare-toggle:hover { color: var(--text); border-color: var(--accent); }
+  #compare-toggle.active { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; }
+  #compare-model-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: var(--text); padding: 6px 10px; border-radius: 7px; font-size: 12.5px; cursor: pointer;
+  }
+  #compare-model-menu button:hover { background: var(--panel-2); }
+  #compare-model-menu button.selected { color: var(--accent); font-weight: 600; }
   #model-pill {
     display: flex; align-items: center; gap: 5px;
     background: none; border: 1px solid var(--border); color: var(--text-dim);
@@ -1244,6 +1257,12 @@
           <button id="research-toggle" onclick="toggleResearchMode()" data-tooltip="AI Research Mode: web search, compare sources, cite references" aria-label="Toggle research mode">
             🌐 Research
           </button>
+          <div id="compare-wrap" style="position:relative;display:flex;align-items:center;">
+            <button id="compare-toggle" onclick="toggleCompareMode(event)" data-tooltip="Compare mode: get answers from 2 models side-by-side (off by default)" aria-label="Toggle compare mode">
+              ⚖️ Compare
+            </button>
+            <div id="compare-model-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:170px;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.3);"></div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:4px;">
           <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
@@ -1513,6 +1532,11 @@ let history = [];
 let extraFileContent = "";
 let isStreaming = false;
 let researchModeOn = false;
+// Compare mode: OFF by default, purely opt-in via the "⚖️ Compare" button.
+// Does not run on every response - only affects sendMessage() when a user
+// explicitly enables it, and never fires unless the toggle is active.
+let compareModeOn = false;
+let compareModel2 = '';
 let conversations = [];
 let currentConvId = null;
 let selectedModel = localStorage.getItem('biswalex_model') || "";
@@ -2295,6 +2319,54 @@ function onModelChange(modelId) {
   document.getElementById('model-pill-menu').classList.remove('open');
 }
 
+// ---------- COMPARE MODE (optional, off by default) ----------
+// Lets the user see 2 models answer the same question side-by-side. Fully
+// opt-in: normal sendMessage() behavior is completely unchanged unless the
+// user explicitly clicks "⚖️ Compare" to turn it on.
+function toggleCompareMode(evt) {
+  if (evt) evt.stopPropagation();
+  compareModeOn = !compareModeOn;
+  const btn = document.getElementById('compare-toggle');
+  btn.classList.toggle('active', compareModeOn);
+  const menu = document.getElementById('compare-model-menu');
+  if (compareModeOn) {
+    if (!compareModel2 || compareModel2 === selectedModel) {
+      const other = availableModels.find(m => m.id !== selectedModel);
+      compareModel2 = other ? other.id : selectedModel;
+    }
+    renderCompareModelMenu();
+    menu.style.display = 'block';
+  } else {
+    menu.style.display = 'none';
+  }
+}
+
+function renderCompareModelMenu() {
+  const menu = document.getElementById('compare-model-menu');
+  if (!availableModels.length) {
+    menu.innerHTML = '<div class="empty-hint" style="padding:8px;">No models available.</div>';
+    return;
+  }
+  menu.innerHTML =
+    '<div style="padding:4px 8px;font-size:11px;color:var(--text-dim);">Compare against:</div>' +
+    availableModels.map(m =>
+      `<button class="${m.id === compareModel2 ? 'selected' : ''}" onclick="onCompareModelChange('${m.id}', event)">${escapeHtml(m.label)}</button>`
+    ).join('');
+}
+
+function onCompareModelChange(modelId, evt) {
+  if (evt) evt.stopPropagation();
+  compareModel2 = modelId;
+  renderCompareModelMenu();
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#compare-wrap')) {
+    const menu = document.getElementById('compare-model-menu');
+    if (menu && compareModeOn === false) menu.style.display = 'none';
+  }
+});
+
 loadModels();
 
 // ---------- TOKEN / USAGE ESTIMATE ----------
@@ -2827,8 +2899,42 @@ function renameConversation(evt, id) {
   const name = prompt('Rename chat', conv.title);
   if (name && name.trim()) {
     conv.title = name.trim().slice(0, 60);
+    conv.titleLocked = true;
     saveConversations();
     renderHistory(document.getElementById('chat-search').value);
+  }
+}
+
+// ---------- AUTO TITLE + TOPIC TAGS (sidebar organized by topic) ----------
+// Runs once per conversation, right after the first assistant reply, so the
+// sidebar entry moves from "first message text" to a real topic-based
+// title/tags - same idea as ChatGPT/Claude's auto-titling. Never overwrites
+// a title the user set manually (see titleLocked above) and silently no-ops
+// on any failure, leaving the existing first-message title in place.
+async function autoTitleConversation(id) {
+  const conv = conversations.find(c => c.id === id);
+  if (!conv || conv.autoTitled || conv.titleLocked) return;
+  if (conv.messages.length < 2) return;
+  try {
+    const res = await fetch(API_URL + '/generate-title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: conv.messages.slice(0, 6), model: selectedModel })
+    });
+    const data = await res.json();
+    conv.autoTitled = true;
+    if (data.title) {
+      if (!conv.titleLocked) conv.title = data.title.slice(0, 60);
+      if (Array.isArray(data.tags) && data.tags.length) {
+        conv.tags = Array.from(new Set([...(conv.tags || []), ...data.tags])).slice(0, 6);
+      }
+      saveConversations();
+      renderHistory(document.getElementById('chat-search').value);
+    } else {
+      saveConversations();
+    }
+  } catch (e) {
+    // Leave the existing first-message title as-is on any failure.
   }
 }
 
@@ -3082,7 +3188,13 @@ function upsertConversation() {
       deleted: false,
       deletedAt: null,
       parentId: null,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      // Used by the topic-based auto-title/tag feature below: starts
+      // false so the first assistant reply triggers one auto-title call;
+      // a manual rename (see renameConversation) sets titleLocked so we
+      // never overwrite a name the user chose themselves.
+      autoTitled: false,
+      titleLocked: false
     });
   }
   const conv = conversations.find(c => c.id === currentConvId);
@@ -3868,7 +3980,11 @@ async function sendMessage() {
   input.value = "";
   autoGrow(input);
 
-  await streamAssistantReply(query);
+  if (compareModeOn && !researchModeOn) {
+    await streamCompareReply(query);
+  } else {
+    await streamAssistantReply(query);
+  }
 }
 
 async function regenerateResponse(btn) {
@@ -3952,11 +4068,112 @@ async function streamAssistantReply(query) {
   setStreamingTitle(false);
   recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
+  if (currentConvId) autoTitleConversation(currentConvId);
   updateTokenCounter();
   analyzePiri();
   if (!wasAborted && !isSharedView && fullText.trim()) {
     renderFollowupChips(bubbleId, query, fullText);
   }
+}
+
+// Renders a 2-column "vs" bubble for compare mode and streams both models
+// in parallel. Only ever called when the user has explicitly turned on
+// Compare mode - normal single-model streamAssistantReply() is untouched.
+function addCompareMessage(modelALabel, modelBLabel) {
+  hideEmptyState();
+  const messages = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row assistant';
+  const idA = 'cmp-a-' + Date.now() + Math.random().toString(36).slice(2);
+  const idB = 'cmp-b-' + Date.now() + Math.random().toString(36).slice(2);
+  row.innerHTML = `
+    <div class="avatar assistant">${BOT_ICON}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;min-width:0;">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">${escapeHtml(modelALabel)}</div>
+          <div class="bubble" id="${idA}" style="border:none;padding:0;background:none;"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;min-width:0;">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">${escapeHtml(modelBLabel)}</div>
+          <div class="bubble" id="${idB}" style="border:none;padding:0;background:none;"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+  messages.appendChild(row);
+  messages.scrollTop = messages.scrollHeight;
+  return { idA, idB };
+}
+
+async function streamOneCompareSide(query, model, bubbleEl) {
+  let fullText = "";
+  let firstChunk = true;
+  try {
+    const res = await fetch(API_URL + "/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model, project_context: getActiveProjectContext(), research_mode: false, persona_prompt: getActivePersonaPrompt() })
+    });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const payload = JSON.parse(line.slice(6));
+          if (payload.type === "chunk") {
+            if (firstChunk) { fullText = ""; firstChunk = false; }
+            fullText += payload.text;
+            bubbleEl.innerHTML = renderMarkdown(fullText) + '<span class="cursor"></span>';
+          } else if (payload.type === "done") {
+            bubbleEl.innerHTML = renderMarkdown(fullText);
+            enhanceBubble(bubbleEl);
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (err) {
+    bubbleEl.innerHTML = "⚠️ Could not reach the server.";
+  }
+  return fullText;
+}
+
+async function streamCompareReply(query) {
+  isStreaming = true;
+  setSendButtonMode(true);
+  setStreamingTitle(true);
+
+  const labelA = (availableModels.find(m => m.id === selectedModel) || {}).label || selectedModel || 'Model A';
+  const labelB = (availableModels.find(m => m.id === compareModel2) || {}).label || compareModel2 || 'Model B';
+  const { idA, idB } = addCompareMessage(labelA, labelB);
+  const bubbleA = document.getElementById(idA);
+  const bubbleB = document.getElementById(idB);
+
+  const [textA, textB] = await Promise.all([
+    streamOneCompareSide(query, selectedModel, bubbleA),
+    streamOneCompareSide(query, compareModel2, bubbleB)
+  ]);
+
+  // Only the primary (currently selected) model's answer becomes part of
+  // the real conversation/context, same as a normal reply - the second
+  // column is shown for comparison only, so nothing about existing chat
+  // continuity, RAG, or history logic is affected.
+  history.push({ role: 'assistant', message: textA });
+  isStreaming = false;
+  currentAbortController = null;
+  setSendButtonMode(false);
+  setStreamingTitle(false);
+  upsertConversation();
+  if (currentConvId) autoTitleConversation(currentConvId);
+  updateTokenCounter();
+  analyzePiri();
 }
 
 async function renderFollowupChips(bubbleId, query, answer) {
