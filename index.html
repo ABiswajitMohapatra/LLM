@@ -856,10 +856,18 @@
   .history-item[draggable="true"] { cursor: grab; }
   .history-item.dragging { opacity: .4; }
   .tag-chip {
-    display: inline-flex; align-items: center; font-size: 10px; font-weight: 600;
+    display: none; align-items: center; font-size: 10px; font-weight: 600;
     background: rgba(124,92,255,.15); color: var(--accent); border-radius: 20px;
     padding: 1px 7px; margin-left: 4px; flex-shrink: 0; max-width: 70px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Tags stay hidden in the normal list so the chat's actual name/title is
+     always fully readable; hovering (or focusing, for keyboard users) the
+     row reveals them next to the title without changing saved data. */
+  .history-item:hover .tag-chip,
+  .history-item:focus-within .tag-chip,
+  .history-item.menu-open .tag-chip {
+    display: inline-flex;
   }
   .archived-badge, .trash-badge { font-size: 11px; flex-shrink: 0; }
   .trash-meta { font-size: 11px; color: var(--text-dim); padding: 2px 0 0; }
@@ -1233,7 +1241,7 @@
         <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-image" accept="image/*" style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-        <textarea id="user-input" rows="1" placeholder="Message Mastishk...." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+        <textarea id="user-input" rows="1" placeholder="Message Mastishk..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
       </div>
       <div id="input-bottom-row">
         <div style="display:flex;align-items:center;gap:4px;">
