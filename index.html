@@ -951,6 +951,100 @@
   }
   .artifact-body .artifact-markdown { padding: 20px; background: var(--panel); height: 100%; overflow: auto; font-size: 14.5px; line-height: 1.65; }
   .artifact-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 13px; }
+
+  /* ===================================================================
+     TOPBAR "MORE" DROPDOWN — consolidates Pinned / Tokens / Piri / Export
+     behind one icon so the top bar stays clean. Purely additive: none of
+     the moved elements lose their id, so all existing JS keeps working
+     unchanged; this only restyles their layout inside the dropdown.
+     =================================================================== */
+  #topbar-more-wrap { position: relative; }
+  #topbar-more-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    cursor: pointer; padding: 7px 9px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #topbar-more-btn:hover, #topbar-more-btn.active { background: var(--panel-2); color: var(--text); }
+  #topbar-more-menu {
+    display: none; flex-direction: column; gap: 2px;
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+    min-width: 240px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
+  }
+  #topbar-more-menu.open { display: flex; }
+  #topbar-more-menu .tm-divider { height: 1px; background: var(--border); margin: 6px 4px; }
+  #topbar-more-menu .tm-item {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    background: none; border: none; color: var(--text); text-align: left;
+    font-size: 13.5px; padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  }
+  #topbar-more-menu .tm-item:hover { background: var(--panel-2); }
+  /* Restyle the relocated elements (ids unchanged) for the vertical menu */
+  #topbar-more-menu #token-counter {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+    padding: 9px 10px; border-radius: 8px; cursor: default; width: 100%;
+    box-sizing: border-box;
+  }
+  #topbar-more-menu #token-counter .bar { width: 100%; }
+  #topbar-more-menu #piri-toggle-btn {
+    width: 100%; box-sizing: border-box; justify-content: flex-start;
+    background: none; border: none; border-radius: 8px; padding: 9px 10px; font-size: 13.5px;
+  }
+  #topbar-more-menu #piri-toggle-btn:hover { background: var(--panel-2); }
+  #topbar-more-menu #export-wrap { width: 100%; }
+  #topbar-more-menu #export-btn {
+    width: 100%; box-sizing: border-box; justify-content: flex-start;
+    background: none; border: none; border-radius: 8px; padding: 9px 10px; font-size: 13.5px;
+  }
+  #topbar-more-menu #export-btn:hover { background: var(--panel-2); }
+  #topbar-more-menu #export-menu { position: static; box-shadow: none; border: none; padding: 0 0 0 6px; margin-top: 2px; }
+
+  /* Persona panel */
+  #persona-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .persona-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2);
+  }
+  .persona-card.active { border-color: var(--accent); }
+  .persona-card-name { font-size: 13.5px; font-weight: 600; }
+  .persona-card-prompt { font-size: 12px; color: var(--text-dim); margin-top: 2px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .persona-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .persona-card-actions button {
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 9px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  }
+  .persona-card-actions button:hover { background: var(--border); color: var(--text); }
+  #persona-form { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+  #persona-form input, #persona-form textarea {
+    width: 100%; box-sizing: border-box; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 9px 10px; font-size: 13px; font-family: inherit;
+  }
+  #persona-form textarea { min-height: 80px; resize: vertical; }
+  #persona-form button { align-self: flex-start; }
+
+  /* Live tools panel */
+  .lt-section { margin-bottom: 16px; }
+  .lt-section h4 { margin: 0 0 8px; font-size: 12.5px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .04em; }
+  #lt-calc-row { display: flex; gap: 8px; }
+  #lt-calc-input {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 9px 10px; font-size: 14px; font-family: inherit;
+  }
+  #lt-calc-result { margin-top: 8px; font-size: 15px; font-weight: 600; }
+  #lt-search-row { display: flex; gap: 8px; }
+  #lt-search-input {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 9px 10px; font-size: 13px; font-family: inherit;
+  }
+  #lt-search-results { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .lt-result-card { padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+  .lt-result-card a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+  .lt-result-card p { margin: 4px 0 0; font-size: 12px; color: var(--text-dim); }
+  #lt-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 12px; }
+  #lt-calendar-grid .lt-cal-dow { color: var(--text-dim); font-size: 11px; padding-bottom: 4px; }
+  #lt-calendar-grid .lt-cal-day { padding: 6px 0; border-radius: 6px; }
+  #lt-calendar-grid .lt-cal-day.today { background: var(--accent); color: #fff; font-weight: 700; }
+  #lt-calendar-title { font-size: 13px; margin-bottom: 8px; color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -1068,21 +1162,32 @@
   <div id="model-name" style="display:none;"></div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
-    <button class="new-chat-btn" style="width:auto;margin:0;padding:7px 11px;" onclick="openPinnedPanel()" data-tooltip="Pinned messages" aria-label="Pinned messages">📌</button>
-    <div id="token-counter" data-tooltip="Estimated context usage">
-      <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
-      <span id="token-text">~0 tokens</span>
-    </div>
-    <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
-    <div id="export-wrap">
-      <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
-        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export
+    <div id="topbar-more-wrap">
+      <button id="topbar-more-btn" onclick="toggleTopbarMore(event)" data-tooltip="More options" aria-label="More options">
+        <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
-      <div id="export-menu">
-        <button onclick="shareChatLink()">🔗 Share as link</button>
-        <button onclick="exportMarkdown()">📝 Export as Markdown</button>
-        <button onclick="exportPDF()">📄 Export as PDF</button>
+      <div id="topbar-more-menu">
+        <button class="tm-item" onclick="openPinnedPanel()">📌 Pinned messages</button>
+        <div id="token-counter" data-tooltip="Estimated context usage">
+          <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
+          <span id="token-text">~0 tokens</span>
+        </div>
+        <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
+        <div class="tm-divider"></div>
+        <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt">🎭 Persona</button>
+        <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar">🧰 Live tools</button>
+        <div class="tm-divider"></div>
+        <div id="export-wrap">
+          <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
+            <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Export
+          </button>
+          <div id="export-menu">
+            <button onclick="shareChatLink()">🔗 Share as link</button>
+            <button onclick="exportMarkdown()">📝 Export as Markdown</button>
+            <button onclick="exportPDF()">📄 Export as PDF</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1305,6 +1410,50 @@
         <button class="theme-swatch" data-theme-btn="dracula" onclick="setTheme('dracula')" data-tooltip="Dracula" aria-label="Dracula theme" style="background:linear-gradient(135deg,#bd93f9,#282a36);"></button>
         <button class="theme-swatch" data-theme-btn="catppuccin" onclick="setTheme('catppuccin')" data-tooltip="Catppuccin" aria-label="Catppuccin theme" style="background:linear-gradient(135deg,#cba6f7,#1e1e2e);"></button>
         <button data-theme-btn="system" onclick="setTheme('system')" data-tooltip="Match system" aria-label="System theme">💻</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Persona / custom system-prompt panel -->
+<div id="persona-backdrop" class="panel-backdrop" onclick="if(event.target===this)closePersonaPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🎭 Persona</h3><button class="icon-close" onclick="closePersonaPanel()">✕</button></div>
+    <div class="panel-body">
+      <div id="persona-list"></div>
+      <div id="persona-form">
+        <input id="persona-name-input" type="text" placeholder="Persona name (e.g. Legal Expert)">
+        <textarea id="persona-prompt-input" placeholder="e.g. Answer like an experienced lawyer. Be precise, cite relevant sections, keep a formal tone."></textarea>
+        <button class="new-chat-btn" style="width:auto;margin:0;" onclick="createPersona()">+ Save persona</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Live tools panel: quick web search, calculator, mini calendar -->
+<div id="livetools-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeLiveToolsPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🧰 Live tools</h3><button class="icon-close" onclick="closeLiveToolsPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="lt-section">
+        <h4>Web search</h4>
+        <div id="lt-search-row">
+          <input id="lt-search-input" type="text" placeholder="Search the web..." onkeydown="if(event.key==='Enter')runLiveSearch()">
+          <button class="new-chat-btn" style="width:auto;margin:0;padding:8px 12px;" onclick="runLiveSearch()">Search</button>
+        </div>
+        <div id="lt-search-results"></div>
+      </div>
+      <div class="lt-section">
+        <h4>Calculator</h4>
+        <div id="lt-calc-row">
+          <input id="lt-calc-input" type="text" placeholder="e.g. (240*1.18)/6" oninput="runLiveCalc()">
+        </div>
+        <div id="lt-calc-result"></div>
+      </div>
+      <div class="lt-section">
+        <h4>Calendar</h4>
+        <div id="lt-calendar-title"></div>
+        <div id="lt-calendar-grid"></div>
       </div>
     </div>
   </div>
@@ -1568,29 +1717,6 @@ async function askLLMFull(prompt) {
   return fullText;
 }
 
-// Cleans up LLM output for Mermaid: strips any prose/preamble the model
-// added despite instructions, pulls code out of ```mermaid fences if
-// present, and — if the model squished every statement onto one line
-// (the "No diagram type detected for text: To create a diagram..." failure
-// mode) — reinserts line breaks before each new statement so the Mermaid
-// parser can read it.
-function sanitizeMermaidCode(raw) {
-  let code = (raw || '').trim();
-  const fenced = code.match(/```(?:mermaid)?\s*([\s\S]*?)```/i);
-  if (fenced) code = fenced[1].trim();
-  const kwMatch = code.match(/\b(graph\s+(TD|LR|RL|BT|TB)|flowchart\s+(TD|LR|RL|BT|TB)|sequenceDiagram|classDiagram|stateDiagram(-v2)?|erDiagram|gantt|pie|journey|mindmap)\b/i);
-  if (kwMatch) code = code.slice(kwMatch.index);
-  const lineCount = code.split('\n').filter(l => l.trim()).length;
-  if (lineCount <= 2 && code.length > 60) {
-    code = code
-      .replace(/^(graph|flowchart)\s+(TD|LR|RL|BT|TB)\s+/i, '$1 $2\n')
-      .replace(/\s+(subgraph\b)/gi, '\n$1')
-      .replace(/\s+(end)\b/gi, '\nend')
-      .replace(/([\]\)])\s+([A-Za-z][\w]*\s*-->)/g, '$1\n$2');
-  }
-  return code.trim();
-}
-
 async function runStudio() {
   const mode = document.getElementById('studio-mode').value;
   const prompt = document.getElementById('studio-input').value.trim();
@@ -1601,32 +1727,19 @@ async function runStudio() {
   out.textContent = 'Generating...';
 
   if (mode === 'diagram') {
-    const diagramPrompt = `Generate Mermaid.js diagram syntax (choose flowchart/mindmap/sequenceDiagram as fits best) for: ${prompt}\n\n`
-      + `Rules:\n- Output ONLY the Mermaid code, wrapped in a \`\`\`mermaid code fence.\n`
-      + `- No explanation before or after the code fence.\n`
-      + `- Put EVERY node/edge/subgraph statement on its own line — never combine statements on one line.\n\n`
-      + `Example of the required format:\n\`\`\`mermaid\nflowchart TD\n    A[Start] --> B[Step One]\n    B --> C[Step Two]\n    C --> D[End]\n\`\`\``;
     try {
-      const raw = await askLLMFull(diagramPrompt);
-      let code = sanitizeMermaidCode(raw);
+      const raw = await askLLMFull(`Generate ONLY valid Mermaid.js diagram syntax (choose flowchart/mindmap/sequenceDiagram as fits best), no explanation, no markdown code fences, for: ${prompt}`);
+      const code = raw.replace(/```mermaid|```/g, '').trim();
       await ensureMermaidLib();
-      if (!window.mermaid) { out.textContent = 'Could not load diagram renderer.'; return; }
-      try {
+      if (window.mermaid) {
         const { svg } = await mermaid.render('studioMermaidSvg', code);
         out.innerHTML = svg;
         dlBtn.style.display = 'inline-block';
-      } catch (renderErr) {
-        // One retry: ask the model again, explicitly telling it the first
-        // attempt failed to parse, rather than showing a dead end.
-        out.textContent = 'First attempt had a syntax issue, retrying...';
-        const retryRaw = await askLLMFull(diagramPrompt + `\n\nYour previous attempt failed to parse. Double-check the syntax is valid Mermaid.js and follow the format exactly.`);
-        code = sanitizeMermaidCode(retryRaw);
-        const { svg } = await mermaid.render('studioMermaidSvg2', code);
-        out.innerHTML = svg;
-        dlBtn.style.display = 'inline-block';
+      } else {
+        out.textContent = 'Could not load diagram renderer.';
       }
     } catch (e) {
-      out.textContent = '⚠️ Could not generate a valid diagram. Try rephrasing your request.';
+      out.textContent = '⚠️ ' + e.message;
     }
   } else {
     // PPT mode: calls the real backend (/generate-ppt), which uses Groq +
@@ -2455,6 +2568,149 @@ function renderArchiveList() {
 
 function openThemePanel() { document.getElementById('theme-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
+
+/* ===================== Topbar "more" dropdown ===================== */
+function toggleTopbarMore(evt) {
+  if (evt) evt.stopPropagation();
+  document.getElementById('topbar-more-menu').classList.toggle('open');
+  document.getElementById('topbar-more-btn').classList.toggle('active');
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('#topbar-more-wrap')) {
+    document.getElementById('topbar-more-menu').classList.remove('open');
+    document.getElementById('topbar-more-btn').classList.remove('active');
+  }
+});
+
+/* ===================== Persona / custom system prompt ===================== */
+function getPersonas() {
+  try { return JSON.parse(localStorage.getItem('biswalex_personas') || '[]'); }
+  catch (e) { return []; }
+}
+function savePersonas(list) { localStorage.setItem('biswalex_personas', JSON.stringify(list)); }
+function getActivePersonaId() { return localStorage.getItem('biswalex_active_persona') || ''; }
+function setActivePersonaId(id) { localStorage.setItem('biswalex_active_persona', id || ''); renderPersonaList(); }
+function getActivePersonaPrompt() {
+  const id = getActivePersonaId();
+  if (!id) return '';
+  const p = getPersonas().find(p => p.id === id);
+  return p ? p.prompt : '';
+}
+function createPersona() {
+  const nameEl = document.getElementById('persona-name-input');
+  const promptEl = document.getElementById('persona-prompt-input');
+  const name = nameEl.value.trim();
+  const prompt = promptEl.value.trim();
+  if (!name || !prompt) return;
+  const list = getPersonas();
+  const id = 'p_' + Date.now();
+  list.push({ id, name, prompt });
+  savePersonas(list);
+  setActivePersonaId(id);
+  nameEl.value = '';
+  promptEl.value = '';
+}
+function selectPersona(id) { setActivePersonaId(getActivePersonaId() === id ? '' : id); }
+function deletePersona(id, evt) {
+  if (evt) evt.stopPropagation();
+  savePersonas(getPersonas().filter(p => p.id !== id));
+  if (getActivePersonaId() === id) setActivePersonaId('');
+  else renderPersonaList();
+}
+function renderPersonaList() {
+  const wrap = document.getElementById('persona-list');
+  if (!wrap) return;
+  const list = getPersonas();
+  const activeId = getActivePersonaId();
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty-hint">No personas yet — create one below. When none is selected, BiswaLex replies normally.</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(p => `
+    <div class="persona-card ${p.id === activeId ? 'active' : ''}" onclick="selectPersona('${p.id}')">
+      <div>
+        <div class="persona-card-name">${p.id === activeId ? '✅ ' : ''}${escapeHtml(p.name)}</div>
+        <div class="persona-card-prompt">${escapeHtml(p.prompt)}</div>
+      </div>
+      <div class="persona-card-actions">
+        <button onclick="deletePersona('${p.id}', event)">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+function openPersonaPanel() {
+  renderPersonaList();
+  document.getElementById('persona-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closePersonaPanel() { document.getElementById('persona-backdrop').classList.remove('show'); }
+
+/* ===================== Live tools: search, calculator, calendar ===================== */
+async function runLiveSearch() {
+  const q = document.getElementById('lt-search-input').value.trim();
+  const results = document.getElementById('lt-search-results');
+  if (!q) return;
+  results.innerHTML = '<div class="empty-hint">Searching...</div>';
+  try {
+    const res = await fetch(API_URL + '/web-search-quick', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      results.innerHTML = `<div class="empty-hint">${escapeHtml(data.message || 'Search failed.')}</div>`;
+      return;
+    }
+    const answerHtml = data.answer ? `<div class="lt-result-card"><p style="color:var(--text);font-size:13px;">${escapeHtml(data.answer)}</p></div>` : '';
+    const cardsHtml = (data.results || []).map(r => `
+      <div class="lt-result-card">
+        <a href="${r.url}" target="_blank" rel="noopener">${escapeHtml(r.title || r.url)}</a>
+        <p>${escapeHtml(r.snippet || '')}</p>
+      </div>
+    `).join('');
+    results.innerHTML = answerHtml + cardsHtml || '<div class="empty-hint">No results.</div>';
+  } catch (e) {
+    results.innerHTML = '<div class="empty-hint">Search failed — check your connection.</div>';
+  }
+}
+
+function runLiveCalc() {
+  const raw = document.getElementById('lt-calc-input').value.trim();
+  const out = document.getElementById('lt-calc-result');
+  if (!raw) { out.textContent = ''; return; }
+  if (!/^[0-9+\-*/().%\s]+$/.test(raw)) { out.textContent = 'Only numbers and + - * / ( ) % are allowed.'; return; }
+  try {
+    // eslint-disable-next-line no-new-func
+    const value = Function('"use strict"; return (' + raw + ')')();
+    out.textContent = Number.isFinite(value) ? ('= ' + (Math.round(value * 1e8) / 1e8)) : 'Invalid expression';
+  } catch (e) {
+    out.textContent = 'Invalid expression';
+  }
+}
+
+function renderLiveCalendar() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth(), today = now.getDate();
+  document.getElementById('lt-calendar-title').textContent =
+    now.toLocaleString('default', { month: 'long' }) + ' ' + year;
+  const first = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const dows = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  let html = dows.map(d => `<div class="lt-cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < first; i++) html += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    html += `<div class="lt-cal-day ${d === today ? 'today' : ''}">${d}</div>`;
+  }
+  document.getElementById('lt-calendar-grid').innerHTML = html;
+}
+
+function openLiveToolsPanel() {
+  renderLiveCalendar();
+  document.getElementById('livetools-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closeLiveToolsPanel() { document.getElementById('livetools-backdrop').classList.remove('show'); }
 
 function openTrashPanel() {
   renderTrashList();
@@ -3638,7 +3894,7 @@ async function streamAssistantReply(query) {
     const res = await fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt() }),
       signal: currentAbortController.signal
     });
 
