@@ -4504,7 +4504,7 @@ async function sendMessage() {
         const execRes = await fetch(API_URL + '/execute-plugin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plugin_name: pluginName, query: pluginText })
+          body: JSON.stringify({ plugin_name: pluginName, query: pluginText, url: plugin.url, method: plugin.method })
         });
         const execData = await execRes.json();
         if (execData.success && execData.result) {
