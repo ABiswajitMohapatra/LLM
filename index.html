@@ -1249,8 +1249,8 @@
     <div id="file-chip"><span>📎</span><span id="file-name"></span><button onclick="clearFile()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button></div>
     <div id="input-wrap">
       <div id="input-top-row">
-        <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
-        <input type="file" id="file-input-image" accept="image/*" style="display:none" onchange="handleFile(event)">
+        <input type="file" id="file-input" multiple style="display:none" onchange="handleFile(event)">
+        <input type="file" id="file-input-image" accept="image/*" multiple style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
         <textarea id="user-input" rows="1" placeholder="Message Mastishk..." onkeydown="handleKey(event)" oninput="autoGrow(this)" onpaste="handleInputPaste(event)"></textarea>
       </div>
@@ -3766,17 +3766,25 @@ async function handleInputPaste(e) {
 }
 
 async function handleFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  await uploadFileObject(file);
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  // Multiple files picked together (Ctrl/Cmd-click) get one shared batch_id
+  // so the backend knows to use ALL of them for the next question, instead
+  // of just the single most-recent file. A single file picked (the
+  // original, still-default case) gets no batch_id - unchanged behavior.
+  const batchId = files.length > 1 ? ('b-' + Date.now()) : null;
+  for (const file of files) {
+    await uploadFileObject(file, batchId);
+  }
 }
 
-async function uploadFileObject(file) {
+async function uploadFileObject(file, batchId) {
   document.getElementById('file-name').textContent = "Reading " + file.name + "...";
   document.getElementById('file-chip').classList.add('show');
 
   const formData = new FormData();
   formData.append("file", file);
+  if (batchId) formData.append("batch_id", batchId);
   try {
     const res = await fetch(API_URL + "/upload", { method: "POST", body: formData });
     const data = await res.json();
