@@ -1748,14 +1748,36 @@ function deleteProject(id) {
 }
 
 function getActiveProjectContext() {
-  if (!activeProjectId) return null;
-  const p = projects.find(x => x.id === activeProjectId);
-  if (!p) return null;
-  let ctx = p.instructions || '';
-  if (p.files.length) {
-    ctx += '\n\nAttached files:\n' + p.files.map(f => `--- ${f.name} ---\n${f.content}`).join('\n\n');
+  let ctx = '';
+  if (activeProjectId) {
+    const p = projects.find(x => x.id === activeProjectId);
+    if (p) {
+      ctx = p.instructions || '';
+      if (p.files.length) {
+        ctx += '\n\nAttached files:\n' + p.files.map(f => `--- ${f.name} ---\n${f.content}`).join('\n\n');
+      }
+      if (p.runningSummary && p.runningSummary.trim()) {
+        ctx += '\n\nRunning summary of progress from earlier sessions on this project:\n' + p.runningSummary.trim();
+      }
+    }
   }
-  return ctx;
+  // Global running summary: builds up across ALL chats regardless of
+  // whether a project is active, so a plain "Hi" in any new chat still
+  // carries forward what the user's been working on recently.
+  const globalSummary = getGlobalActivitySummary();
+  if (globalSummary && globalSummary.trim()) {
+    ctx += (ctx ? '\n\n' : '') + 'Running summary of what this user has been working on recently:\n' + globalSummary.trim();
+  }
+  return ctx || null;
+}
+
+function getGlobalActivitySummary() {
+  try { return localStorage.getItem('biswalex_activity_summary') || ''; }
+  catch (e) { return ''; }
+}
+function saveGlobalActivitySummary(text) {
+  try { localStorage.setItem('biswalex_activity_summary', text); }
+  catch (e) { /* ignore storage errors */ }
 }
 
 // ---- Code sandbox (JS/Python execution in-page; C/C++/Java via Wandbox public API) ----
@@ -3106,6 +3128,35 @@ async function autoExtractMemory(convId) {
     }
     saveConversations();
   } catch (e) { /* leave memory unchanged on failure */ }
+}
+
+// Runs once per conversation regardless of whether a project is active
+// (mirrors autoExtractMemory's safe pattern). If a project is active, rolls
+// into that project's running summary; otherwise rolls into one global
+// running summary shared across all chats, so even a plain "Hi" in a brand
+// new chat carries forward recent context. Fires after the reply is
+// already done, and silently no-ops on any failure - never blocks or
+// alters the visible chat response.
+async function autoExtractProjectState(convId) {
+  const conv = conversations.find(c => c.id === convId);
+  if (!conv || conv.projectStateExtracted) return;
+  if (conv.messages.length < 4) return;
+  const p = activeProjectId ? projects.find(x => x.id === activeProjectId) : null;
+  const existingSummary = p ? (p.runningSummary || '') : getGlobalActivitySummary();
+  conv.projectStateExtracted = true;
+  try {
+    const res = await fetch(API_URL + '/extract-project-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: conv.messages.slice(0, 12), existing_summary: existingSummary, model: selectedModel })
+    });
+    const data = await res.json();
+    if (data.summary && data.summary.trim()) {
+      if (p) { p.runningSummary = data.summary.trim(); saveProjects(); }
+      else { saveGlobalActivitySummary(data.summary.trim()); }
+    }
+    saveConversations();
+  } catch (e) { /* leave summary unchanged on failure */ }
 }
 
 /* ===================== Background task mode ===================== */
@@ -4626,7 +4677,7 @@ async function streamAssistantReply(query) {
   setStreamingTitle(false);
   recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
-  if (currentConvId) { autoTitleConversation(currentConvId); autoExtractMemory(currentConvId); }
+  if (currentConvId) { autoTitleConversation(currentConvId); autoExtractMemory(currentConvId); autoExtractProjectState(currentConvId); }
   updateTokenCounter();
   analyzePiri();
   if (!wasAborted && !isSharedView && fullText.trim()) {
