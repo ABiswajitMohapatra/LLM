@@ -502,17 +502,17 @@
     color: var(--text); font-size: 15px; resize: none;
     max-height: 200px; font-family: inherit; padding: 6px 4px;
   }
-  #send-btn, #attach-btn, #mic-btn {
+  #send-btn, #attach-btn, #mic-btn, #piri-input-btn {
     background: none;
     border: none; color: var(--text-dim); width: 32px; height: 32px;
     border-radius: 50%; cursor: pointer; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 16px;
   }
-  #attach-btn:hover, #mic-btn:hover { background: var(--panel); color: var(--text); }
+  #attach-btn:hover, #mic-btn:hover, #piri-input-btn:hover { background: var(--panel); color: var(--text); }
   #send-btn { color: var(--accent); }
   #send-btn:hover { background: var(--panel); }
-  #send-btn svg, #attach-btn svg, #mic-btn svg { width: 18px; height: 18px; }
+  #send-btn svg, #attach-btn svg, #mic-btn svg, #piri-input-btn svg { width: 18px; height: 18px; }
   #mic-btn.recording { background: #ef4444; border-color: #ef4444; color: #fff; animation: mic-pulse 1.2s infinite; }
   @keyframes mic-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
   #send-btn.stop-mode { color: #ef4444; }
@@ -813,7 +813,7 @@
       padding: 10px calc(10px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
     }
     #user-input { font-size: 16px; }
-    #send-btn, #attach-btn, #mic-btn { width: 38px; height: 38px; }
+    #send-btn, #attach-btn, #mic-btn, #piri-input-btn { width: 38px; height: 38px; }
 
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
@@ -1198,19 +1198,19 @@
         <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
       <div id="topbar-more-menu">
-        <button class="tm-item" onclick="openPinnedPanel()">📌 Pinned messages</button>
+        <button class="tm-item" onclick="openPinnedPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9h6M9 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Pinned messages</button>
         <div id="token-counter" data-tooltip="Estimated context usage">
           <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
           <span id="token-text">~0 tokens</span>
         </div>
         <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
         <div class="tm-divider"></div>
-        <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt">🎭 Persona</button>
-        <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar">🧰 Live tools</button>
-        <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions">🧭 Discover</button>
-        <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs">🔌 Plugins</button>
-        <button class="tm-item" onclick="openMemoryPanel()" data-tooltip="Facts remembered across chats">🧠 Memory</button>
-        <button class="tm-item" onclick="openBackgroundPanel()" data-tooltip="Run a query in the background">🕐 Background</button>
+        <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.8"/><path d="M2 20c0-3.5 4.5-7 10-7s10 3.5 10 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Persona</button>
+        <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Live tools</button>
+        <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Discover</button>
+        <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 2v4M15 2v4M9 18v4M15 18v4M7 8h10a2 2 0 0 1 2 2v1a3 3 0 0 1 0 6v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 0-6V10a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Plugins</button>
+        <button class="tm-item" onclick="openMemoryPanel()" data-tooltip="Facts remembered across chats"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Memory</button>
+        <button class="tm-item" onclick="openBackgroundPanel()" data-tooltip="Run a query in the background"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11h8M8 15h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Background</button>
         <div class="tm-divider"></div>
         <div id="export-wrap">
           <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
@@ -1255,9 +1255,9 @@
               <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
             <div id="attach-menu">
-              <button onclick="pickAttach('image')">🖼️ Image</button>
-              <button onclick="pickAttach('file')">📄 Files</button>
-              <button onclick="pickAttach('camera')">📷 Camera</button>
+              <button onclick="pickAttach('image')"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M3 18l5-5 4 4 9-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Image</button>
+              <button onclick="pickAttach('file')"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="flex-shrink:0;"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 3v6h6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Files</button>
+              <button onclick="pickAttach('camera')"><svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="flex-shrink:0;"><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M5 11h3l2-3h4l2 3h3c1 0 2 1 2 2v7c0 1-1 2-2 2H5c-1 0-2-1-2-2v-7c0-1 1-2 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Camera</button>
             </div>
           </div>
           <div id="model-pill-wrap">
@@ -1280,6 +1280,9 @@
         <div style="display:flex;align-items:center;gap:4px;">
           <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <button id="piri-input-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
           <button id="send-btn" onclick="sendOrStop()" data-tooltip="Send" aria-label="Send">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
