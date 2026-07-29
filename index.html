@@ -1354,10 +1354,6 @@
     <div class="code-panel-body">
       <textarea id="image-prompt" rows="3" placeholder="Describe the image... e.g. a cat astronaut in space, digital art"></textarea>
       <div style="display:flex;gap:8px;">
-        <select id="image-engine" style="flex:1;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px;font-size:13px;" data-tooltip="Pollinations: unlimited, no key. Gemini: higher quality, free tier">
-          <option value="pollinations" selected>Pollinations (fast, unlimited)</option>
-          <option value="gemini">Gemini (higher quality)</option>
-        </select>
         <select id="image-ratio" style="flex:1;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px;font-size:13px;">
           <option value="1024x1024">Square</option>
           <option value="1024x1536">Portrait</option>
@@ -1800,40 +1796,12 @@ function generateImage() {
   const output = document.getElementById('image-output');
   const actions = document.getElementById('image-panel-actions');
   if (!prompt) { output.textContent = 'Type a prompt first.'; return; }
-  const engine = document.getElementById('image-engine').value;
-  lastImagePrompt = prompt;
-  actions.style.display = 'none';
-
-  if (engine === 'gemini') {
-    output.innerHTML = '<span class="toolbar-spinner"></span> Generating with Gemini...';
-    fetch(API_URL + '/generate-image-gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.success || !data.image_base64) {
-          output.textContent = '⚠️ ' + (data.error || 'Could not generate image with Gemini.');
-          return;
-        }
-        const dataUrl = 'data:image/png;base64,' + data.image_base64;
-        lastGeneratedImageUrl = dataUrl;
-        output.innerHTML = '';
-        const img = new Image();
-        img.onload = () => { output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
-        img.src = dataUrl;
-        img.alt = prompt;
-      })
-      .catch(() => { output.textContent = '⚠️ Could not reach the server for Gemini image generation.'; });
-    return;
-  }
-
-  // Default: Pollinations.ai (unchanged from before)
   const [w, h] = document.getElementById('image-ratio').value.split('x');
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${Math.floor(Math.random() * 1e6)}&nologo=true`;
+  lastImagePrompt = prompt;
   lastGeneratedImageUrl = url;
   output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
+  actions.style.display = 'none';
   const img = new Image();
   img.onload = () => { output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
   img.onerror = () => { output.textContent = '⚠️ Could not generate image. Try again.'; };
