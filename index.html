@@ -1768,7 +1768,7 @@ function getActiveProjectContext() {
   if (globalSummary && globalSummary.trim()) {
     ctx += (ctx ? '\n\n' : '') + 'Running summary of what this user has been working on recently:\n' + globalSummary.trim();
   }
-  return ctx || null;
+  return ctx;
 }
 
 function getGlobalActivitySummary() {
