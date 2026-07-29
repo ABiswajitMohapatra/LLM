@@ -1266,7 +1266,7 @@
           </button>
           <div id="compare-wrap" style="position:relative;display:flex;align-items:center;">
             <button id="compare-toggle" onclick="toggleCompareMode(event)" data-tooltip="Compare mode: get answers from 2 models side-by-side (off by default)" aria-label="Toggle compare mode">
-              ⚖️ Compare
+              ⚖️ <span id="compare-toggle-label">Compare</span>
             </button>
             <div id="compare-model-menu" style="display:none;position:absolute;bottom:calc(100% + 6px);left:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;min-width:170px;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.3);"></div>
           </div>
@@ -1548,6 +1548,20 @@
 </div>
 
 <!-- Artifact panel -->
+<!-- Desktop webcam capture (mobile uses the native camera app via file-input-camera) -->
+<div id="webcam-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeWebcamCapture()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>📷 Camera</h3><button class="icon-close" onclick="closeWebcamCapture()">✕</button></div>
+    <div class="panel-body" style="padding:12px 16px 16px;">
+      <video id="webcam-video" autoplay playsinline style="width:100%;border-radius:10px;background:#000;"></video>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="panel-primary-btn" style="flex:1;" onclick="captureWebcamPhoto()">📸 Capture & attach</button>
+        <button class="panel-secondary-btn" onclick="closeWebcamCapture()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="artifact-backdrop" onclick="closeArtifact()"></div>
 <div id="artifact-panel">
   <div class="artifact-header">
@@ -2368,20 +2382,24 @@ function onModelChange(modelId) {
 // user explicitly clicks "⚖️ Compare" to turn it on.
 function toggleCompareMode(evt) {
   if (evt) evt.stopPropagation();
-  compareModeOn = !compareModeOn;
   const btn = document.getElementById('compare-toggle');
-  btn.classList.toggle('active', compareModeOn);
   const menu = document.getElementById('compare-model-menu');
   if (compareModeOn) {
-    if (!compareModel2 || compareModel2 === selectedModel) {
-      const other = availableModels.find(m => m.id !== selectedModel);
-      compareModel2 = other ? other.id : selectedModel;
-    }
-    renderCompareModelMenu();
-    menu.style.display = 'block';
-  } else {
+    // Already active -> this click turns it off (same as Research toggle).
+    compareModeOn = false;
+    btn.classList.remove('active');
+    document.getElementById('compare-toggle-label').textContent = 'Compare';
     menu.style.display = 'none';
+    return;
   }
+  // Not active yet -> just open the model picker; compare mode itself only
+  // turns on once a model is actually picked (see onCompareModelChange).
+  if (!compareModel2 || compareModel2 === selectedModel) {
+    const other = availableModels.find(m => m.id !== selectedModel);
+    compareModel2 = other ? other.id : selectedModel;
+  }
+  renderCompareModelMenu();
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
 function renderCompareModelMenu() {
@@ -2400,13 +2418,19 @@ function renderCompareModelMenu() {
 function onCompareModelChange(modelId, evt) {
   if (evt) evt.stopPropagation();
   compareModel2 = modelId;
-  renderCompareModelMenu();
+  // Picking a model is what actually turns compare mode on - stays on for
+  // every message until the Compare button is clicked again to disable it.
+  compareModeOn = true;
+  const btn = document.getElementById('compare-toggle');
+  btn.classList.add('active');
+  const m = availableModels.find(x => x.id === modelId);
+  document.getElementById('compare-toggle-label').textContent = 'vs ' + (m ? m.label : modelId);
+  document.getElementById('compare-model-menu').style.display = 'none';
 }
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#compare-wrap')) {
-    const menu = document.getElementById('compare-model-menu');
-    if (menu && compareModeOn === false) menu.style.display = 'none';
+    document.getElementById('compare-model-menu').style.display = 'none';
   }
 });
 
@@ -3460,15 +3484,14 @@ function toggleAttachMenu(evt) {
   document.querySelectorAll('.lang-menu.open, #model-pill-menu.open, #attach-menu.open').forEach(m => m.classList.remove('open'));
   if (!isOpen) menu.classList.add('open');
 }
-function pickAttach(kind) {
-  document.getElementById('attach-menu').classList.remove('open');
-  const id = kind === 'image' ? 'file-input-image' : kind === 'camera' ? 'file-input-camera' : 'file-input';
-  document.getElementById(id).click();
-}
 
 async function handleFile(e) {
   const file = e.target.files[0];
   if (!file) return;
+  await uploadFileObject(file);
+}
+
+async function uploadFileObject(file) {
   document.getElementById('file-name').textContent = "Reading " + file.name + "...";
   document.getElementById('file-chip').classList.add('show');
 
@@ -3491,6 +3514,62 @@ async function handleFile(e) {
     extraFileContent = "";
     document.getElementById('file-name').textContent = "Failed to read file";
   }
+}
+
+// ---------- DESKTOP WEBCAM CAPTURE ----------
+// Mobile browsers already open the native camera app via the hidden
+// file-input's `capture` attribute. Desktop browsers ignore that attribute
+// and just show a regular file picker, so on desktop we open the laptop's
+// webcam directly via getUserMedia and let the user snap + attach a photo.
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+let cameraStream = null;
+
+async function pickAttach(kind) {
+  document.getElementById('attach-menu').classList.remove('open');
+  if (kind === 'camera' && !isMobileDevice()) {
+    openWebcamCapture();
+    return;
+  }
+  const id = kind === 'image' ? 'file-input-image' : kind === 'camera' ? 'file-input-camera' : 'file-input';
+  document.getElementById(id).click();
+}
+
+async function openWebcamCapture() {
+  const backdrop = document.getElementById('webcam-backdrop');
+  const video = document.getElementById('webcam-video');
+  backdrop.classList.add('show');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = cameraStream;
+  } catch (err) {
+    closeWebcamCapture();
+    alert('Could not access your camera. Check browser camera permissions.');
+  }
+}
+
+function closeWebcamCapture() {
+  document.getElementById('webcam-backdrop').classList.remove('show');
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+async function captureWebcamPhoto() {
+  const video = document.getElementById('webcam-video');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(async (blob) => {
+    closeWebcamCapture();
+    if (!blob) return;
+    const file = new File([blob], 'webcam-photo.jpg', { type: 'image/jpeg' });
+    await uploadFileObject(file);
+  }, 'image/jpeg', 0.92);
 }
 
 // ---------- VOICE INPUT ----------
