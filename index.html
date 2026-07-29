@@ -693,7 +693,11 @@
     color: var(--text-dim); padding: 6px 8px; border-radius: 7px; font-size: 12px; cursor: pointer;
   }
   .piri-tab.active { background: var(--panel-2); color: var(--text); border-color: var(--accent); }
-  #piri-body { flex: 1; overflow-y: auto; padding: 4px 10px 14px; }
+  #piri-body { flex: 1; overflow-y: auto; padding: 4px 10px 14px; scrollbar-width: thin; scrollbar-color: #3a3a40 transparent; }
+  #piri-body::-webkit-scrollbar { width: 6px; }
+  #piri-body::-webkit-scrollbar-track { background: transparent; }
+  #piri-body::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 10px; }
+  #piri-body::-webkit-scrollbar-thumb:hover { background: #4a4a52; }
   .piri-section-item {
     padding: 9px 10px; border-radius: 8px; font-size: 13px; color: var(--text);
     cursor: pointer; margin-bottom: 3px; display: flex; align-items: flex-start; gap: 8px;
@@ -1205,6 +1209,8 @@
         <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar">🧰 Live tools</button>
         <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions">🧭 Discover</button>
         <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs">🔌 Plugins</button>
+        <button class="tm-item" onclick="openMemoryPanel()" data-tooltip="Facts remembered across chats">🧠 Memory</button>
+        <button class="tm-item" onclick="openBackgroundPanel()" data-tooltip="Run a query in the background">🕐 Background</button>
         <div class="tm-divider"></div>
         <div id="export-wrap">
           <button id="export-btn" onclick="toggleExportMenu(event)" data-tooltip="Export chat" aria-label="Export chat">
@@ -1547,6 +1553,39 @@
   </div>
 </div>
 
+<!-- Memory panel: durable facts about the user, reused across chats -->
+<div id="memory-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeMemoryPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🧠 Memory</h3><button class="icon-close" onclick="closeMemoryPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="empty-hint">Facts Mastishk has learned about you from past chats, and reuses (when relevant) in new ones. Nothing here is sent unless it's actually relevant.</div>
+      <div id="memory-list"></div>
+      <div class="panel-divider">
+        <label>Add a fact manually</label>
+        <input type="text" id="new-memory-fact" placeholder="e.g. I prefer concise answers" onkeydown="if(event.key==='Enter')addMemoryFactManual()">
+        <button class="panel-primary-btn" onclick="addMemoryFactManual()">Add</button>
+        <button class="panel-secondary-btn" style="margin-left:6px;" onclick="clearAllMemory()">Clear all</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Background task panel: run a query server-side without keeping the tab streaming -->
+<div id="background-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeBackgroundPanel()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>🕐 Background Tasks</h3><button class="icon-close" onclick="closeBackgroundPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="empty-hint">Runs on the server even if you close this panel. Come back and check progress anytime.</div>
+      <textarea id="bg-task-input" rows="3" placeholder="e.g. Research the top 5 renewable energy trends in 2026 and summarize each"></textarea>
+      <button class="panel-primary-btn" onclick="startBackgroundTaskUI()">▶ Run in background</button>
+      <div class="panel-divider">
+        <label>Jobs</label>
+        <div id="bg-task-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Artifact panel -->
 <!-- Desktop webcam capture (mobile uses the native camera app via file-input-camera) -->
 <div id="webcam-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeWebcamCapture()">
@@ -1594,6 +1633,10 @@ let researchModeOn = false;
 // explicitly enables it, and never fires unless the toggle is active.
 let compareModeOn = false;
 let compareModel2 = '';
+// Token/cost transparency (feature 4): holds the most recent "usage"
+// event from the /chat stream so it can be shown under the reply once
+// streaming finishes. Purely additive/display-only.
+let _lastUsageEst = null;
 let conversations = [];
 let currentConvId = null;
 let selectedModel = localStorage.getItem('biswalex_model') || "";
@@ -2969,6 +3012,184 @@ function deletePlugin(index) {
   renderPluginsList();
 }
 
+/* ===================== Memory: persistent cross-chat facts ===================== */
+function getMemoryFacts() {
+  try { return JSON.parse(localStorage.getItem('biswalex_memory') || '[]'); }
+  catch (e) { return []; }
+}
+function saveMemoryFacts(list) { localStorage.setItem('biswalex_memory', JSON.stringify(list)); }
+
+// Builds the short string sent as memory_context on every /chat call - the
+// backend only uses it if non-empty, so an empty memory list changes
+// nothing about existing chat behavior.
+function getMemoryContextString() {
+  const facts = getMemoryFacts();
+  if (!facts.length) return '';
+  return facts.map(f => '- ' + f).join('\n');
+}
+
+function openMemoryPanel() {
+  renderMemoryList();
+  document.getElementById('memory-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+}
+function closeMemoryPanel() { document.getElementById('memory-backdrop').classList.remove('show'); }
+
+function renderMemoryList() {
+  const list = document.getElementById('memory-list');
+  const facts = getMemoryFacts();
+  if (!facts.length) {
+    list.innerHTML = '<div class="empty-hint">No facts remembered yet - they build up automatically as you chat, or add one manually below.</div>';
+    return;
+  }
+  list.innerHTML = facts.map((f, i) => `
+    <div class="project-item">
+      <div class="project-item-main"><div class="project-item-name" style="font-weight:400;">${escapeHtml(f)}</div></div>
+      <button class="danger-link" onclick="removeMemoryFact(${i})">Remove</button>
+    </div>`).join('');
+}
+
+function addMemoryFactManual() {
+  const input = document.getElementById('new-memory-fact');
+  const text = input.value.trim();
+  if (!text) return;
+  const facts = getMemoryFacts();
+  facts.push(text.slice(0, 120));
+  saveMemoryFacts(facts);
+  input.value = '';
+  renderMemoryList();
+}
+
+function removeMemoryFact(i) {
+  const facts = getMemoryFacts();
+  facts.splice(i, 1);
+  saveMemoryFacts(facts);
+  renderMemoryList();
+}
+
+function clearAllMemory() {
+  if (!confirm('Clear all remembered facts?')) return;
+  saveMemoryFacts([]);
+  renderMemoryList();
+}
+
+// Runs once per conversation (mirrors autoTitleConversation's pattern), so
+// it doesn't add an extra LLM call on every single message. Silently no-ops
+// on failure - never blocks or alters the normal reply flow.
+async function autoExtractMemory(convId) {
+  const conv = conversations.find(c => c.id === convId);
+  if (!conv || conv.memoryExtracted) return;
+  if (conv.messages.length < 4) return;
+  conv.memoryExtracted = true;
+  try {
+    const res = await fetch(API_URL + '/extract-memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ history: conv.messages.slice(0, 12), model: selectedModel })
+    });
+    const data = await res.json();
+    const newFacts = (data.facts || []).filter(f => f && f.trim());
+    if (newFacts.length) {
+      const existing = getMemoryFacts();
+      const existingLower = new Set(existing.map(f => f.toLowerCase()));
+      newFacts.forEach(f => { if (!existingLower.has(f.toLowerCase())) existing.push(f); });
+      saveMemoryFacts(existing.slice(-30));
+    }
+    saveConversations();
+  } catch (e) { /* leave memory unchanged on failure */ }
+}
+
+/* ===================== Background task mode ===================== */
+let bgTaskPollTimer = null;
+
+function getBgTasks() {
+  try { return JSON.parse(localStorage.getItem('biswalex_bg_tasks') || '[]'); }
+  catch (e) { return []; }
+}
+function saveBgTasks(list) { localStorage.setItem('biswalex_bg_tasks', JSON.stringify(list)); }
+
+function openBackgroundPanel() {
+  renderBgTaskList();
+  document.getElementById('background-backdrop').classList.add('show');
+  closeSidebarOnMobile();
+  if (!bgTaskPollTimer) bgTaskPollTimer = setInterval(pollBgTasks, 4000);
+}
+function closeBackgroundPanel() { document.getElementById('background-backdrop').classList.remove('show'); }
+
+async function startBackgroundTaskUI() {
+  const input = document.getElementById('bg-task-input');
+  const query = input.value.trim();
+  if (!query) return;
+  input.value = '';
+  try {
+    const res = await fetch(API_URL + '/background-task', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, model: selectedModel, persona_prompt: getActivePersonaPrompt() })
+    });
+    const data = await res.json();
+    if (data.job_id) {
+      const tasks = getBgTasks();
+      tasks.unshift({ job_id: data.job_id, query, status: 'pending', result: null, createdAt: Date.now() });
+      saveBgTasks(tasks.slice(0, 20));
+      renderBgTaskList();
+      pollBgTasks();
+    }
+  } catch (e) {
+    alert('Could not start background task - check your connection.');
+  }
+}
+
+async function pollBgTasks() {
+  const tasks = getBgTasks();
+  const pending = tasks.filter(t => t.status === 'pending');
+  if (!pending.length) return;
+  for (const t of pending) {
+    try {
+      const res = await fetch(API_URL + '/background-task/' + t.job_id);
+      const data = await res.json();
+      if (data.status && data.status !== 'pending') {
+        t.status = data.status;
+        t.result = data.result;
+        t.error = data.error;
+      }
+    } catch (e) { /* try again next poll */ }
+  }
+  saveBgTasks(tasks);
+  renderBgTaskList();
+}
+
+function renderBgTaskList() {
+  const list = document.getElementById('bg-task-list');
+  const tasks = getBgTasks();
+  if (!tasks.length) {
+    list.innerHTML = '<div class="empty-hint">No background tasks yet.</div>';
+    return;
+  }
+  list.innerHTML = tasks.map((t, i) => {
+    const statusLabel = t.status === 'pending' ? '⏳ Running...' : t.status === 'done' ? '✅ Done' : '⚠️ Error';
+    const resultHtml = t.status === 'done'
+      ? `<div class="toolbar-result-box" style="margin-top:8px;">${renderMarkdown(t.result || '')}</div>`
+      : (t.status === 'error' ? `<div class="toolbar-result-box" style="margin-top:8px;">⚠️ ${escapeHtml(t.error || 'Failed')}</div>` : '');
+    return `
+      <div class="project-item" style="flex-direction:column;align-items:stretch;">
+        <div style="display:flex;justify-content:space-between;gap:8px;">
+          <div class="project-item-name">${escapeHtml(t.query.slice(0, 80))}</div>
+          <button class="danger-link" onclick="removeBgTask(${i})">✕</button>
+        </div>
+        <div class="project-item-sub">${statusLabel}</div>
+        ${resultHtml}
+      </div>`;
+  }).join('');
+}
+
+function removeBgTask(i) {
+  const tasks = getBgTasks();
+  tasks.splice(i, 1);
+  saveBgTasks(tasks);
+  renderBgTaskList();
+}
+
 function openTrashPanel() {
   renderTrashList();
   document.getElementById('trash-backdrop').classList.add('show');
@@ -4021,6 +4242,55 @@ async function quickTaskRequest(bubbleId, msgIndex, task, targetLanguage) {
   }
 }
 
+// Fact-check / self-correction (features 2+5): user-triggered, single extra
+// call per click. Shows a confidence score, any flagged claims (each with a
+// best-effort verification link), and a suggested correction if the model
+// found something wrong. Never runs automatically.
+async function runFactCheck(bubbleId, msgIndex) {
+  const bubble = document.getElementById(bubbleId);
+  if (!bubble || !history[msgIndex]) return;
+  const userMsg = history[msgIndex - 1] && history[msgIndex - 1].role === 'user' ? history[msgIndex - 1].message : '';
+  let resultBox = document.getElementById(bubbleId + '-toolbar-result');
+  if (!resultBox) {
+    resultBox = document.createElement('div');
+    resultBox.id = bubbleId + '-toolbar-result';
+    resultBox.className = 'toolbar-result-box';
+    bubble.parentElement.appendChild(resultBox);
+  }
+  resultBox.innerHTML = `<div class="toolbar-result-label">Fact-check</div><span class="toolbar-spinner"></span> Reviewing...`;
+  try {
+    const res = await fetch(API_URL + '/verify-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: userMsg, answer: history[msgIndex].message, model: selectedModel })
+    });
+    const data = await res.json();
+    if (data.error) {
+      resultBox.innerHTML = `<div class="toolbar-result-label">Fact-check</div>⚠️ ${escapeHtml(data.error)}`;
+      return;
+    }
+    const conf = data.confidence;
+    const confColor = conf == null ? 'var(--text-dim)' : conf >= 80 ? '#4ade80' : conf >= 50 ? '#f59e0b' : '#f87171';
+    const confHtml = conf != null
+      ? `<div style="font-weight:700;color:${confColor};margin-bottom:6px;">Confidence: ${conf}%</div>`
+      : '';
+    const flagsHtml = (data.flags || []).length
+      ? data.flags.map(f => `
+          <div style="border-left:2px solid var(--border);padding-left:8px;margin:6px 0;font-size:12.5px;">
+            <div>"${escapeHtml(f.claim)}"</div>
+            <div style="color:var(--text-dim);">${escapeHtml(f.reason || '')}</div>
+            ${f.source_hint ? `<a href="${f.source_hint}" target="_blank" rel="noopener" style="color:var(--accent);">verify source →</a>` : ''}
+          </div>`).join('')
+      : '<div style="color:var(--text-dim);font-size:12.5px;">No specific claims flagged.</div>';
+    const revisedHtml = data.revised_answer
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);"><b>Suggested correction:</b><br>${renderMarkdown(data.revised_answer)}</div>`
+      : '';
+    resultBox.innerHTML = `<div class="toolbar-result-label">Fact-check</div>${confHtml}${flagsHtml}${revisedHtml}`;
+  } catch (e) {
+    resultBox.innerHTML = `<div class="toolbar-result-label">Fact-check</div>⚠️ Could not reach the server.`;
+  }
+}
+
 function addMessage(role, text, msgIndex) {
   hideEmptyState();
   const messages = document.getElementById('messages');
@@ -4043,6 +4313,8 @@ function addMessage(role, text, msgIndex) {
     ? `<button data-tooltip="Branch from here" aria-label="Branch conversation from here" onclick="branchFromMessage(${msgIndex})">${BRANCH_ICON}</button>` : '';
   const summarizeBtn = (role === 'assistant' && hasIndex)
     ? `<button data-tooltip="Summarize this response" aria-label="Summarize message" onclick="quickTaskRequest('${bubbleId}', ${msgIndex}, 'summarize')">📝</button>` : '';
+  const factCheckBtn = (role === 'assistant' && hasIndex)
+    ? `<button data-tooltip="Fact-check this response" aria-label="Fact-check message" onclick="runFactCheck('${bubbleId}', ${msgIndex})">🔍</button>` : '';
   const speakBtn = (role === 'assistant' && hasIndex)
     ? `<button id="speak-${bubbleId}" data-tooltip="Listen (right-click for voice/speed)" aria-label="Listen to message" onclick="toggleSpeak('${bubbleId}')" oncontextmenu="openTtsSettings(event)">${SPEAKER_ICON}</button>` : '';
   const translateBtn = (role === 'assistant' && hasIndex)
@@ -4063,6 +4335,7 @@ function addMessage(role, text, msgIndex) {
         ${quoteBtn}
         ${branchBtn}
         ${summarizeBtn}
+        ${factCheckBtn}
         ${translateBtn}
         <button data-tooltip="Good response" aria-label="Good response">👍</button>
         <button data-tooltip="Bad response" aria-label="Bad response">👎</button>
@@ -4269,6 +4542,7 @@ async function streamAssistantReply(query) {
   isStreaming = true;
   setSendButtonMode(true);
   setStreamingTitle(true);
+  _lastUsageEst = null;
   const _statsStart = Date.now();
   let _firstChunkAt = null;
 
@@ -4281,7 +4555,7 @@ async function streamAssistantReply(query) {
     const res = await fetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt(), memory_context: getMemoryContextString() }),
       signal: currentAbortController.signal
     });
 
@@ -4306,6 +4580,8 @@ async function streamAssistantReply(query) {
             fullText += payload.text;
             bubbleEl.innerHTML = renderMarkdown(fullText) + '<span class="cursor"></span>';
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+          } else if (payload.type === "usage") {
+            _lastUsageEst = payload;
           } else if (payload.type === "done") {
             bubbleEl.innerHTML = renderMarkdown(fullText);
             enhanceBubble(bubbleEl);
@@ -4323,6 +4599,17 @@ async function streamAssistantReply(query) {
     }
   }
 
+  if (_lastUsageEst && !wasAborted) {
+    const actionsRow = bubbleEl.parentElement && bubbleEl.parentElement.querySelector('.actions');
+    if (actionsRow) {
+      const usageNote = document.createElement('span');
+      usageNote.style.cssText = 'font-size:11px;color:var(--text-dim);margin-left:auto;padding:4px 6px;';
+      usageNote.textContent = `~${_lastUsageEst.total_tokens_est} tokens`;
+      usageNote.setAttribute('data-tooltip', `~${_lastUsageEst.prompt_tokens_est} prompt + ~${_lastUsageEst.completion_tokens_est} completion (estimate)`);
+      actionsRow.appendChild(usageNote);
+    }
+  }
+
   history.push({ role: 'assistant', message: fullText });
   isStreaming = false;
   currentAbortController = null;
@@ -4330,7 +4617,7 @@ async function streamAssistantReply(query) {
   setStreamingTitle(false);
   recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
-  if (currentConvId) autoTitleConversation(currentConvId);
+  if (currentConvId) { autoTitleConversation(currentConvId); autoExtractMemory(currentConvId); }
   updateTokenCounter();
   analyzePiri();
   if (!wasAborted && !isSharedView && fullText.trim()) {
