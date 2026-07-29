@@ -1252,7 +1252,7 @@
         <input type="file" id="file-input" style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-image" accept="image/*" style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
-        <textarea id="user-input" rows="1" placeholder="Message Mastishk..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+        <textarea id="user-input" rows="1" placeholder="Message Mastishk..." onkeydown="handleKey(event)" oninput="autoGrow(this)" onpaste="handleInputPaste(event)"></textarea>
       </div>
       <div id="input-bottom-row">
         <div style="display:flex;align-items:center;gap:4px;">
@@ -3744,6 +3744,25 @@ function toggleAttachMenu(evt) {
   const isOpen = menu.classList.contains('open');
   document.querySelectorAll('.lang-menu.open, #model-pill-menu.open, #attach-menu.open').forEach(m => m.classList.remove('open'));
   if (!isOpen) menu.classList.add('open');
+}
+
+// Lets a user paste (Ctrl+V) an image directly into the message box - it
+// gets attached exactly like a file picked via the 📎 menu, reusing the
+// same uploadFileObject() upload path. Only intercepts when the clipboard
+// actually contains image data; normal text pasting is untouched.
+async function handleInputPaste(e) {
+  const items = (e.clipboardData || window.clipboardData)?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type && item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        e.preventDefault();
+        await uploadFileObject(file);
+      }
+      return;
+    }
+  }
 }
 
 async function handleFile(e) {
