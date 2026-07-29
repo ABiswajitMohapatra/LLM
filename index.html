@@ -1203,7 +1203,7 @@
           <span class="bar"><span class="bar-fill" id="token-bar-fill" style="width:0%"></span></span>
           <span id="token-text">~0 tokens</span>
         </div>
-        <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">Piri</button>
+        <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel" style="display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 20c5-1 9-5 10-10 .6-3 2-5 6-6-1 4-3 5.4-6 6-5 1-9 5-10 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg> Piri</button>
         <div class="tm-divider"></div>
         <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.8"/><path d="M2 20c0-3.5 4.5-7 10-7s10 3.5 10 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Persona</button>
         <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Live tools</button>
@@ -1281,8 +1281,8 @@
           <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </button>
-          <button id="piri-input-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <button id="piri-input-btn" onclick="togglePiriPanel()" data-tooltip="Piri" aria-label="Toggle Piri navigation panel">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 20c5-1 9-5 10-10 .6-3 2-5 6-6-1 4-3 5.4-6 6-5 1-9 5-10 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
           </button>
           <button id="send-btn" onclick="sendOrStop()" data-tooltip="Send" aria-label="Send">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
