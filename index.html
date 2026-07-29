@@ -3137,27 +3137,7 @@ async function autoExtractMemory(convId) {
 // new chat carries forward recent context. Fires after the reply is
 // already done, and silently no-ops on any failure - never blocks or
 // alters the visible chat response.
-async function autoExtractProjectState(convId) {
-  const conv = conversations.find(c => c.id === convId);
-  if (!conv || conv.projectStateExtracted) return;
-  if (conv.messages.length < 4) return;
-  const p = activeProjectId ? projects.find(x => x.id === activeProjectId) : null;
-  const existingSummary = p ? (p.runningSummary || '') : getGlobalActivitySummary();
-  conv.projectStateExtracted = true;
-  try {
-    const res = await fetch(API_URL + '/extract-project-state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history: conv.messages.slice(0, 12), existing_summary: existingSummary, model: selectedModel })
-    });
-    const data = await res.json();
-    if (data.summary && data.summary.trim()) {
-      if (p) { p.runningSummary = data.summary.trim(); saveProjects(); }
-      else { saveGlobalActivitySummary(data.summary.trim()); }
-    }
-    saveConversations();
-  } catch (e) { /* leave summary unchanged on failure */ }
-}
+// (removed - backend endpoint not available)
 
 /* ===================== Background task mode ===================== */
 let bgTaskPollTimer = null;
@@ -4677,7 +4657,7 @@ async function streamAssistantReply(query) {
   setStreamingTitle(false);
   recordStats(_firstChunkAt ? (_firstChunkAt - _statsStart) : null);
   upsertConversation();
-  if (currentConvId) { autoTitleConversation(currentConvId); autoExtractMemory(currentConvId); autoExtractProjectState(currentConvId); }
+  if (currentConvId) { autoTitleConversation(currentConvId); autoExtractMemory(currentConvId); }
   updateTokenCounter();
   analyzePiri();
   if (!wasAborted && !isSharedView && fullText.trim()) {
