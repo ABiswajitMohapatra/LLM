@@ -859,9 +859,36 @@
       white-space: normal !important;
     }
 
-    /* Never allow horizontal scroll on mobile */
+    /* Never allow horizontal scroll on mobile (page-level) */
     html, body { max-width: 100vw; overflow-x: hidden; }
     #input-area, #input-wrap, #input-top-row, #topbar { max-width: 100%; }
+
+    /* Root cause of horizontal scrolling: flex children (.msg-row/.bubble) default
+       to min-width:auto, so a long unbroken token (URL, inline code, long word)
+       forces the row wider than the viewport even though the page has
+       overflow-x:hidden. Forcing min-width:0 lets them shrink to the viewport,
+       and word-break/overflow-wrap makes long tokens wrap instead of overflowing.
+       Code blocks are intentionally excluded so `overflow-x:auto` still lets
+       long code lines scroll horizontally *inside* the block only. */
+    #messages { overflow-x: hidden; max-width: 100%; }
+    .msg-row { min-width: 0; max-width: 100%; box-sizing: border-box; }
+    .bubble { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+    .bubble p, .bubble li, .bubble h1, .bubble h2, .bubble h3, .bubble h4 { overflow-wrap: anywhere; word-break: break-word; }
+    .bubble a { overflow-wrap: anywhere; word-break: break-word; }
+    .bubble :not(pre) > code { overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
+    .bubble pre { max-width: 100%; box-sizing: border-box; }
+    .bubble pre code { white-space: pre; overflow-wrap: normal; word-break: normal; }
+    .bubble table { display: block; max-width: 100%; overflow-x: auto; }
+
+    /* AI Studio (and other wide panels): keep dropdowns fully visible, never clipped */
+    .panel-box.wide { width: min(640px, 92vw); max-width: 92vw; }
+    .panel-header { flex-wrap: wrap; row-gap: 8px; }
+    .panel-header > div { flex-wrap: wrap; width: 100%; row-gap: 8px; }
+    #studio-mode, #ppt-template-select {
+      flex: 1 1 130px; min-width: 0; max-width: 100%; box-sizing: border-box;
+    }
+    .code-panel-body { max-width: 100%; box-sizing: border-box; }
+    #studio-input, #studio-output { max-width: 100%; box-sizing: border-box; }
 
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
@@ -1239,7 +1266,7 @@
 <div id="main">
   <div id="topbar">
   <button id="mobile-sidebar-btn" onclick="toggleSidebar()" data-tooltip="Menu" aria-label="Open menu">
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
   </button>
   <div id="model-name" style="display:none;"></div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
