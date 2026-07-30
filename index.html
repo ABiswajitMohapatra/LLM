@@ -822,11 +822,36 @@
     #user-input { font-size: 16px; }
     #send-btn, #attach-btn, #mic-btn, #piri-input-btn { width: 38px; height: 38px; }
 
-    #input-bottom-row { flex-wrap: nowrap; }
+    #input-bottom-row { flex-wrap: wrap; row-gap: 6px; }
+    #input-bottom-row > div { flex-wrap: wrap; row-gap: 6px; }
     #piri-input-btn { display: none; }
-    #research-toggle-label, #compare-toggle-label { display: none; }
+    #research-toggle-label { display: none; }
+    #compare-toggle-label { display: inline-block; max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
     #research-toggle, #compare-toggle { padding: 6px 8px; }
     #model-pill { max-width: 110px; }
+
+    /* Logo: icon only on mobile, brand text hidden (top bar already carries branding) */
+    #brand-name, #brand-tag { display: none; }
+    #brand-mark { margin: 0 auto; }
+
+    /* Suggested prompt chips: compact wrapped grid instead of oversized buttons */
+    #suggestion-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 8px !important;
+    }
+    .suggestion-chip {
+      max-width: 100% !important;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px !important;
+      font-size: 12.5px !important;
+      white-space: normal !important;
+    }
+
+    /* Never allow horizontal scroll on mobile */
+    html, body { max-width: 100vw; overflow-x: hidden; }
+    #input-area, #input-wrap, #input-top-row, #topbar { max-width: 100%; }
 
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
@@ -3684,33 +3709,56 @@ loadTemplates();
 tryRenderSharedView();
 updateTokenCounter();
 
-function toggleSidebar() {
+// ---------- Single source of truth for viewport + sidebar/rail state ----------
+// Root cause of "sidebar disappears" / "mobile layout only after theme change":
+// sidebar + rail visibility were each set with their own inline styles from
+// scattered `window.innerWidth <= 768` checks, so any code path that closed
+// the sidebar without also restoring the rail (e.g. closeSidebarOnMobile)
+// left the UI in an inconsistent state with NO left navigation visible.
+// Fixing this by driving both from one function, using matchMedia (which
+// reflects the real, current viewport instead of a snapshot taken once at
+// parse time), and re-running it on every viewport change.
+const mobileMQ = window.matchMedia('(max-width: 768px)');
+function isMobileViewport() { return mobileMQ.matches; }
+
+function syncSidebarForViewport(opts) {
+  const forceOpen = opts && opts.forceOpen;
+  const forceClose = opts && opts.forceClose;
   const sidebar = document.getElementById('sidebar');
   const rail = document.getElementById('sidebar-rail');
-  sidebar.classList.toggle('hidden');
-  const isHidden = sidebar.classList.contains('hidden');
-  rail.style.display = isHidden ? 'flex' : 'none';
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar-backdrop').classList.toggle('show', !isHidden);
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar || !rail || !backdrop) return;
+
+  if (isMobileViewport()) {
+    let hidden = sidebar.classList.contains('hidden');
+    if (forceOpen) hidden = false;
+    if (forceClose) hidden = true;
+    if (!sidebar.dataset.mobileInit) { hidden = true; } // first mobile paint: start closed
+    sidebar.dataset.mobileInit = '1';
+    sidebar.classList.toggle('hidden', hidden);
+    rail.style.display = 'flex';
+    backdrop.classList.toggle('show', !hidden);
+  } else {
+    sidebar.classList.remove('hidden');
+    rail.style.display = 'none';
+    backdrop.classList.remove('show');
   }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const isHidden = !sidebar.classList.contains('hidden');
+  syncSidebarForViewport(isHidden ? { forceClose: true } : { forceOpen: true });
 }
 
 function closeSidebarOnMobile() {
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.add('hidden');
-    document.getElementById('sidebar-backdrop').classList.remove('show');
-  }
+  if (isMobileViewport()) syncSidebarForViewport({ forceClose: true });
 }
 
 function initSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const rail = document.getElementById('sidebar-rail');
-  if (window.innerWidth <= 768) {
-    sidebar.classList.add('hidden');
-    rail.style.display = 'flex';
-  } else {
-    rail.style.display = 'none';
-  }
+  syncSidebarForViewport();
+  mobileMQ.addEventListener('change', () => syncSidebarForViewport());
+  window.addEventListener('orientationchange', () => syncSidebarForViewport());
 }
 initSidebar();
 
