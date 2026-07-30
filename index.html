@@ -153,7 +153,9 @@
     border: none;
     padding: 0;
     margin: 0;
+    scrollbar-width: none;
   }
+  #sidebar.hidden::-webkit-scrollbar { display: none; width: 0; }
   #brand {
     display: flex; align-items: center; gap: 10px;
     padding: 6px 6px 16px;
@@ -818,7 +820,9 @@
     #sidebar.hidden { 
       transform: translateX(-100%);
       margin-left: 0;
+      scrollbar-width: none;
     }
+    #sidebar.hidden::-webkit-scrollbar { display: none; width: 0; }
 
     #topbar {
       height: calc(52px + env(safe-area-inset-top));
