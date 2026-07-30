@@ -821,6 +821,18 @@
     #user-input { font-size: 16px; }
     #send-btn, #attach-btn, #mic-btn, #piri-input-btn { width: 38px; height: 38px; }
 
+    #input-bottom-row { flex-wrap: nowrap; }
+    #input-bottom-row > div:first-child {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      flex: 1; min-width: 0; scrollbar-width: none;
+    }
+    #input-bottom-row > div:first-child::-webkit-scrollbar { display: none; }
+    #input-bottom-row > div:first-child > * { flex-shrink: 0; }
+    #input-bottom-row > div:last-child { flex-shrink: 0; }
+    #research-toggle-label, #compare-toggle-label { display: none; }
+    #research-toggle, #compare-toggle { padding: 6px 8px; }
+    #model-pill { max-width: 110px; }
+
     .history-item { padding: 11px 10px; }
     .kebab-btn { opacity: 1; padding: 6px; }
     .history-menu { min-width: 150px; }
@@ -1274,7 +1286,7 @@
             <div id="model-pill-menu"></div>
           </div>
           <button id="research-toggle" onclick="toggleResearchMode()" data-tooltip="AI Research Mode: web search, compare sources, cite references" aria-label="Toggle research mode">
-            🌐 Research
+            🌐 <span id="research-toggle-label">Research</span>
           </button>
           <div id="compare-wrap" style="position:relative;display:flex;align-items:center;">
             <button id="compare-toggle" onclick="toggleCompareMode(event)" data-tooltip="Compare mode: get answers from 2 models side-by-side (off by default)" aria-label="Toggle compare mode">
