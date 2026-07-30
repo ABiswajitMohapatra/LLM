@@ -259,6 +259,11 @@
     background: none; border: none; color: var(--text); cursor: pointer;
     font-size: 18px; padding: 6px;
   }
+  #mobile-sidebar-btn {
+    display: none; background: none; border: none; color: var(--text); cursor: pointer;
+    padding: 6px; border-radius: 8px; flex-shrink: 0; align-items: center; justify-content: center;
+  }
+  #mobile-sidebar-btn:hover { background: var(--panel-2); }
   #model-name { font-weight: 600; font-size: 14px; }
   #topbar-spacer { flex: 1; }
   #token-counter {
@@ -822,13 +827,18 @@
     #user-input { font-size: 16px; }
     #send-btn, #attach-btn, #mic-btn, #piri-input-btn { width: 38px; height: 38px; }
 
-    #input-bottom-row { flex-wrap: wrap; row-gap: 6px; }
-    #input-bottom-row > div { flex-wrap: wrap; row-gap: 6px; }
+    /* ChatGPT-style off-canvas drawer: no persistent rail on mobile, only the hamburger button */
+    #sidebar-rail { display: none !important; }
+    #mobile-sidebar-btn { display: flex; }
+
+    #input-bottom-row { flex-wrap: nowrap; gap: 4px; }
+    #input-bottom-row > div { flex-wrap: nowrap; gap: 4px; min-width: 0; }
     #piri-input-btn { display: none; }
     #research-toggle-label { display: none; }
-    #compare-toggle-label { display: inline-block; max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-    #research-toggle, #compare-toggle { padding: 6px 8px; }
-    #model-pill { max-width: 110px; }
+    #compare-toggle-label { display: inline-block; max-width: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+    #research-toggle, #compare-toggle { padding: 6px 7px; font-size: 12px; }
+    #model-pill { max-width: 78px; }
+    #model-pill-label { font-size: 12px; }
 
     /* Logo: icon only on mobile, brand text hidden (top bar already carries branding) */
     #brand-name, #brand-tag { display: none; }
@@ -1228,6 +1238,9 @@
 
 <div id="main">
   <div id="topbar">
+  <button id="mobile-sidebar-btn" onclick="toggleSidebar()" data-tooltip="Menu" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
   <div id="model-name" style="display:none;"></div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
     <div id="topbar-spacer"></div>
