@@ -1381,6 +1381,12 @@
           <option value="diagram">Diagram / Flowchart / Mindmap</option>
           <option value="ppt">Presentation</option>
         </select>
+        <select id="ppt-template-select" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px;">
+          <option value="business">Business</option>
+          <option value="education">Education</option>
+          <option value="research">Research</option>
+          <option value="technical">Technical</option>
+        </select>
         <button class="icon-close" onclick="closeStudioPanel()">✕</button>
       </div>
     </div>
@@ -1916,7 +1922,7 @@ async function runStudio() {
       const res = await fetch(API_URL + '/generate-ppt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: prompt, slides: 8, template: 'business', model: selectedModel })
+        body: JSON.stringify({ topic: prompt, slides: 8, template: document.getElementById('ppt-template-select')?.value || 'business', model: selectedModel })
       });
       if (!res.ok) {
         let detail = '';
