@@ -148,7 +148,11 @@
   #sidebar::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 10px; }
   #sidebar::-webkit-scrollbar-thumb:hover { background: #4a4a52; }
   #sidebar.hidden { 
-    display: none !important;
+    width: 0;
+    overflow: hidden;
+    border: none;
+    padding: 0;
+    margin: 0;
   }
   #brand {
     display: flex; align-items: center; gap: 10px;
@@ -810,14 +814,11 @@
       padding-bottom: calc(12px + env(safe-area-inset-bottom));
       box-shadow: 2px 0 24px rgba(0,0,0,.35);
     }
+    #sidebar:not(.hidden) { margin-left: 0; }
     #sidebar.hidden { 
-      display: block !important;
-      transform: translateX(-100%) !important;
-      margin-left: 0 !important;
-      scrollbar-width: none !important;
-      overflow: hidden !important;
+      transform: translateX(-100%);
+      margin-left: 0;
     }
-    #sidebar.hidden::-webkit-scrollbar { display: none !important; width: 0 !important; }
 
     #topbar {
       height: calc(52px + env(safe-area-inset-top));
