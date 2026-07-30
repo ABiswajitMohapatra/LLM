@@ -1354,10 +1354,6 @@
     <div class="code-panel-body">
       <textarea id="image-prompt" rows="3" placeholder="Describe the image... e.g. a cat astronaut in space, digital art"></textarea>
       <div style="display:flex;gap:8px;">
-        <select id="image-model" style="flex:1;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px;font-size:13px;">
-          <option value="pollinations">Pollinations.ai</option>
-          <option value="flux">FLUX.1-schnell</option>
-        </select>
         <select id="image-ratio" style="flex:1;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px;font-size:13px;">
           <option value="1024x1024">Square</option>
           <option value="1024x1536">Portrait</option>
@@ -1796,8 +1792,6 @@ function openImagePanel() { document.getElementById('image-backdrop').classList.
 function closeImagePanel() { document.getElementById('image-backdrop').classList.remove('show'); }
 
 function generateImage() {
-  const modelChoice = document.getElementById('image-model').value;
-  if (modelChoice === 'flux') { generateImageFlux(); return; }
   const prompt = document.getElementById('image-prompt').value.trim();
   const output = document.getElementById('image-output');
   const actions = document.getElementById('image-panel-actions');
@@ -1813,37 +1807,6 @@ function generateImage() {
   img.onerror = () => { output.textContent = '⚠️ Could not generate image. Try again.'; };
   img.src = url;
   img.alt = prompt;
-}
-
-async function generateImageFlux() {
-  const prompt = document.getElementById('image-prompt').value.trim();
-  const output = document.getElementById('image-output');
-  const actions = document.getElementById('image-panel-actions');
-  if (!prompt) { output.textContent = 'Type a prompt first.'; return; }
-  const [w, h] = document.getElementById('image-ratio').value.split('x');
-  lastImagePrompt = prompt;
-  output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
-  actions.style.display = 'none';
-  try {
-    const res = await fetch(API_URL + '/generate-image-flux', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, width: parseInt(w), height: parseInt(h) })
-    });
-    const data = await res.json();
-    if (!data.success) {
-      output.textContent = '⚠️ ' + (data.error || 'Could not generate image. Try again.');
-      return;
-    }
-    lastGeneratedImageUrl = data.image_url;
-    const img = new Image();
-    img.onload = () => { output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
-    img.onerror = () => { output.textContent = '⚠️ Could not generate image. Try again.'; };
-    img.src = data.image_url;
-    img.alt = prompt;
-  } catch (e) {
-    output.textContent = '⚠️ Could not reach the server.';
-  }
 }
 
 function regenerateImage() { generateImage(); }
