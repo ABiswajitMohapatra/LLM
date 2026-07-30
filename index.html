@@ -821,14 +821,9 @@
     #user-input { font-size: 16px; }
     #send-btn, #attach-btn, #mic-btn, #piri-input-btn { width: 38px; height: 38px; }
 
-    #input-bottom-row { flex-wrap: nowrap; }
-    #input-bottom-row > div:first-child {
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
-      flex: 1; min-width: 0; scrollbar-width: none;
-    }
-    #input-bottom-row > div:first-child::-webkit-scrollbar { display: none; }
-    #input-bottom-row > div:first-child > * { flex-shrink: 0; }
-    #input-bottom-row > div:last-child { flex-shrink: 0; }
+    #input-bottom-row { flex-wrap: wrap; row-gap: 6px; }
+    #input-bottom-row > div:first-child { flex-wrap: wrap; min-width: 0; }
+    #input-bottom-row > div:last-child { margin-left: auto; flex-shrink: 0; }
     #research-toggle-label, #compare-toggle-label { display: none; }
     #research-toggle, #compare-toggle { padding: 6px 8px; }
     #model-pill { max-width: 110px; }
