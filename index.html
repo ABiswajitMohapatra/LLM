@@ -120,6 +120,13 @@
       radial-gradient(ellipse at 50% 100%, rgba(124,92,255,0.04), transparent 60%);
   }
 
+  /* Mobile-only: hide animated background effects */
+  @media (max-width: 1024px) {
+    #bg-canvas, #bg-glow {
+      display: none !important;
+    }
+  }
+
   /* Sidebar */
 #sidebar {
     width: 260px;
@@ -5040,23 +5047,6 @@ async function sendFollowup(text) {
   function draw() {
     if (!canvas.isConnected) return;
     ctx.clearRect(0, 0, w, h);
-
-    ctx.strokeStyle = 'rgba(124,92,255,0.045)';
-    ctx.lineWidth = 1;
-    lanes.forEach(y => {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    });
-
-    ctx.fillStyle = 'rgba(124,92,255,0.025)';
-    const gap = 52;
-    for (let gx = 0; gx < w; gx += gap) {
-      for (let gy = 0; gy < h; gy += gap) {
-        ctx.fillRect(gx, gy, 1, 1);
-      }
-    }
 
     particles.forEach(p => {
       p.x += p.speed;
