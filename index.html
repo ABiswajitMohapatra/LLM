@@ -3749,50 +3749,57 @@ loadTemplates();
 tryRenderSharedView();
 updateTokenCounter();
 
-// ---------- Single source of truth for viewport + sidebar/rail state ----------
-// Root cause of "sidebar disappears" / "mobile layout only after theme change":
-// sidebar + rail visibility were each set with their own inline styles from
-// scattered `window.innerWidth <= 768` checks, so any code path that closed
-// the sidebar without also restoring the rail (e.g. closeSidebarOnMobile)
-// left the UI in an inconsistent state with NO left navigation visible.
-// Fixing this by driving both from one function, using matchMedia (which
-// reflects the real, current viewport instead of a snapshot taken once at
-// parse time), and re-running it on every viewport change.
+// ---------- Sidebar state: desktop and mobile are fully independent ----------
+// Desktop (>=768px, matches existing breakpoint): collapsible sidebar. Collapsed
+// state persists across reloads and reuses the existing icon rail as the
+// "icons only" collapsed view. This is the ORIGINAL desktop behavior.
+// Mobile (<768px): off-canvas slide-in drawer, always starts closed, never
+// persisted, and never touches desktop state.
 const mobileMQ = window.matchMedia('(max-width: 768px)');
 function isMobileViewport() { return mobileMQ.matches; }
 
-function syncSidebarForViewport(opts) {
-  const forceOpen = opts && opts.forceOpen;
-  const forceClose = opts && opts.forceClose;
+let desktopSidebarCollapsed = localStorage.getItem('biswalex_sidebar_collapsed') === '1';
+let mobileDrawerOpen = false;
+
+function applyDesktopSidebarState() {
   const sidebar = document.getElementById('sidebar');
   const rail = document.getElementById('sidebar-rail');
   const backdrop = document.getElementById('sidebar-backdrop');
   if (!sidebar || !rail || !backdrop) return;
+  backdrop.classList.remove('show');
+  sidebar.classList.toggle('hidden', desktopSidebarCollapsed);
+  rail.style.display = desktopSidebarCollapsed ? 'flex' : 'none';
+}
 
-  if (isMobileViewport()) {
-    let hidden = sidebar.classList.contains('hidden');
-    if (forceOpen) hidden = false;
-    if (forceClose) hidden = true;
-    if (!sidebar.dataset.mobileInit) { hidden = true; } // first mobile paint: start closed
-    sidebar.dataset.mobileInit = '1';
-    sidebar.classList.toggle('hidden', hidden);
-    rail.style.display = 'flex';
-    backdrop.classList.toggle('show', !hidden);
-  } else {
-    sidebar.classList.remove('hidden');
-    rail.style.display = 'none';
-    backdrop.classList.remove('show');
-  }
+function applyMobileSidebarState() {
+  const sidebar = document.getElementById('sidebar');
+  const rail = document.getElementById('sidebar-rail');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar || !rail || !backdrop) return;
+  rail.style.display = 'none'; // mobile uses the top-left hamburger, not the rail
+  sidebar.classList.toggle('hidden', !mobileDrawerOpen);
+  backdrop.classList.toggle('show', mobileDrawerOpen);
+}
+
+function syncSidebarForViewport() {
+  if (isMobileViewport()) applyMobileSidebarState();
+  else applyDesktopSidebarState();
 }
 
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const isHidden = !sidebar.classList.contains('hidden');
-  syncSidebarForViewport(isHidden ? { forceClose: true } : { forceOpen: true });
+  if (isMobileViewport()) {
+    mobileDrawerOpen = !mobileDrawerOpen;
+  } else {
+    desktopSidebarCollapsed = !desktopSidebarCollapsed;
+    localStorage.setItem('biswalex_sidebar_collapsed', desktopSidebarCollapsed ? '1' : '0');
+  }
+  syncSidebarForViewport();
 }
 
 function closeSidebarOnMobile() {
-  if (isMobileViewport()) syncSidebarForViewport({ forceClose: true });
+  if (!isMobileViewport()) return;
+  mobileDrawerOpen = false;
+  syncSidebarForViewport();
 }
 
 function initSidebar() {
