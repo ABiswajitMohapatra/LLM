@@ -4275,6 +4275,7 @@ function buildHistoryItemHtml(c, q) {
         <button onclick="duplicateConversation(event, ${jsIdLiteral(c.id)})">⧉ Duplicate</button>
         <button onclick="promptAddTag(event, ${jsIdLiteral(c.id)})">🏷️ Add tag</button>
         <button onclick="openMoveFolderMenu(event, ${jsIdLiteral(c.id)})">📁 Move to folder</button>
+        ${c.folderId ? `<button onclick="event.stopPropagation(); moveConversationToFolder(${jsIdLiteral(c.id)}, null);">↩️ Remove from Folder</button>` : ''}
         <button onclick="archiveConversation(event, ${jsIdLiteral(c.id)})">🗄️ Archive</button>
         <button class="danger" onclick="trashConversation(event, ${jsIdLiteral(c.id)})">🗑️ Move to Trash</button>
       </div>
