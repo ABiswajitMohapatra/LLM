@@ -2692,6 +2692,42 @@ function pickWandboxCompiler(list, language) {
 }
 
 const WANDBOX_LANGUAGE_MAP = { 'c++': 'C++', 'c': 'C', 'java': 'Java' };
+// Judge0 CE (https://ce.judge0.com) - a second, independent public compiler
+// service used only as an automatic fallback when Wandbox itself is down or
+// its host is out of resources (e.g. the "crun: clone: Resource temporarily
+// unavailable" container error, which comes from Wandbox's own servers, not
+// from this app). No API key needed for this public instance.
+const JUDGE0_URL = "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
+const JUDGE0_LANGUAGE_MAP = { 'c++': 54, 'c': 50, 'java': 62 };
+
+async function runViaJudge0(code, lang, outputEl, isFallback) {
+  if (isFallback) outputEl.textContent = 'Primary compiler is unavailable — retrying with a backup compiler...';
+  else outputEl.textContent = 'Connecting to compiler service...';
+  try {
+    const language_id = JUDGE0_LANGUAGE_MAP[lang];
+    const res = await fetch(JUDGE0_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_code: code, language_id })
+    });
+    if (!res.ok) {
+      outputEl.textContent = '⚠️ Both compiler services are unavailable right now (HTTP ' + res.status + '). Please try again in a moment.';
+      return;
+    }
+    const data = await res.json();
+    let out = '';
+    if (data.compile_output) out += data.compile_output;
+    if (data.stdout) out += (out ? '\n' : '') + data.stdout;
+    if (data.stderr) out += (out ? '\n' : '') + data.stderr;
+    if (data.message) out += (out ? '\n' : '') + data.message;
+    if (data.status && data.status.description && data.status.description !== 'Accepted') {
+      out += (out ? '\n' : '') + 'Status: ' + data.status.description;
+    }
+    outputEl.textContent = (isFallback ? '(ran via backup compiler)\n' : '') + (out.trim() || '(no output)');
+  } catch (err) {
+    outputEl.textContent = '⚠️ Both compiler services are unavailable right now (' + err.message + '). Please try again in a moment.';
+  }
+}
 
 async function runViaWandbox(code, lang, outputEl) {
   outputEl.textContent = 'Connecting to compiler service...';
@@ -2700,8 +2736,7 @@ async function runViaWandbox(code, lang, outputEl) {
     const language = WANDBOX_LANGUAGE_MAP[lang];
     const compilerName = pickWandboxCompiler(list, language);
     if (!compilerName) {
-      outputEl.textContent = '⚠️ No available compiler found for ' + language + ' right now. Please try again later.';
-      return;
+      return runViaJudge0(code, lang, outputEl, true);
     }
     outputEl.textContent = 'Compiling & running (' + compilerName + ')...';
     const res = await fetch(WANDBOX_COMPILE_URL, {
@@ -2715,8 +2750,7 @@ async function runViaWandbox(code, lang, outputEl) {
       })
     });
     if (!res.ok) {
-      outputEl.textContent = '⚠️ Compiler service returned an error (HTTP ' + res.status + '). It may be temporarily unavailable — please try again in a moment.';
-      return;
+      return runViaJudge0(code, lang, outputEl, true);
     }
     const data = await res.json();
     let out = '';
@@ -2725,9 +2759,17 @@ async function runViaWandbox(code, lang, outputEl) {
     if (data.program_output) out += (out ? '\n' : '') + data.program_output;
     if (data.program_error) out += (out ? '\n' : '') + data.program_error;
     if (data.signal) out += (out ? '\n' : '') + 'Signal: ' + data.signal;
-    outputEl.textContent = out.trim() || '(no output)';
+    const combined = out.trim();
+    // Wandbox's own host occasionally returns a raw container-runtime error
+    // (e.g. "OCI runtime error", "crun: ...") instead of real compiler
+    // output when it's overloaded - treat that as a failure and fall back
+    // automatically instead of showing the user a cryptic infra error.
+    if (!combined || /OCI runtime error|crun:|clone:\s*Resource temporarily unavailable/i.test(combined)) {
+      return runViaJudge0(code, lang, outputEl, true);
+    }
+    outputEl.textContent = combined;
   } catch (err) {
-    outputEl.textContent = '⚠️ Could not reach the compiler service (' + err.message + '). Check your connection and try again.';
+    return runViaJudge0(code, lang, outputEl, true);
   }
 }
 
