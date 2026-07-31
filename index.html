@@ -4006,6 +4006,29 @@ function saveConversations() {
   try { localStorage.setItem('biswalex_conversations_cache', JSON.stringify(conversations)); } catch (e) {}
 }
 
+// ---- Compare-mode pending choice (per-conversation, browser-local) ----
+// A compare turn only becomes a real history/backend message once the user
+// picks a side (see useCompareSide) - until then both answers are stashed
+// here so a page refresh in the same browser session still shows the full
+// comparison and lets the user choose, instead of losing it.
+function getPendingCompares() {
+  try { return JSON.parse(localStorage.getItem('biswalex_pending_compares') || '{}'); }
+  catch (e) { return {}; }
+}
+function setPendingCompare(convId, data) {
+  const all = getPendingCompares();
+  all[convId] = data;
+  try { localStorage.setItem('biswalex_pending_compares', JSON.stringify(all)); } catch (e) {}
+}
+function getPendingCompare(convId) {
+  return getPendingCompares()[convId] || null;
+}
+function clearPendingCompare(convId) {
+  const all = getPendingCompares();
+  delete all[convId];
+  try { localStorage.setItem('biswalex_pending_compares', JSON.stringify(all)); } catch (e) {}
+}
+
 let collapsedGroups = {};
 try { collapsedGroups = JSON.parse(localStorage.getItem('biswalex_collapsed') || '{}'); } catch (e) { collapsedGroups = {}; }
 
