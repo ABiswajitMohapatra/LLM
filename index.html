@@ -1937,11 +1937,14 @@ function setSession(tokens) {
   if (tokens.access_token) localStorage.setItem(AUTH_KEYS.access, tokens.access_token);
   if (tokens.refresh_token) localStorage.setItem(AUTH_KEYS.refresh, tokens.refresh_token);
   if (tokens.user) localStorage.setItem(AUTH_KEYS.user, JSON.stringify(tokens.user));
+  loadFolders();
+  if (typeof renderHistory === 'function') renderHistory();
 }
 function clearSession() {
   localStorage.removeItem(AUTH_KEYS.access);
   localStorage.removeItem(AUTH_KEYS.refresh);
   localStorage.removeItem(AUTH_KEYS.user);
+  folders = [];
   renderUserAvatar();
 }
 
@@ -2257,8 +2260,10 @@ function agLogout() {
   conversations = [];
   currentConvId = null;
   history = [];
+  folders = [];
   const list = document.getElementById('history-list');
   if (list) list.innerHTML = '';
+  if (typeof renderHistory === 'function') renderHistory();
   showAuthGate();
   agShowStep('login');
 }
@@ -3272,10 +3277,20 @@ function initTheme() {
 initTheme();
 
 // ---------- FOLDERS ----------
-function loadFolders() {
-  try { folders = JSON.parse(localStorage.getItem('biswalex_folders') || '[]'); } catch (e) { folders = []; }
+function foldersStorageKey() {
+  const u = getStoredUser();
+  return u && u.id != null ? ('biswalex_folders_' + u.id) : null;
 }
-function saveFolders() { localStorage.setItem('biswalex_folders', JSON.stringify(folders)); }
+function loadFolders() {
+  const key = foldersStorageKey();
+  if (!key) { folders = []; return; }
+  try { folders = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { folders = []; }
+}
+function saveFolders() {
+  const key = foldersStorageKey();
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify(folders));
+}
 
 function createFolderPrompt() {
   const name = prompt('Folder name');
