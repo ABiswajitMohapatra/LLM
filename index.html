@@ -2194,7 +2194,6 @@ function agLogout() {
 // functions above.
 function onAuthenticated() { 
   renderUserAvatar();
-  conversations = [];
   fetchAndLoadChatSessions();
 }
 
@@ -3888,18 +3887,27 @@ function saveConversations() {
 }
 
 async function fetchAndLoadChatSessions() {
+  const user = getStoredUser();
+  if (!user || !user.id) {
+    conversations = [];
+    renderHistory();
+    return;
+  }
+  
   try {
-    const user = getStoredUser();
-    if (!user) return;
     const token = getAccessToken();
-    if (!token) return;
+    if (!token) throw new Error('No auth token');
+    
     const res = await fetch(API_URL + '/chat-sessions', {
       method: 'GET',
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    if (!res.ok) return;
+    
+    if (!res.ok) throw new Error('Failed to fetch sessions');
+    
     const data = await res.json();
     const sessions = data.sessions || [];
+    
     conversations = sessions.map(s => ({
       id: s.id,
       title: s.title,
@@ -3913,10 +3921,12 @@ async function fetchAndLoadChatSessions() {
       deletedAt: null,
       parentId: null
     }));
+    
     saveConversations();
     renderHistory();
   } catch (e) {
-    console.error('Failed to fetch chat sessions:', e);
+    console.error('Failed to fetch from PostgreSQL, falling back to localStorage:', e);
+    loadConversations(user.id);
   }
 }
 
