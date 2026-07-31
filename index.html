@@ -2247,8 +2247,11 @@ function agLogout() {
   // back in.
   clearSession();
   conversations = [];
-  currentConvId = null;
-  history = [];
+  // newChat() resets currentConvId/history AND repaints the main chat
+  // panel (previously only the sidebar list was cleared here, leaving the
+  // last-viewed conversation visible in the main panel until a manual
+  // page refresh).
+  newChat();
   const list = document.getElementById('history-list');
   if (list) list.innerHTML = '';
   showAuthGate();
@@ -2260,7 +2263,19 @@ function agLogout() {
 // source of truth for "which conversations does this account have".
 async function onAuthenticated() {
   renderUserAvatar();
+  // Reset the main chat panel immediately so the previous account's
+  // conversation/messages never linger on screen while the new account's
+  // sessions are being fetched (previously this only happened on a manual
+  // page refresh).
+  newChat();
   await loadConversations();
+  // Auto-select the most recently updated conversation for this account,
+  // if any; otherwise the empty/new-chat state from newChat() above stays.
+  const nonDeleted = conversations.filter(c => !c.deleted);
+  if (nonDeleted.length) {
+    const mostRecent = nonDeleted.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
+    loadConversation(mostRecent.id);
+  }
 }
 
 // On load: if we have tokens, optimistically show the app (apiFetch will
