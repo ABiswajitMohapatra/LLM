@@ -3362,9 +3362,9 @@ function openMoveFolderMenu(evt, id) {
   evt.stopPropagation();
   const menu = document.getElementById('menu-' + id);
   if (!menu) return;
-  const noFolderBtn = `<button onclick="moveConversationToFolder('${id}', null)">🚫 No folder</button>`;
+  const noFolderBtn = `<button onclick="moveConversationToFolder(${jsIdLiteral(id)}, null)">🚫 No folder</button>`;
   const folderBtns = folders.map(f =>
-    `<button onclick="moveConversationToFolder('${id}', '${f.id}')"><span class="folder-color-dot" style="background:${f.color}"></span>${escapeHtml(f.name)}</button>`
+    `<button onclick="moveConversationToFolder(${jsIdLiteral(id)}, '${f.id}')"><span class="folder-color-dot" style="background:${f.color}"></span>${escapeHtml(f.name)}</button>`
   ).join('');
   const backBtn = `<button onclick="closeAllHistoryMenus()">← Cancel</button>`;
   menu.innerHTML = noFolderBtn + folderBtns + backBtn;
