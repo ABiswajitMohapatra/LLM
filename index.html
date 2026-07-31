@@ -3335,9 +3335,9 @@ function openMoveFolderMenu(evt, id) {
   evt.stopPropagation();
   const menu = document.getElementById('menu-' + id);
   if (!menu) return;
-  const noFolderBtn = `<button onclick="moveConversationToFolder('${id}', null)">🚫 No folder</button>`;
+  const noFolderBtn = `<button onclick="moveConversationToFolder(${jsIdLiteral(id)}, null)">🚫 No folder</button>`;
   const folderBtns = folders.map(f =>
-    `<button onclick="moveConversationToFolder('${id}', '${f.id}')"><span class="folder-color-dot" style="background:${f.color}"></span>${escapeHtml(f.name)}</button>`
+    `<button onclick="moveConversationToFolder(${jsIdLiteral(id)}, '${f.id}')"><span class="folder-color-dot" style="background:${f.color}"></span>${escapeHtml(f.name)}</button>`
   ).join('');
   const backBtn = `<button onclick="closeAllHistoryMenus()">← Cancel</button>`;
   menu.innerHTML = noFolderBtn + folderBtns + backBtn;
@@ -3965,8 +3965,10 @@ function onFolderDrop(evt, folderId) {
   evt.preventDefault();
   evt.currentTarget.classList.remove('drop-target');
   let id = draggedConvId;
-  try { id = evt.dataTransfer.getData('text/plain') || draggedConvId; } catch (e) {}
-  if (id) moveConversationToFolder(id, folderId);
+  if (id == null) {
+    try { id = evt.dataTransfer.getData('text/plain') || null; } catch (e) {}
+  }
+  if (id != null) moveConversationToFolder(id, folderId);
 }
 
 // ---------- CONVERSATION HISTORY / SEARCH ----------
