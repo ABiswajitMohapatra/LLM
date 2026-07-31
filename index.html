@@ -2697,6 +2697,39 @@ function pickWandboxCompiler(list, language) {
 }
 
 const WANDBOX_LANGUAGE_MAP = { 'c++': 'C++', 'c': 'C', 'java': 'Java' };
+const JUDGE0_URL = "https://ce.judge0.com/submissions?base64_encoded=false&wait=true";
+const JUDGE0_LANGUAGE_MAP = { 'c++': 54, 'c': 50, 'java': 62 };
+
+function looksLikeInfraError(text) {
+  return /crun|OCI runtime|Resource temporarily unavailable/i.test(text || '');
+}
+
+async function runViaJudge0(code, lang, outputEl) {
+  outputEl.textContent = 'Backup compiler se chala raha hoon...';
+  try {
+    const res = await fetch(JUDGE0_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_code: code,
+        language_id: JUDGE0_LANGUAGE_MAP[lang]
+      })
+    });
+    if (!res.ok) {
+      outputEl.textContent = '⚠️ Backup compiler service returned an error (HTTP ' + res.status + '). Please try again in a moment.';
+      return;
+    }
+    const data = await res.json();
+    let out = '';
+    if (data.compile_output) out += data.compile_output;
+    if (data.stdout) out += (out ? '\n' : '') + data.stdout;
+    if (data.stderr) out += (out ? '\n' : '') + data.stderr;
+    if (data.message) out += (out ? '\n' : '') + data.message;
+    outputEl.textContent = (out.trim() || '(no output)') + '\n\n(backup compiler se chala)';
+  } catch (err) {
+    outputEl.textContent = '⚠️ Compiler service abhi available nahi hai. Thodi der baad try karein.';
+  }
+}
 
 async function runViaWandbox(code, lang, outputEl) {
   outputEl.textContent = 'Connecting to compiler service...';
@@ -2705,8 +2738,7 @@ async function runViaWandbox(code, lang, outputEl) {
     const language = WANDBOX_LANGUAGE_MAP[lang];
     const compilerName = pickWandboxCompiler(list, language);
     if (!compilerName) {
-      outputEl.textContent = '⚠️ No available compiler found for ' + language + ' right now. Please try again later.';
-      return;
+      return runViaJudge0(code, lang, outputEl);
     }
     outputEl.textContent = 'Compiling & running (' + compilerName + ')...';
     const res = await fetch(WANDBOX_COMPILE_URL, {
@@ -2720,8 +2752,7 @@ async function runViaWandbox(code, lang, outputEl) {
       })
     });
     if (!res.ok) {
-      outputEl.textContent = '⚠️ Compiler service returned an error (HTTP ' + res.status + '). It may be temporarily unavailable — please try again in a moment.';
-      return;
+      return runViaJudge0(code, lang, outputEl);
     }
     const data = await res.json();
     let out = '';
@@ -2730,9 +2761,12 @@ async function runViaWandbox(code, lang, outputEl) {
     if (data.program_output) out += (out ? '\n' : '') + data.program_output;
     if (data.program_error) out += (out ? '\n' : '') + data.program_error;
     if (data.signal) out += (out ? '\n' : '') + 'Signal: ' + data.signal;
+    if (looksLikeInfraError(out)) {
+      return runViaJudge0(code, lang, outputEl);
+    }
     outputEl.textContent = out.trim() || '(no output)';
   } catch (err) {
-    outputEl.textContent = '⚠️ Could not reach the compiler service (' + err.message + '). Check your connection and try again.';
+    return runViaJudge0(code, lang, outputEl);
   }
 }
 
