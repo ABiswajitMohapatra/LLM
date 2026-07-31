@@ -85,6 +85,7 @@
   .msg-row.user .bubble, #input-wrap, .history-item, #theme-toggle button {
     transition: background-color .25s ease, color .25s ease, border-color .25s ease;
   }
+  html { overflow-x: hidden; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
@@ -97,7 +98,9 @@
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
     position: relative;
+    max-width: 100vw;
   }
+  #piri-panel:not(.open) { pointer-events: none; }
 
   /* ===== Live animated background (flowing particles) ===== */
   #bg-canvas {
@@ -1199,9 +1202,146 @@
     max-width: 100%; text-align: left;
   }
   .followup-chip:hover { background: var(--border); border-color: var(--accent); }
+
+  /* ---------- AUTH GATE (login/signup/forgot password) ---------- */
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    padding: 20px;
+  }
+  #auth-gate.hidden { display: none; }
+  #auth-card {
+    width: 100%; max-width: 380px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    box-sizing: border-box;
+  }
+  #auth-card .ag-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  #auth-card .ag-logo img { width: 32px; height: 32px; border-radius: 8px; }
+  #auth-card .ag-logo span { font-size: 17px; font-weight: 600; color: var(--text); }
+  #auth-card h2 { margin: 0 0 4px; font-size: 19px; color: var(--text); }
+  #auth-card p.ag-sub { margin: 0 0 18px; font-size: 13px; color: var(--text-dim); }
+  .ag-field { margin-bottom: 12px; }
+  .ag-field label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 5px; }
+  .ag-field input {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: 10px 12px; font-size: 14px; outline: none;
+    transition: border-color .15s ease;
+  }
+  .ag-field input:focus { border-color: var(--accent); }
+  .ag-btn {
+    width: 100%; border: none; border-radius: 9px;
+    background: var(--accent); color: #fff;
+    padding: 11px 14px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .ag-btn:disabled { opacity: .6; cursor: default; }
+  .ag-btn.secondary { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+  .ag-links { display: flex; justify-content: space-between; margin-top: 14px; font-size: 12.5px; }
+  .ag-links a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .ag-error {
+    background: rgba(255,80,80,.1); border: 1px solid rgba(255,80,80,.3);
+    color: #ff6b6b; font-size: 12.5px; padding: 8px 10px; border-radius: 8px;
+    margin-bottom: 12px; display: none;
+  }
+  .ag-error.show { display: block; }
+  .ag-success {
+    background: rgba(80,220,140,.1); border: 1px solid rgba(80,220,140,.3);
+    color: #3ddc84; font-size: 12.5px; padding: 8px 10px; border-radius: 8px;
+    margin-bottom: 12px; display: none;
+  }
+  .ag-success.show { display: block; }
+  .ag-spinner {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+    animation: ag-spin .7s linear infinite; display: none;
+  }
+  .ag-spinner.show { display: inline-block; }
+  @keyframes ag-spin { to { transform: rotate(360deg); } }
+  .ag-step { display: none; }
+  .ag-step.active { display: block; }
 </style>
 </head>
 <body>
+
+<div id="auth-gate" class="hidden">
+  <div id="auth-card">
+    <div class="ag-logo">
+      <img src="biswalex_logo.svg" alt="Mastishk">
+      <span>Mastishk</span>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="ag-step active" id="ag-step-login">
+      <h2>Welcome back</h2>
+      <p class="ag-sub">Log in to continue</p>
+      <div class="ag-error" id="ag-login-error"></div>
+      <div class="ag-field"><label>Email</label><input type="email" id="ag-login-email" autocomplete="email"></div>
+      <div class="ag-field"><label>Password</label><input type="password" id="ag-login-password" autocomplete="current-password"></div>
+      <button class="ag-btn" id="ag-login-btn" onclick="agLogin()"><span class="ag-spinner" id="ag-login-spinner"></span><span>Log in</span></button>
+      <div class="ag-links">
+        <a onclick="agShowStep('forgot')">Forgot password?</a>
+        <a onclick="agShowStep('signup')">Create account</a>
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="ag-step" id="ag-step-signup">
+      <h2>Create your account</h2>
+      <p class="ag-sub">Get started with Mastishk</p>
+      <div class="ag-error" id="ag-signup-error"></div>
+      <div class="ag-field"><label>Name</label><input type="text" id="ag-signup-name" autocomplete="name"></div>
+      <div class="ag-field"><label>Email</label><input type="email" id="ag-signup-email" autocomplete="email"></div>
+      <div class="ag-field"><label>Password</label><input type="password" id="ag-signup-password" autocomplete="new-password"></div>
+      <div class="ag-field"><label>Confirm password</label><input type="password" id="ag-signup-confirm" autocomplete="new-password"></div>
+      <button class="ag-btn" id="ag-signup-btn" onclick="agSignup()"><span class="ag-spinner" id="ag-signup-spinner"></span><span>Sign up</span></button>
+      <div class="ag-links">
+        <a onclick="agShowStep('login')">Already have an account? Log in</a>
+      </div>
+    </div>
+
+    <!-- FORGOT PASSWORD: step 1 - email -->
+    <div class="ag-step" id="ag-step-forgot">
+      <h2>Reset your password</h2>
+      <p class="ag-sub">Enter your email and we'll send you a code</p>
+      <div class="ag-error" id="ag-forgot-error"></div>
+      <div class="ag-success" id="ag-forgot-success"></div>
+      <div class="ag-field"><label>Email</label><input type="email" id="ag-forgot-email" autocomplete="email"></div>
+      <button class="ag-btn" id="ag-forgot-btn" onclick="agForgotPassword()"><span class="ag-spinner" id="ag-forgot-spinner"></span><span>Send code</span></button>
+      <div class="ag-links"><a onclick="agShowStep('login')">Back to login</a></div>
+    </div>
+
+    <!-- FORGOT PASSWORD: step 2 - OTP -->
+    <div class="ag-step" id="ag-step-otp">
+      <h2>Enter code</h2>
+      <p class="ag-sub">We sent a 6-digit code to your email</p>
+      <div class="ag-error" id="ag-otp-error"></div>
+      <div class="ag-field"><label>Code</label><input type="text" id="ag-otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+      <button class="ag-btn" id="ag-otp-btn" onclick="agVerifyOtp()"><span class="ag-spinner" id="ag-otp-spinner"></span><span>Verify code</span></button>
+      <div class="ag-links">
+        <a onclick="agForgotPassword(true)">Resend code</a>
+        <a onclick="agShowStep('login')">Back to login</a>
+      </div>
+    </div>
+
+    <!-- FORGOT PASSWORD: step 3 - new password -->
+    <div class="ag-step" id="ag-step-newpass">
+      <h2>Set new password</h2>
+      <p class="ag-sub">Choose a new password for your account</p>
+      <div class="ag-error" id="ag-newpass-error"></div>
+      <div class="ag-field"><label>New password</label><input type="password" id="ag-newpass-1" autocomplete="new-password"></div>
+      <div class="ag-field"><label>Confirm new password</label><input type="password" id="ag-newpass-2" autocomplete="new-password"></div>
+      <button class="ag-btn" id="ag-newpass-btn" onclick="agResetPassword()"><span class="ag-spinner" id="ag-newpass-spinner"></span><span>Reset password</span></button>
+      <div class="ag-links"><a onclick="agShowStep('login')">Back to login</a></div>
+    </div>
+  </div>
+</div>
 
 <canvas id="bg-canvas"></canvas>
 <div id="bg-glow"></div>
@@ -1307,7 +1447,7 @@
 <div id="main">
   <div id="topbar">
   <button id="mobile-sidebar-btn" onclick="toggleSidebar()" data-tooltip="Menu" aria-label="Open menu">
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M3.5 7h17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 15h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
   </button>
   <div id="model-name" style="display:none;"></div>
     <span id="active-project-badge" onclick="clearActiveProject()" data-tooltip="Click to leave project"></span>
@@ -1325,6 +1465,8 @@
         <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel" style="display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 20c5-1 9-5 10-10 .6-3 2-5 6-6-1 4-3 5.4-6 6-5 1-9 5-10 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg> Piri</button>
         <div class="tm-divider"></div>
         <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.8"/><path d="M2 20c0-3.5 4.5-7 10-7s10 3.5 10 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Persona</button>
+        <div class="tm-divider"></div>
+        <button class="tm-item" id="auth-logout-btn" onclick="agLogout()" data-tooltip="Log out"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
         <button class="tm-item" onclick="openLiveToolsPanel()" data-tooltip="Search, calculator, calendar"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Live tools</button>
         <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Discover</button>
         <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 2v4M15 2v4M9 18v4M15 18v4M7 8h10a2 2 0 0 1 2 2v1a3 3 0 0 1 0 6v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 0-6V10a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Plugins</button>
@@ -1362,7 +1504,7 @@
     <div id="file-chip"><span>📎</span><span id="file-name"></span><button onclick="clearFile()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;">✕</button></div>
     <div id="input-wrap">
       <div id="input-top-row">
-        <input type="file" id="file-input" multiple style="display:none" onchange="handleFile(event)">
+        <input type="file" id="file-input" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.txt,.md,.csv,.json" style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-image" accept="image/*" multiple style="display:none" onchange="handleFile(event)">
         <input type="file" id="file-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
         <textarea id="user-input" rows="1" placeholder="Message Mastishk..." onkeydown="handleKey(event)" oninput="autoGrow(this)" onpaste="handleInputPaste(event)"></textarea>
@@ -1752,6 +1894,258 @@ const WANDBOX_LIST_URL = "https://wandbox.org/api/list.json";
 const WANDBOX_COMPILE_URL = "https://wandbox.org/api/compile.json";
 // =====================
 
+// ====== AUTH (JWT login/signup/forgot-password + session handling) ======
+const AUTH_KEYS = { access: 'mastishk_access_token', refresh: 'mastishk_refresh_token', user: 'mastishk_user' };
+
+function getAccessToken() { return localStorage.getItem(AUTH_KEYS.access); }
+function getRefreshToken() { return localStorage.getItem(AUTH_KEYS.refresh); }
+function getStoredUser() { try { return JSON.parse(localStorage.getItem(AUTH_KEYS.user) || 'null'); } catch (e) { return null; } }
+
+function setSession(tokens) {
+  if (tokens.access_token) localStorage.setItem(AUTH_KEYS.access, tokens.access_token);
+  if (tokens.refresh_token) localStorage.setItem(AUTH_KEYS.refresh, tokens.refresh_token);
+  if (tokens.user) localStorage.setItem(AUTH_KEYS.user, JSON.stringify(tokens.user));
+}
+function clearSession() {
+  localStorage.removeItem(AUTH_KEYS.access);
+  localStorage.removeItem(AUTH_KEYS.refresh);
+  localStorage.removeItem(AUTH_KEYS.user);
+}
+
+let _refreshInFlight = null;
+async function refreshAccessToken() {
+  const rt = getRefreshToken();
+  if (!rt) return false;
+  if (_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = (async () => {
+    try {
+      const res = await fetch(API_URL + '/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      localStorage.setItem(AUTH_KEYS.access, data.access_token);
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      _refreshInFlight = null;
+    }
+  })();
+  return _refreshInFlight;
+}
+
+// Drop-in replacement for fetch() against our API: attaches the access
+// token, and on a 401 (expired/invalid token) transparently refreshes once
+// and retries before giving up and re-showing the login screen. Every
+// existing apiFetch(API_URL + ...) call in this file has been switched to
+// apiFetch(...) so this applies everywhere without changing call sites'
+// logic otherwise.
+async function apiFetch(url, options) {
+  options = options || {};
+  options.headers = Object.assign({}, options.headers || {});
+  const token = getAccessToken();
+  if (token) options.headers['Authorization'] = 'Bearer ' + token;
+
+  let res = await fetch(url, options);
+
+  if (res.status === 401 && getRefreshToken()) {
+    const ok = await refreshAccessToken();
+    if (ok) {
+      options.headers['Authorization'] = 'Bearer ' + getAccessToken();
+      res = await fetch(url, options);
+    }
+  }
+
+  if (res.status === 401) {
+    clearSession();
+    showAuthGate();
+  }
+
+  return res;
+}
+
+function showAuthGate() {
+  document.getElementById('auth-gate').classList.remove('hidden');
+}
+function hideAuthGate() {
+  document.getElementById('auth-gate').classList.add('hidden');
+}
+
+function agShowStep(step) {
+  document.querySelectorAll('.ag-step').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.ag-error, .ag-success').forEach(el => el.classList.remove('show'));
+  document.getElementById('ag-step-' + step).classList.add('active');
+}
+
+function agSetLoading(prefix, loading) {
+  document.getElementById(prefix + '-btn').disabled = loading;
+  document.getElementById(prefix + '-spinner').classList.toggle('show', loading);
+}
+function agShowError(id, message) {
+  const el = document.getElementById(id);
+  el.textContent = message;
+  el.classList.add('show');
+}
+function agHideError(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+async function agLogin() {
+  const email = document.getElementById('ag-login-email').value.trim();
+  const password = document.getElementById('ag-login-password').value;
+  agHideError('ag-login-error');
+  if (!email || !password) { agShowError('ag-login-error', 'Please enter both email and password.'); return; }
+  agSetLoading('ag-login', true);
+  try {
+    const res = await fetch(API_URL + '/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { agShowError('ag-login-error', data.detail || 'Login failed.'); return; }
+    setSession(data);
+    hideAuthGate();
+    onAuthenticated();
+  } catch (e) {
+    agShowError('ag-login-error', 'Network error. Please try again.');
+  } finally {
+    agSetLoading('ag-login', false);
+  }
+}
+
+async function agSignup() {
+  const name = document.getElementById('ag-signup-name').value.trim();
+  const email = document.getElementById('ag-signup-email').value.trim();
+  const password = document.getElementById('ag-signup-password').value;
+  const confirm_password = document.getElementById('ag-signup-confirm').value;
+  agHideError('ag-signup-error');
+  if (!name || !email || !password || !confirm_password) { agShowError('ag-signup-error', 'Please fill in all fields.'); return; }
+  if (password !== confirm_password) { agShowError('ag-signup-error', 'Passwords do not match.'); return; }
+  agSetLoading('ag-signup', true);
+  try {
+    const res = await fetch(API_URL + '/auth/signup', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, confirm_password })
+    });
+    const data = await res.json();
+    if (!res.ok) { agShowError('ag-signup-error', data.detail || 'Signup failed.'); return; }
+    setSession(data);
+    hideAuthGate();
+    onAuthenticated();
+  } catch (e) {
+    agShowError('ag-signup-error', 'Network error. Please try again.');
+  } finally {
+    agSetLoading('ag-signup', false);
+  }
+}
+
+let _agResetEmail = '';
+let _agResetToken = '';
+
+async function agForgotPassword(isResend) {
+  const emailInput = document.getElementById('ag-forgot-email');
+  const email = (isResend === true ? _agResetEmail : emailInput.value.trim());
+  agHideError('ag-forgot-error');
+  agHideError('ag-otp-error');
+  if (!email) { agShowError('ag-forgot-error', 'Please enter your email.'); return; }
+  agSetLoading('ag-forgot', true);
+  try {
+    const res = await fetch(API_URL + '/auth/forgot-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) { agShowError('ag-forgot-error', data.detail || 'Could not send reset code.'); return; }
+    _agResetEmail = email;
+    document.getElementById('ag-forgot-success').textContent = data.message || 'Code sent, check your email.';
+    document.getElementById('ag-forgot-success').classList.add('show');
+    agShowStep('otp');
+  } catch (e) {
+    agShowError('ag-forgot-error', 'Network error. Please try again.');
+  } finally {
+    agSetLoading('ag-forgot', false);
+  }
+}
+
+async function agVerifyOtp() {
+  const otp = document.getElementById('ag-otp-code').value.trim();
+  agHideError('ag-otp-error');
+  if (!otp) { agShowError('ag-otp-error', 'Please enter the code.'); return; }
+  agSetLoading('ag-otp', true);
+  try {
+    const res = await fetch(API_URL + '/auth/verify-otp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _agResetEmail, otp })
+    });
+    const data = await res.json();
+    if (!res.ok) { agShowError('ag-otp-error', data.detail || 'Invalid code.'); return; }
+    _agResetToken = data.reset_token;
+    agShowStep('newpass');
+  } catch (e) {
+    agShowError('ag-otp-error', 'Network error. Please try again.');
+  } finally {
+    agSetLoading('ag-otp', false);
+  }
+}
+
+async function agResetPassword() {
+  const p1 = document.getElementById('ag-newpass-1').value;
+  const p2 = document.getElementById('ag-newpass-2').value;
+  agHideError('ag-newpass-error');
+  if (!p1 || !p2) { agShowError('ag-newpass-error', 'Please fill in both fields.'); return; }
+  if (p1 !== p2) { agShowError('ag-newpass-error', 'Passwords do not match.'); return; }
+  agSetLoading('ag-newpass', true);
+  try {
+    const res = await fetch(API_URL + '/auth/reset-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _agResetEmail, reset_token: _agResetToken, new_password: p1, confirm_password: p2 })
+    });
+    const data = await res.json();
+    if (!res.ok) { agShowError('ag-newpass-error', data.detail || 'Could not reset password.'); return; }
+    _agResetEmail = ''; _agResetToken = '';
+    agShowStep('login');
+    document.getElementById('ag-login-error').classList.remove('show');
+  } catch (e) {
+    agShowError('ag-newpass-error', 'Network error. Please try again.');
+  } finally {
+    agSetLoading('ag-newpass', false);
+  }
+}
+
+function agLogout() {
+  const rt = getRefreshToken();
+  if (rt) {
+    fetch(API_URL + '/auth/logout', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: rt })
+    }).catch(() => {});
+  }
+  clearSession();
+  showAuthGate();
+  agShowStep('login');
+}
+
+// Called once after a successful login/signup/session-restore. Kept as a
+// tiny hook so any post-auth setup can be added without touching the auth
+// functions above.
+function onAuthenticated() {}
+
+// On load: if we have tokens, optimistically show the app (apiFetch will
+// transparently refresh an expired access token on the first real API
+// call, or bounce back to the login screen if the refresh token is also
+// gone/expired) - this keeps the user logged in across visits until they
+// explicitly log out or every token expires, without an extra blocking
+// network round-trip before the UI can render.
+if (getAccessToken() && getRefreshToken()) {
+  hideAuthGate();
+} else {
+  showAuthGate();
+}
+// =====================
+
 let history = [];
 let extraFileContent = "";
 let isStreaming = false;
@@ -1975,7 +2369,7 @@ async function ensureMermaidLib() {
 }
 
 async function askLLMFull(prompt) {
-  const res = await fetch(API_URL + "/chat", {
+  const res = await apiFetch(API_URL + "/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query: prompt, history: [], extra_file_content: "", model: selectedModel, project_context: null })
@@ -2032,7 +2426,7 @@ async function runStudio() {
     lastPptBlob = null;
     out.innerHTML = '<span class="toolbar-spinner"></span> Building your slides (this can take 15-30s)...';
     try {
-      const res = await fetch(API_URL + '/generate-ppt', {
+      const res = await apiFetch(API_URL + '/generate-ppt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: prompt, slides: 8, template: document.getElementById('ppt-template-select')?.value || 'business', model: selectedModel })
@@ -2470,7 +2864,7 @@ function startEditMessage(bubbleId, idx) {
     improveBtn.disabled = true;
     improveBtn.textContent = '✨ Improving...';
     try {
-      const res = await fetch(API_URL + '/quick-task', {
+      const res = await apiFetch(API_URL + '/quick-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: original, task: 'improve', model: selectedModel })
@@ -2513,7 +2907,7 @@ async function saveEditMessage(bubbleId, idx, newText) {
 async function loadModels() {
   const label = document.getElementById('model-pill-label');
   try {
-    const res = await fetch(API_URL + "/models");
+    const res = await apiFetch(API_URL + "/models");
     const data = await res.json();
     availableModels = data.models || [];
     const saved = localStorage.getItem('biswalex_model');
@@ -2993,7 +3387,7 @@ async function runLiveSearch() {
   if (!q) return;
   results.innerHTML = '<div class="empty-hint">Searching...</div>';
   try {
-    const res = await fetch(API_URL + '/web-search-quick', {
+    const res = await apiFetch(API_URL + '/web-search-quick', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: q })
@@ -3064,7 +3458,7 @@ async function renderDiscoverFeed() {
   const body = document.getElementById('discover-body');
   body.innerHTML = '<div class="empty-hint">Loading today\'s topics...</div>';
   try {
-    const res = await fetch(API_URL + '/discover-topics');
+    const res = await apiFetch(API_URL + '/discover-topics');
     const data = await res.json();
     const topics = data.topics || [];
     if (topics.length === 0) {
@@ -3232,7 +3626,7 @@ async function autoExtractMemory(convId) {
   if (conv.messages.length < 4) return;
   conv.memoryExtracted = true;
   try {
-    const res = await fetch(API_URL + '/extract-memory', {
+    const res = await apiFetch(API_URL + '/extract-memory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ history: conv.messages.slice(0, 12), model: selectedModel })
@@ -3281,7 +3675,7 @@ async function startBackgroundTaskUI() {
   if (!query) return;
   input.value = '';
   try {
-    const res = await fetch(API_URL + '/background-task', {
+    const res = await apiFetch(API_URL + '/background-task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, model: selectedModel, persona_prompt: getActivePersonaPrompt() })
@@ -3305,7 +3699,7 @@ async function pollBgTasks() {
   if (!pending.length) return;
   for (const t of pending) {
     try {
-      const res = await fetch(API_URL + '/background-task/' + t.job_id);
+      const res = await apiFetch(API_URL + '/background-task/' + t.job_id);
       const data = await res.json();
       if (data.status && data.status !== 'pending') {
         t.status = data.status;
@@ -3472,7 +3866,7 @@ async function autoTitleConversation(id) {
   if (!conv || conv.autoTitled || conv.titleLocked) return;
   if (conv.messages.length < 2) return;
   try {
-    const res = await fetch(API_URL + '/generate-title', {
+    const res = await apiFetch(API_URL + '/generate-title', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ history: conv.messages.slice(0, 6), model: selectedModel })
@@ -3966,7 +4360,7 @@ async function uploadFileObject(file, batchId) {
   formData.append("file", file);
   if (batchId) formData.append("batch_id", batchId);
   try {
-    const res = await fetch(API_URL + "/upload", { method: "POST", body: formData });
+    const res = await apiFetch(API_URL + "/upload", { method: "POST", body: formData });
     const data = await res.json();
     if (data.success) {
       // The backend keeps the extracted document server-side (uploaded_documents)
@@ -4477,7 +4871,7 @@ async function quickTaskRequest(bubbleId, msgIndex, task, targetLanguage) {
   }
   resultBox.innerHTML = `<div class="toolbar-result-label">${labelMap[task] || task}</div><span class="toolbar-spinner"></span> Working...`;
   try {
-    const res = await fetch(API_URL + '/quick-task', {
+    const res = await apiFetch(API_URL + '/quick-task', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: history[msgIndex].message, task, target_language: targetLanguage, model: selectedModel })
@@ -4506,7 +4900,7 @@ async function runFactCheck(bubbleId, msgIndex) {
   }
   resultBox.innerHTML = `<div class="toolbar-result-label">Fact-check</div><span class="toolbar-spinner"></span> Reviewing...`;
   try {
-    const res = await fetch(API_URL + '/verify-response', {
+    const res = await apiFetch(API_URL + '/verify-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: userMsg, answer: history[msgIndex].message, model: selectedModel })
@@ -4739,7 +5133,7 @@ async function sendMessage() {
     if (plugin) {
       // Execute plugin API call before main query
       try {
-        const execRes = await fetch(API_URL + '/execute-plugin', {
+        const execRes = await apiFetch(API_URL + '/execute-plugin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plugin_name: pluginName, query: pluginText, url: plugin.url, method: plugin.method })
@@ -4799,7 +5193,7 @@ async function streamAssistantReply(query) {
   let wasAborted = false;
 
   try {
-    const res = await fetch(API_URL + "/chat", {
+    const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt(), memory_context: getMemoryContextString() }),
@@ -4906,7 +5300,7 @@ async function streamOneCompareSide(query, model, bubbleEl) {
   let fullText = "";
   let firstChunk = true;
   try {
-    const res = await fetch(API_URL + "/chat", {
+    const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model, project_context: getActiveProjectContext(), research_mode: false, persona_prompt: getActivePersonaPrompt() })
@@ -4974,7 +5368,7 @@ async function streamCompareReply(query) {
 
 async function renderFollowupChips(bubbleId, query, answer) {
   try {
-    const res = await fetch(API_URL + '/suggest-followups', {
+    const res = await apiFetch(API_URL + '/suggest-followups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query, answer, model: selectedModel })
