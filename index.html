@@ -3908,24 +3908,68 @@ async function fetchAndLoadChatSessions() {
     const data = await res.json();
     const sessions = data.sessions || [];
     
-    conversations = sessions.map(s => ({
-      id: s.id,
-      title: s.title,
-      messages: [],
-      createdAt: new Date(s.created_at),
-      updatedAt: new Date(s.updated_at),
-      folderId: null,
-      tags: [],
-      archived: false,
-      deleted: false,
-      deletedAt: null,
-      parentId: null
-    }));
+    // Fetch messages for each session
+    const conversationsWithMessages = [];
+    for (const s of sessions) {
+      try {
+        const msgRes = await fetch(API_URL + '/chat-sessions/' + s.id, {
+          method: 'GET',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (!msgRes.ok) throw new Error('Failed to fetch messages');
+        
+        const msgData = await msgRes.json();
+        const messages = (msgData.messages || []).map(m => ({
+          role: m.role,
+          message: m.content
+        }));
+        
+        conversationsWithMessages.push({
+          id: s.id,
+          title: s.title,
+          messages: messages,
+          createdAt: new Date(s.created_at),
+          updatedAt: new Date(s.updated_at),
+          folderId: null,
+          tags: [],
+          archived: false,
+          deleted: false,
+          deletedAt: null,
+          parentId: null,
+          autoTitled: false,
+          titleLocked: false,
+          pinned: false
+        });
+        
+        console.log('[frontend] Loaded session', s.id, 'with', messages.length, 'messages');
+      } catch (e) {
+        console.error('Failed to fetch messages for session', s.id, e);
+        conversationsWithMessages.push({
+          id: s.id,
+          title: s.title,
+          messages: [],
+          createdAt: new Date(s.created_at),
+          updatedAt: new Date(s.updated_at),
+          folderId: null,
+          tags: [],
+          archived: false,
+          deleted: false,
+          deletedAt: null,
+          parentId: null,
+          autoTitled: false,
+          titleLocked: false,
+          pinned: false
+        });
+      }
+    }
     
+    conversations = conversationsWithMessages;
     saveConversations();
     renderHistory();
+    console.log('[frontend] Loaded', conversations.length, 'sessions from database');
   } catch (e) {
-    console.error('Failed to fetch from PostgreSQL, falling back to localStorage:', e);
+    console.error('Failed to fetch from PostgreSQL:', e);
     loadConversations(user.id);
   }
 }
@@ -4237,34 +4281,80 @@ function loadConversation(id) {
   updateTokenCounter();
 }
 
-function upsertConversation() {
+async function upsertConversation() {
   if (history.length === 0) return;
-  if (!currentConvId) {
-    currentConvId = 'c-' + Date.now();
-    const firstUserMsg = history.find(m => m.role === 'user');
-    conversations.push({
-      id: currentConvId,
-      title: (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 40),
-      messages: [],
-      pinned: false,
-      folderId: null,
-      tags: [],
-      archived: false,
-      deleted: false,
-      deletedAt: null,
-      parentId: null,
-      updatedAt: Date.now(),
-      // Used by the topic-based auto-title/tag feature below: starts
-      // false so the first assistant reply triggers one auto-title call;
-      // a manual rename (see renameConversation) sets titleLocked so we
-      // never overwrite a name the user chose themselves.
-      autoTitled: false,
-      titleLocked: false
-    });
+  
+  // Create session in database if not already created
+  if (!currentConvId || typeof currentConvId === 'string' && currentConvId.startsWith('c-')) {
+    try {
+      const firstUserMsg = history.find(m => m.role === 'user');
+      const title = (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 100);
+      
+      const res = await apiFetch(API_URL + '/chat-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      
+      if (!res.ok) throw new Error('Failed to create session');
+      const data = await res.json();
+      const dbSessionId = data.id;
+      
+      // Update or create conversation entry
+      let conv = conversations.find(c => c.id === currentConvId);
+      if (!conv) {
+        conversations.push({
+          id: dbSessionId,
+          title: title,
+          messages: [],
+          pinned: false,
+          folderId: null,
+          tags: [],
+          archived: false,
+          deleted: false,
+          deletedAt: null,
+          parentId: null,
+          updatedAt: Date.now(),
+          autoTitled: false,
+          titleLocked: false
+        });
+      } else {
+        conv.id = dbSessionId;
+      }
+      
+      currentConvId = dbSessionId;
+      saveConversations();
+      console.log('[frontend] Created DB session:', dbSessionId);
+    } catch (e) {
+      console.error('[frontend] Failed to create session:', e);
+      // Fallback: use local ID
+      if (!currentConvId) {
+        currentConvId = 'c-' + Date.now();
+        const firstUserMsg = history.find(m => m.role === 'user');
+        conversations.push({
+          id: currentConvId,
+          title: (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 40),
+          messages: [],
+          pinned: false,
+          folderId: null,
+          tags: [],
+          archived: false,
+          deleted: false,
+          deletedAt: null,
+          parentId: null,
+          updatedAt: Date.now(),
+          autoTitled: false,
+          titleLocked: false
+        });
+      }
+    }
   }
+  
   const conv = conversations.find(c => c.id === currentConvId);
-  conv.messages = JSON.parse(JSON.stringify(history));
-  conv.updatedAt = Date.now();
+  if (conv) {
+    conv.messages = JSON.parse(JSON.stringify(history));
+    conv.updatedAt = Date.now();
+  }
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
 }
@@ -5312,7 +5402,7 @@ async function streamAssistantReply(query) {
     const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt(), memory_context: getMemoryContextString() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt(), memory_context: getMemoryContextString(), session_id: currentConvId }),
       signal: currentAbortController.signal
     });
 
