@@ -391,12 +391,6 @@
   .suggestion-chip:hover { border-color: var(--accent); background: var(--panel); }
   .msg-row { display: flex; align-items: flex-start; padding: 14px 18px; gap: 10px; max-width: 820px; margin: 0 auto; }
   .msg-row.user { justify-content: flex-end; }
-  /* This wrapper (holds .bubble + .actions) is the actual flex item inside
-     .msg-row. Without min-width:0 it defaults to min-width:auto and refuses
-     to shrink below its content's intrinsic width, which is what was
-     pushing bubbles wider than the screen on mobile even though .bubble
-     itself had max-width rules. */
-  .bubble-col { min-width: 0; max-width: 100%; }
   .avatar {
     width: 28px; height: 28px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -418,8 +412,6 @@
   }
   .bubble p { margin: 0 0 10px 0; }
   .bubble p:last-child { margin-bottom: 0; }
-  .bubble ul, .bubble ol { margin: 0 0 10px 0; padding-left: 22px; max-width: 100%; box-sizing: border-box; }
-  .bubble li { max-width: 100%; }
   .bubble pre {
     background: #0b0b0d; border: 1px solid #2a2a2e;
     border-radius: 10px; padding: 12px 12px 12px; overflow-x: auto; font-size: 13px;
@@ -947,6 +939,14 @@
        long code lines scroll horizontally *inside* the block only. */
     #messages { overflow-x: hidden; max-width: 100%; }
     .msg-row { min-width: 0; max-width: 100%; box-sizing: border-box; }
+    /* This wrapper (holds .bubble + .actions) is the actual flex item inside
+       .msg-row. Without min-width:0 it defaults to min-width:auto and refuses
+       to shrink below its content's intrinsic width, which is what was
+       pushing bubbles wider than the screen even though .bubble itself had
+       max-width rules. Scoped to mobile only, desktop layout is untouched. */
+    .bubble-col { min-width: 0; max-width: 100%; }
+    .bubble ul, .bubble ol { max-width: 100%; box-sizing: border-box; }
+    .bubble li { max-width: 100%; }
     .bubble { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
     .bubble p, .bubble li, .bubble h1, .bubble h2, .bubble h3, .bubble h4 { overflow-wrap: anywhere; word-break: break-word; }
     .bubble a { overflow-wrap: anywhere; word-break: break-word; }
