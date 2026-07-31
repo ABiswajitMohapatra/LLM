@@ -2254,6 +2254,13 @@ function agLogout() {
   newChat();
   const list = document.getElementById('history-list');
   if (list) list.innerHTML = '';
+  // Clear remaining per-account UI state so nothing from this account
+  // lingers on screen or in local cache for whoever logs in next.
+  const searchBox = document.getElementById('chat-search');
+  if (searchBox) searchBox.value = '';
+  const draftInput = document.getElementById('user-input');
+  if (draftInput) { draftInput.value = ''; autoGrow(draftInput); }
+  try { localStorage.removeItem('biswalex_conversations_cache'); } catch (e) {}
   showAuthGate();
   agShowStep('login');
 }
