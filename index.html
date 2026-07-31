@@ -3231,7 +3231,7 @@ function openDashboard() {
     </div>
     <div class="panel-divider">
       <label>Recent activity</label>
-      ${recent.length ? recent.map(c => `<div class="pinned-item" onclick="loadConversation('${c.id}'); closeDashboard();">${escapeHtml(c.title)} <span style="color:var(--text-dim);font-size:11px;">— ${new Date(c.updatedAt).toLocaleString()}</span></div>`).join('') : '<div class="empty-hint">No activity yet.</div>'}
+      ${recent.length ? recent.map(c => `<div class="pinned-item" onclick="loadConversation(${jsIdLiteral(c.id)}); closeDashboard();">${escapeHtml(c.title)} <span style="color:var(--text-dim);font-size:11px;">— ${new Date(c.updatedAt).toLocaleString()}</span></div>`).join('') : '<div class="empty-hint">No activity yet.</div>'}
     </div>`;
   document.getElementById('dashboard-backdrop').classList.add('show');
   closeSidebarOnMobile();
@@ -3445,11 +3445,11 @@ function renderArchiveList() {
   if (items.length === 0) { list.innerHTML = '<div class="empty-hint">No archived chats.</div>'; return; }
   list.innerHTML = items.map(c => `
     <div class="project-item">
-      <div class="project-item-main" onclick="loadConversation('${c.id}'); closeArchivePanel();">
+      <div class="project-item-main" onclick="loadConversation(${jsIdLiteral(c.id)}); closeArchivePanel();">
         <div class="project-item-name">${escapeHtml(c.title)}</div>
         <div class="project-item-sub">${new Date(c.updatedAt).toLocaleDateString()}</div>
       </div>
-      <button class="restore-link" onclick="unarchiveConversation('${c.id}')">Unarchive</button>
+      <button class="restore-link" onclick="unarchiveConversation(${jsIdLiteral(c.id)})">Unarchive</button>
     </div>`).join('');
 }
 
@@ -3915,8 +3915,8 @@ function renderTrashList() {
         <div class="project-item-name">${escapeHtml(c.title)}</div>
         <div class="trash-meta">Deleted ${c.deletedAt ? new Date(c.deletedAt).toLocaleDateString() : ''}</div>
       </div>
-      <button class="restore-link" onclick="restoreFromTrash('${c.id}')">Restore</button>
-      <button class="danger-link" onclick="permanentlyDelete('${c.id}')">Delete forever</button>
+      <button class="restore-link" onclick="restoreFromTrash(${jsIdLiteral(c.id)})">Restore</button>
+      <button class="danger-link" onclick="permanentlyDelete(${jsIdLiteral(c.id)})">Delete forever</button>
     </div>`).join('');
 }
 
@@ -4191,6 +4191,18 @@ function exportPDF() {
   setTimeout(() => win.print(), 300);
 }
 
+// Conversation ids are numbers once persisted to Postgres (numeric primary
+// key), but a few are still string fallbacks (e.g. 'pending-<ts>' if a
+// create call failed offline). Inline onclick="..." handlers need the
+// exact right JS literal type embedded, or e.g. loadConversation('42')
+// passes the STRING '42' while every lookup does strict c.id === id
+// against the NUMBER 42 - which always fails silently. This picks the
+// correct literal form for either case.
+function jsIdLiteral(id) {
+  if (typeof id === 'number') return String(id);
+  return "'" + String(id).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+}
+
 function highlightText(text, q) {
   if (!q) return escapeHtml(text);
   const idx = text.toLowerCase().indexOf(q);
@@ -4202,21 +4214,21 @@ function buildHistoryItemHtml(c, q) {
   const tagsHtml = (c.tags || []).slice(0, 2).map(t => `<span class="tag-chip" title="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('');
   return `
     <div class="history-item ${c.id === currentConvId ? 'active' : ''}" tabindex="0" role="button" draggable="true"
-         ondragstart="onHistoryDragStart(event, '${c.id}')" ondragend="onHistoryDragEnd(event)"
-         onclick="loadConversation('${c.id}')" onkeydown="if(event.key==='Enter')loadConversation('${c.id}')">
+         ondragstart="onHistoryDragStart(event, ${jsIdLiteral(c.id)})" ondragend="onHistoryDragEnd(event)"
+         onclick="loadConversation(${jsIdLiteral(c.id)})" onkeydown="if(event.key==='Enter')loadConversation(${jsIdLiteral(c.id)})">
       ${c.pinned ? '<span class="pin-badge">📌</span>' : ''}
       ${c.parentId ? '<span class="pin-badge" data-tooltip="Branched chat">🌳</span>' : ''}
       <span class="history-item-title">${highlightText(c.title, q)}</span>
       ${tagsHtml}
-      <button class="kebab-btn" onclick="toggleHistoryMenu(event, '${c.id}')" aria-label="Chat options">${KEBAB_SVG}</button>
+      <button class="kebab-btn" onclick="toggleHistoryMenu(event, ${jsIdLiteral(c.id)})" aria-label="Chat options">${KEBAB_SVG}</button>
       <div class="history-menu" id="menu-${c.id}">
-        <button onclick="togglePinConversation(event, '${c.id}')">${c.pinned ? '📌 Unpin' : '📌 Pin'}</button>
-        <button onclick="renameConversation(event, '${c.id}')">✏️ Rename</button>
-        <button onclick="duplicateConversation(event, '${c.id}')">⧉ Duplicate</button>
-        <button onclick="promptAddTag(event, '${c.id}')">🏷️ Add tag</button>
-        <button onclick="openMoveFolderMenu(event, '${c.id}')">📁 Move to folder</button>
-        <button onclick="archiveConversation(event, '${c.id}')">🗄️ Archive</button>
-        <button class="danger" onclick="trashConversation(event, '${c.id}')">🗑️ Move to Trash</button>
+        <button onclick="togglePinConversation(event, ${jsIdLiteral(c.id)})">${c.pinned ? '📌 Unpin' : '📌 Pin'}</button>
+        <button onclick="renameConversation(event, ${jsIdLiteral(c.id)})">✏️ Rename</button>
+        <button onclick="duplicateConversation(event, ${jsIdLiteral(c.id)})">⧉ Duplicate</button>
+        <button onclick="promptAddTag(event, ${jsIdLiteral(c.id)})">🏷️ Add tag</button>
+        <button onclick="openMoveFolderMenu(event, ${jsIdLiteral(c.id)})">📁 Move to folder</button>
+        <button onclick="archiveConversation(event, ${jsIdLiteral(c.id)})">🗄️ Archive</button>
+        <button class="danger" onclick="trashConversation(event, ${jsIdLiteral(c.id)})">🗑️ Move to Trash</button>
       </div>
     </div>`;
 }
