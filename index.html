@@ -2192,7 +2192,10 @@ function agLogout() {
 // Called once after a successful login/signup/session-restore. Kept as a
 // tiny hook so any post-auth setup can be added without touching the auth
 // functions above.
-function onAuthenticated() { renderUserAvatar(); }
+function onAuthenticated() { 
+  renderUserAvatar();
+  fetchAndLoadChatSessions();
+}
 
 // On load: if we have tokens, optimistically show the app (apiFetch will
 // transparently refresh an expired access token on the first real API
@@ -3857,11 +3860,15 @@ function onFolderDrop(evt, folderId) {
 }
 
 // ---------- CONVERSATION HISTORY / SEARCH ----------
-function loadConversations() {
+function _getUserConversationsKey(userId) {
+  return 'biswalex_conversations_' + userId;
+}
+
+function loadConversations(userId) {
   try {
-    conversations = JSON.parse(localStorage.getItem('biswalex_conversations') || '[]');
+    const key = userId ? _getUserConversationsKey(userId) : 'biswalex_conversations';
+    conversations = JSON.parse(localStorage.getItem(key) || '[]');
   } catch (e) { conversations = []; }
-  // Backfill fields for conversations saved before folders/tags/archive/trash existed.
   conversations.forEach(c => {
     if (c.folderId === undefined) c.folderId = null;
     if (!Array.isArray(c.tags)) c.tags = [];
@@ -3874,7 +3881,42 @@ function loadConversations() {
 }
 
 function saveConversations() {
-  localStorage.setItem('biswalex_conversations', JSON.stringify(conversations));
+  const user = getStoredUser();
+  const key = user ? _getUserConversationsKey(user.id) : 'biswalex_conversations';
+  localStorage.setItem(key, JSON.stringify(conversations));
+}
+
+async function fetchAndLoadChatSessions() {
+  try {
+    const user = getStoredUser();
+    if (!user) return;
+    const token = getAccessToken();
+    if (!token) return;
+    const res = await fetch(API_URL + '/chat-sessions', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const sessions = data.sessions || [];
+    conversations = sessions.map(s => ({
+      id: s.id,
+      title: s.title,
+      messages: [],
+      createdAt: new Date(s.created_at),
+      updatedAt: new Date(s.updated_at),
+      folderId: null,
+      tags: [],
+      archived: false,
+      deleted: false,
+      deletedAt: null,
+      parentId: null
+    }));
+    saveConversations();
+    renderHistory();
+  } catch (e) {
+    console.error('Failed to fetch chat sessions:', e);
+  }
 }
 
 let collapsedGroups = {};
@@ -4240,7 +4282,8 @@ function branchFromMessage(msgIndex) {
 }
 
 loadFolders();
-loadConversations();
+const _initialUser = getStoredUser();
+loadConversations(_initialUser ? _initialUser.id : null);
 loadProjects();
 loadTemplates();
 tryRenderSharedView();
