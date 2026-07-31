@@ -249,16 +249,38 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    position: relative;
   }
-  .sidebar-footer .sf-mark {
-    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  #user-avatar-btn {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; padding: 0;
   }
-  .sidebar-footer .sf-mark img { width: 16px; height: 16px; }
-  .sidebar-footer .sf-text { line-height: 1.35; overflow: hidden; }
-  .sidebar-footer .sf-title { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sidebar-footer .sf-sub { font-size: 11px; color: var(--text-dim); }
+  #user-avatar-btn span { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: .3px; }
+  #user-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 200px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    z-index: 50;
+  }
+  #user-menu.open { display: block; }
+  #user-menu-name { font-size: 13px; font-weight: 600; color: var(--text); padding: 6px 8px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #user-menu-email { font-size: 11.5px; color: var(--text-dim); padding: 0 8px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #user-menu .tm-divider { height: 1px; background: var(--border); margin: 6px 4px; }
+  #user-menu .tm-item {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+    background: none; border: none; color: var(--text); font-size: 13px;
+    padding: 7px 8px; border-radius: 6px; cursor: pointer;
+  }
+  #user-menu .tm-item:hover { background: var(--border); }
 
   /* Main */
   #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
@@ -1433,13 +1455,15 @@
   </div>
 
   <div id="history-list"></div>
-  <div class="sidebar-footer">
-    <div class="sf-mark">
-      <img src="biswalex_logo.svg" alt="Mastishk logo">
-    </div>
-    <div class="sf-text">
-      <div class="sf-title">Mastishk</div>
-      <div class="sf-sub">Powered by Groq</div>
+  <div class="sidebar-footer" id="sidebar-footer">
+    <button id="user-avatar-btn" onclick="toggleUserMenu(event)" aria-label="User menu">
+      <span id="user-avatar-initials">--</span>
+    </button>
+    <div id="user-menu">
+      <div id="user-menu-name"></div>
+      <div id="user-menu-email"></div>
+      <div class="tm-divider"></div>
+      <button class="tm-item" onclick="agLogout()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
     </div>
   </div>
 </div>
@@ -1910,6 +1934,7 @@ function clearSession() {
   localStorage.removeItem(AUTH_KEYS.access);
   localStorage.removeItem(AUTH_KEYS.refresh);
   localStorage.removeItem(AUTH_KEYS.user);
+  renderUserAvatar();
 }
 
 let _refreshInFlight = null;
@@ -2115,6 +2140,42 @@ async function agResetPassword() {
   }
 }
 
+function getInitials(name, email) {
+  const source = (name && name.trim()) || (email && email.trim()) || '';
+  if (!source) return '--';
+  const parts = source.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
+
+function renderUserAvatar() {
+  const user = getStoredUser();
+  const initialsEl = document.getElementById('user-avatar-initials');
+  const nameEl = document.getElementById('user-menu-name');
+  const emailEl = document.getElementById('user-menu-email');
+  if (!user) {
+    if (initialsEl) initialsEl.textContent = '--';
+    if (nameEl) nameEl.textContent = '';
+    if (emailEl) emailEl.textContent = '';
+    return;
+  }
+  if (initialsEl) initialsEl.textContent = getInitials(user.name, user.email);
+  if (nameEl) nameEl.textContent = user.name || '';
+  if (emailEl) emailEl.textContent = user.email || '';
+}
+
+function toggleUserMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('user-menu').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const btn = document.getElementById('user-avatar-btn');
+  if (menu && menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) {
+    menu.classList.remove('open');
+  }
+});
+
 function agLogout() {
   const rt = getRefreshToken();
   if (rt) {
@@ -2131,7 +2192,7 @@ function agLogout() {
 // Called once after a successful login/signup/session-restore. Kept as a
 // tiny hook so any post-auth setup can be added without touching the auth
 // functions above.
-function onAuthenticated() {}
+function onAuthenticated() { renderUserAvatar(); }
 
 // On load: if we have tokens, optimistically show the app (apiFetch will
 // transparently refresh an expired access token on the first real API
@@ -2141,6 +2202,7 @@ function onAuthenticated() {}
 // network round-trip before the UI can render.
 if (getAccessToken() && getRefreshToken()) {
   hideAuthGate();
+  renderUserAvatar();
 } else {
   showAuthGate();
 }
