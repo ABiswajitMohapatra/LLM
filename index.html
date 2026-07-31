@@ -3350,7 +3350,7 @@ function moveConversationToFolder(id, folderId) {
   saveConversations();
   closeAllHistoryMenus();
   renderHistory(document.getElementById('chat-search').value);
-  syncConvMeta(id, { folder_id: folderId });
+  syncConvMeta(id, { folder_id: folderId === null ? '' : folderId });
 }
 
 async function duplicateConversation(evt, id) {
