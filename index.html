@@ -2257,8 +2257,11 @@ function agLogout() {
   conversations = [];
   currentConvId = null;
   history = [];
+  folders = [];
   const list = document.getElementById('history-list');
   if (list) list.innerHTML = '';
+  const foldersSection = document.getElementById('folders-section');
+  if (foldersSection) foldersSection.innerHTML = '';
   showAuthGate();
   agShowStep('login');
 }
@@ -2268,6 +2271,7 @@ function agLogout() {
 // source of truth for "which conversations does this account have".
 async function onAuthenticated() {
   renderUserAvatar();
+  loadFolders();
   await loadConversations();
 }
 
@@ -3314,10 +3318,20 @@ function initTheme() {
 initTheme();
 
 // ---------- FOLDERS ----------
-function loadFolders() {
-  try { folders = JSON.parse(localStorage.getItem('biswalex_folders') || '[]'); } catch (e) { folders = []; }
+// Folders are local-only (not synced to Postgres), so unlike conversations
+// they must be namespaced per account manually - otherwise every account
+// that ever logs in on this browser shares one localStorage key and sees
+// each other's folders (empty for everyone but the creator, since a
+// folder's chats are still correctly scoped per-account via folderId).
+function foldersStorageKey() {
+  const user = getStoredUser();
+  const who = user ? (user.email || user.id || 'unknown') : 'guest';
+  return 'biswalex_folders_' + who;
 }
-function saveFolders() { localStorage.setItem('biswalex_folders', JSON.stringify(folders)); }
+function loadFolders() {
+  try { folders = JSON.parse(localStorage.getItem(foldersStorageKey()) || '[]'); } catch (e) { folders = []; }
+}
+function saveFolders() { localStorage.setItem(foldersStorageKey(), JSON.stringify(folders)); }
 
 function createFolderPrompt() {
   const name = prompt('Folder name');
