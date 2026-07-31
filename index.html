@@ -1992,6 +1992,63 @@ async function apiFetch(url, options) {
   return res;
 }
 
+// ---------- CLOUD CHAT PERSISTENCE (Postgres via /chat-sessions API) ----------
+// PostgreSQL is the single source of truth for conversations/messages, per
+// user (scoped server-side by the JWT's user id). No conversation data is
+// trusted from localStorage; it's only ever read from the backend, on
+// login/session-restore, and replaces whatever was in memory.
+function isServerConvId(id) { return typeof id === 'number'; }
+
+async function apiListSessions() {
+  const res = await apiFetch(API_URL + '/chat-sessions', { method: 'GET' });
+  if (!res.ok) throw new Error('Failed to load conversations');
+  return res.json();
+}
+async function apiGetMessages(sessionId) {
+  const res = await apiFetch(API_URL + '/chat-sessions/' + sessionId + '/messages', { method: 'GET' });
+  if (!res.ok) throw new Error('Failed to load messages');
+  return res.json();
+}
+async function apiCreateSession(title, parentId) {
+  const res = await apiFetch(API_URL + '/chat-sessions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, parent_id: isServerConvId(parentId) ? parentId : null })
+  });
+  if (!res.ok) throw new Error('Failed to create conversation');
+  return res.json();
+}
+async function apiAddMessage(sessionId, role, content, model) {
+  const res = await apiFetch(API_URL + '/chat-sessions/' + sessionId + '/messages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role, content, model: model || null })
+  });
+  if (!res.ok) throw new Error('Failed to save message');
+  return res.json();
+}
+async function apiAddMessagesBulk(sessionId, messages) {
+  const res = await apiFetch(API_URL + '/chat-sessions/' + sessionId + '/messages/bulk', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages })
+  });
+  if (!res.ok) throw new Error('Failed to save messages');
+  return res.json();
+}
+async function syncConvMeta(id, fields) {
+  if (!isServerConvId(id)) return;
+  try {
+    await apiFetch(API_URL + '/chat-sessions/' + id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields)
+    });
+  } catch (e) { /* best-effort; local UI already reflects the change */ }
+}
+async function apiDeleteSession(id) {
+  if (!isServerConvId(id)) return;
+  try {
+    await apiFetch(API_URL + '/chat-sessions/' + id, { method: 'DELETE' });
+  } catch (e) {}
+}
+
 function showAuthGate() {
   document.getElementById('auth-gate').classList.remove('hidden');
 }
@@ -2184,15 +2241,27 @@ function agLogout() {
       body: JSON.stringify({ refresh_token: rt })
     }).catch(() => {});
   }
+  // Logout only ends the session (tokens + in-memory UI state). It never
+  // deletes anything - all conversations/messages stay in Postgres exactly
+  // as they are, and reappear the moment this (or any other) account logs
+  // back in.
   clearSession();
+  conversations = [];
+  currentConvId = null;
+  history = [];
+  const list = document.getElementById('history-list');
+  if (list) list.innerHTML = '';
   showAuthGate();
   agShowStep('login');
 }
 
-// Called once after a successful login/signup/session-restore. Kept as a
-// tiny hook so any post-auth setup can be added without touching the auth
-// functions above.
-function onAuthenticated() { renderUserAvatar(); }
+// Called once after a successful login/signup/session-restore. This is the
+// single point where the sidebar is populated from Postgres - the only
+// source of truth for "which conversations does this account have".
+async function onAuthenticated() {
+  renderUserAvatar();
+  await loadConversations();
+}
 
 // On load: if we have tokens, optimistically show the app (apiFetch will
 // transparently refresh an expired access token on the first real API
@@ -2203,6 +2272,10 @@ function onAuthenticated() { renderUserAvatar(); }
 if (getAccessToken() && getRefreshToken()) {
   hideAuthGate();
   renderUserAvatar();
+  // Session restore (e.g. page reload while still logged in) must also
+  // pull conversations from Postgres - it's the same "authenticated" event
+  // as a fresh login, just without the login form.
+  onAuthenticated();
 } else {
   showAuthGate();
 }
@@ -3254,18 +3327,28 @@ function moveConversationToFolder(id, folderId) {
   saveConversations();
   closeAllHistoryMenus();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { folder_id: folderId });
 }
 
-function duplicateConversation(evt, id) {
+async function duplicateConversation(evt, id) {
   evt.stopPropagation();
   closeAllHistoryMenus();
   const conv = conversations.find(c => c.id === id);
   if (!conv) return;
   const copy = JSON.parse(JSON.stringify(conv));
-  copy.id = 'c-' + Date.now();
   copy.title = (conv.title || 'Chat') + ' (copy)';
   copy.pinned = false;
   copy.updatedAt = Date.now();
+  copy.id = 'pending-' + Date.now();
+  copy._syncedCount = 0;
+  try {
+    const created = await apiCreateSession(copy.title, null);
+    copy.id = created.id;
+    if (copy.messages.length) {
+      await apiAddMessagesBulk(copy.id, copy.messages.map(m => ({ role: m.role, content: m.message })));
+      copy._syncedCount = copy.messages.length;
+    }
+  } catch (e) { /* falls back to local-only copy id */ }
   conversations.push(copy);
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
@@ -3283,6 +3366,7 @@ function promptAddTag(evt, id) {
   if (!conv.tags.includes(clean)) conv.tags.push(clean);
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { tags: conv.tags });
 }
 
 function archiveConversation(evt, id) {
@@ -3294,6 +3378,7 @@ function archiveConversation(evt, id) {
   saveConversations();
   if (currentConvId === id) newChat();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { archived: true });
 }
 
 function unarchiveConversation(id) {
@@ -3303,6 +3388,7 @@ function unarchiveConversation(id) {
   saveConversations();
   renderArchiveList();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { archived: false });
 }
 
 function trashConversation(evt, id) {
@@ -3315,6 +3401,7 @@ function trashConversation(evt, id) {
   saveConversations();
   if (currentConvId === id) newChat();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { deleted: true });
 }
 
 function restoreFromTrash(id) {
@@ -3325,6 +3412,7 @@ function restoreFromTrash(id) {
   saveConversations();
   renderTrashList();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { deleted: false });
 }
 
 function permanentlyDelete(id) {
@@ -3332,6 +3420,7 @@ function permanentlyDelete(id) {
   conversations = conversations.filter(c => c.id !== id);
   saveConversations();
   renderTrashList();
+  apiDeleteSession(id);
 }
 
 function emptyTrash() {
@@ -3341,6 +3430,7 @@ function emptyTrash() {
   conversations = conversations.filter(c => !c.deleted);
   saveConversations();
   renderTrashList();
+  trashed.forEach(c => apiDeleteSession(c.id));
 }
 
 function openArchivePanel() {
@@ -3857,24 +3947,55 @@ function onFolderDrop(evt, folderId) {
 }
 
 // ---------- CONVERSATION HISTORY / SEARCH ----------
-function loadConversations() {
+// Source of truth is Postgres (via /chat-sessions). This fetches every
+// conversation - and its messages - belonging to the currently authenticated
+// user, and replaces the in-memory `conversations` array wholesale, so a
+// different account (or a fresh login on another device) never sees a
+// previous account's chats and always sees its own complete history.
+async function loadConversations() {
+  if (!getAccessToken()) { conversations = []; renderHistory(); return; }
   try {
-    conversations = JSON.parse(localStorage.getItem('biswalex_conversations') || '[]');
-  } catch (e) { conversations = []; }
-  // Backfill fields for conversations saved before folders/tags/archive/trash existed.
-  conversations.forEach(c => {
-    if (c.folderId === undefined) c.folderId = null;
-    if (!Array.isArray(c.tags)) c.tags = [];
-    if (c.archived === undefined) c.archived = false;
-    if (c.deleted === undefined) c.deleted = false;
-    if (c.deletedAt === undefined) c.deletedAt = null;
-    if (c.parentId === undefined) c.parentId = null;
-  });
+    const sessions = await apiListSessions();
+    const loaded = await Promise.all(sessions.map(async (s) => {
+      let messages = [];
+      try {
+        const msgs = await apiGetMessages(s.id);
+        messages = msgs.map(m => ({ role: m.role, message: m.content }));
+      } catch (e) { messages = []; }
+      return {
+        id: s.id,
+        title: s.title || 'New chat',
+        messages,
+        pinned: !!s.pinned,
+        folderId: s.folder_id || null,
+        tags: Array.isArray(s.tags) ? s.tags : [],
+        archived: !!s.archived,
+        deleted: !!s.deleted,
+        deletedAt: s.deleted_at ? Date.parse(s.deleted_at) : null,
+        parentId: s.parent_id || null,
+        updatedAt: s.updated_at ? Date.parse(s.updated_at) : Date.now(),
+        // Already has a real title from a previous session; don't re-trigger
+        // the auto-title API call on every reload.
+        autoTitled: true,
+        titleLocked: true,
+        _syncedCount: messages.length
+      };
+    }));
+    conversations = loaded;
+  } catch (e) {
+    // Backend unreachable / token invalid - show an empty (not stale/mixed)
+    // list rather than falling back to any local cache.
+    conversations = [];
+  }
   renderHistory();
 }
 
+// Local-only cache, purely for instant UI redraws between mutations within
+// this session - NOT read back as a source of truth anywhere (see
+// loadConversations above), so it can never leak one account's chats into
+// another's view.
 function saveConversations() {
-  localStorage.setItem('biswalex_conversations', JSON.stringify(conversations));
+  try { localStorage.setItem('biswalex_conversations_cache', JSON.stringify(conversations)); } catch (e) {}
 }
 
 let collapsedGroups = {};
@@ -3914,6 +4035,7 @@ function renameConversation(evt, id) {
     conv.titleLocked = true;
     saveConversations();
     renderHistory(document.getElementById('chat-search').value);
+    syncConvMeta(id, { title: conv.title });
   }
 }
 
@@ -3942,6 +4064,7 @@ async function autoTitleConversation(id) {
       }
       saveConversations();
       renderHistory(document.getElementById('chat-search').value);
+      syncConvMeta(id, { title: conv.title, tags: conv.tags });
     } else {
       saveConversations();
     }
@@ -3958,6 +4081,7 @@ function togglePinConversation(evt, id) {
   conv.pinned = !conv.pinned;
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
+  syncConvMeta(id, { pinned: conv.pinned });
 }
 
 document.addEventListener('click', (e) => {
@@ -4184,14 +4308,21 @@ function loadConversation(id) {
   updateTokenCounter();
 }
 
-function upsertConversation() {
+async function upsertConversation() {
   if (history.length === 0) return;
+  let conv;
   if (!currentConvId) {
-    currentConvId = 'c-' + Date.now();
     const firstUserMsg = history.find(m => m.role === 'user');
-    conversations.push({
+    const title = (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 40);
+    let newId = 'pending-' + Date.now(); // fallback if the backend call fails (offline, etc)
+    try {
+      const created = await apiCreateSession(title, null);
+      newId = created.id;
+    } catch (e) { /* keep local-only fallback id; will retry sync below is skipped for it */ }
+    currentConvId = newId;
+    conv = {
       id: currentConvId,
-      title: (firstUserMsg ? firstUserMsg.message : 'New chat').slice(0, 40),
+      title,
       messages: [],
       pinned: false,
       folderId: null,
@@ -4206,25 +4337,55 @@ function upsertConversation() {
       // a manual rename (see renameConversation) sets titleLocked so we
       // never overwrite a name the user chose themselves.
       autoTitled: false,
-      titleLocked: false
-    });
+      titleLocked: false,
+      _syncedCount: 0
+    };
+    conversations.push(conv);
+  } else {
+    conv = conversations.find(c => c.id === currentConvId);
+    if (!conv) return;
   }
-  const conv = conversations.find(c => c.id === currentConvId);
+
+  const prevSynced = conv._syncedCount || 0;
   conv.messages = JSON.parse(JSON.stringify(history));
   conv.updatedAt = Date.now();
   saveConversations();
   renderHistory(document.getElementById('chat-search').value);
+
+  // Persist only the messages added since the last sync to Postgres, in
+  // order, so every user/assistant turn is durably saved as soon as it
+  // completes - never only in browser memory.
+  if (isServerConvId(conv.id)) {
+    const newOnes = conv.messages.slice(prevSynced);
+    let sent = 0;
+    for (const m of newOnes) {
+      try {
+        await apiAddMessage(conv.id, m.role, m.message, m.role === 'assistant' ? selectedModel : null);
+        sent++;
+      } catch (e) { break; } // stop on first failure; will retry the unsent tail next turn
+    }
+    conv._syncedCount = prevSynced + sent;
+  }
 }
 
 // ---- Chat branching: fork the conversation from a specific message ----
-function branchFromMessage(msgIndex) {
+async function branchFromMessage(msgIndex) {
   if (isStreaming) return;
-  const sourceTitle = (conversations.find(c => c.id === currentConvId) || {}).title || 'Chat';
+  const parentId = currentConvId;
+  const sourceTitle = (conversations.find(c => c.id === parentId) || {}).title || 'Chat';
   const branchedHistory = JSON.parse(JSON.stringify(history.slice(0, msgIndex + 1)));
-  const newId = 'c-' + Date.now();
+  const title = (sourceTitle + ' (branch)').slice(0, 60);
+  let newId = 'pending-' + Date.now();
+  try {
+    const created = await apiCreateSession(title, parentId);
+    newId = created.id;
+    if (branchedHistory.length) {
+      await apiAddMessagesBulk(newId, branchedHistory.map(m => ({ role: m.role, content: m.message })));
+    }
+  } catch (e) { /* falls back to local-only branch id below */ }
   conversations.push({
     id: newId,
-    title: (sourceTitle + ' (branch)').slice(0, 60),
+    title,
     messages: branchedHistory,
     pinned: false,
     folderId: null,
@@ -4232,15 +4393,21 @@ function branchFromMessage(msgIndex) {
     archived: false,
     deleted: false,
     deletedAt: null,
-    parentId: currentConvId,
-    updatedAt: Date.now()
+    parentId: parentId,
+    updatedAt: Date.now(),
+    autoTitled: true,
+    titleLocked: false,
+    _syncedCount: isServerConvId(newId) ? branchedHistory.length : 0
   });
   saveConversations();
   loadConversation(newId);
 }
 
 loadFolders();
-loadConversations();
+// loadConversations() is intentionally NOT called here - conversations are
+// account-scoped and only ever loaded from Postgres once we know who's
+// authenticated (see onAuthenticated()), so this runs after login/signup/
+// session-restore instead of unconditionally at page parse time.
 loadProjects();
 loadTemplates();
 tryRenderSharedView();
