@@ -4251,11 +4251,12 @@ async function tryRenderSharedView() {
     if (!res.ok) throw new Error('Shared chat not found');
     const payload = await res.json();
     isSharedView = true;
-    document.getElementById('sidebar').style.display = 'none';
-    document.getElementById('sidebar-backdrop').style.display = 'none';
-    document.getElementById('input-area').style.display = 'none';
-    document.getElementById('export-wrap').style.display = 'none';
-    document.getElementById('menu-toggle').style.display = 'none';
+    const _hide = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+    _hide('sidebar');
+    _hide('sidebar-backdrop');
+    _hide('input-area');
+    _hide('export-wrap');
+    _hide('mobile-sidebar-btn');
     document.getElementById('model-name').textContent = payload.t || 'Shared chat';
     document.getElementById('shared-banner').classList.add('show');
     hideEmptyState();
