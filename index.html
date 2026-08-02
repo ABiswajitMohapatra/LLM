@@ -1131,6 +1131,39 @@
   .artifact-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 13px; }
 
   /* ===================================================================
+     CANVAS PANEL — editable document/code side panel
+  =================================================================== */
+  .open-canvas-btn { color: var(--accent) !important; }
+  #canvas-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 55;
+  }
+  #canvas-backdrop.show { display: block; }
+  #canvas-panel {
+    position: fixed; top: 0; right: 0; height: 100dvh; width: min(640px, 92vw);
+    background: var(--panel); border-left: 1px solid var(--border);
+    z-index: 56; display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform .28s ease;
+    box-shadow: -8px 0 30px rgba(0,0,0,.25);
+  }
+  #canvas-panel.show { transform: translateX(0); }
+  #canvas-panel.fullscreen { width: 100vw; }
+  @media (max-width: 640px) { #canvas-panel { width: 100% !important; } }
+  .canvas-toolbar { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .canvas-quickbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .canvas-quickbar button {
+    background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
+    border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 500;
+  }
+  .canvas-quickbar button:hover { color: var(--text); background: var(--panel-2); }
+  .canvas-quickbar button:disabled { opacity: .5; cursor: default; }
+  #canvas-textarea {
+    flex: 1; width: 100%; resize: none; border: none; outline: none;
+    background: var(--code-bg); color: var(--text); padding: 16px;
+    font-size: 13.5px; line-height: 1.65; font-family: "SF Mono", Menlo, monospace; box-sizing: border-box;
+  }
+  .canvas-status { padding: 6px 14px; font-size: 11.5px; color: var(--text-dim); border-top: 1px solid var(--border); flex-shrink: 0; min-height: 16px; }
+
+  /* ===================================================================
      TOPBAR "MORE" DROPDOWN — consolidates Pinned / Tokens / Piri / Export
      behind one icon so the top bar stays clean. Purely additive: none of
      the moved elements lose their id, so all existing JS keeps working
@@ -1504,6 +1537,7 @@
         <button class="tm-item" onclick="openDiscoverPanel()" data-tooltip="Trending topics & questions"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M15.5 8.5l-2 5-5 2 2-5 5-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Discover</button>
         <button class="tm-item" onclick="openPluginsPanel()" data-tooltip="Custom APIs"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 2v4M15 2v4M9 18v4M15 18v4M7 8h10a2 2 0 0 1 2 2v1a3 3 0 0 1 0 6v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 0-6V10a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Plugins</button>
         <button class="tm-item" onclick="openMemoryPanel()" data-tooltip="Facts remembered across chats"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Memory</button>
+        <button class="tm-item" onclick="openCanvasBlank()" data-tooltip="Editable document / code workspace"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Canvas</button>
         <button class="tm-item" onclick="openBackgroundPanel()" data-tooltip="Run a query in the background"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11h8M8 15h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Background</button>
         <div class="tm-divider"></div>
         <div id="export-wrap">
@@ -1917,6 +1951,33 @@
   </div>
   <div class="artifact-tabs" id="artifact-tabs"></div>
   <div class="artifact-body" id="artifact-body"></div>
+</div>
+
+<!-- Canvas panel: editable document/code workspace -->
+<div id="canvas-backdrop" onclick="closeCanvas()"></div>
+<div id="canvas-panel">
+  <div class="artifact-header">
+    <span class="artifact-badge" id="canvas-badge">DOC</span>
+    <span class="artifact-title" id="canvas-title">Canvas</span>
+    <div class="canvas-toolbar">
+      <button class="artifact-icon-btn" id="canvas-undo-btn" onclick="canvasUndo()" data-tooltip="Undo" aria-label="Undo">↶</button>
+      <button class="artifact-icon-btn" id="canvas-redo-btn" onclick="canvasRedo()" data-tooltip="Redo" aria-label="Redo">↷</button>
+      <button class="artifact-icon-btn" onclick="copyCanvasText()" data-tooltip="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <button class="artifact-icon-btn" onclick="downloadCanvasText()" data-tooltip="Download" aria-label="Download"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="artifact-icon-btn" onclick="toggleCanvasFullscreen()" data-tooltip="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="artifact-icon-btn" onclick="closeCanvas()" data-tooltip="Close" aria-label="Close">✕</button>
+    </div>
+  </div>
+  <div class="canvas-quickbar">
+    <button onclick="canvasAskAI('Make this more concise')">Concise</button>
+    <button onclick="canvasAskAI('Fix grammar and spelling')">Fix grammar</button>
+    <button onclick="canvasAskAI('Refactor and clean this up, keep behavior the same')">Refactor</button>
+    <button onclick="canvasAskAI('Expand this with more detail')">Expand</button>
+    <input id="canvas-custom-instruction" type="text" placeholder="Custom instruction…" style="flex:1;min-width:120px;background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--text);outline:none;" onkeydown="if(event.key==='Enter')canvasAskAICustom()">
+    <button onclick="canvasAskAICustom()" style="color:var(--accent);">Ask AI ✨</button>
+  </div>
+  <textarea id="canvas-textarea" spellcheck="false" oninput="canvasOnEdit()"></textarea>
+  <div class="canvas-status" id="canvas-status">Select text to edit only that part, or leave nothing selected to edit the whole document.</div>
 </div>
 
 <script>
@@ -4985,6 +5046,125 @@ function downloadArtifact() {
   a.click();
 }
 
+// ---------- CANVAS: editable side-panel document/code workspace ----------
+let canvasState = { title: 'Canvas', lang: '' };
+let canvasHistoryStack = [''];
+let canvasHistoryPtr = 0;
+
+function openCanvasBlank() {
+  openCanvas('', 'Canvas', '');
+}
+
+function openCanvas(text, titleHint, lang) {
+  canvasState = { title: titleHint || 'Canvas', lang: lang || '' };
+  canvasHistoryStack = [text || ''];
+  canvasHistoryPtr = 0;
+  document.getElementById('canvas-title').textContent = canvasState.title;
+  document.getElementById('canvas-badge').textContent = (lang || 'doc').toUpperCase();
+  document.getElementById('canvas-textarea').value = text || '';
+  updateCanvasUndoRedoButtons();
+  document.getElementById('canvas-status').textContent = 'Select text to edit only that part, or leave nothing selected to edit the whole document.';
+  document.getElementById('canvas-backdrop').classList.add('show');
+  document.getElementById('canvas-panel').classList.add('show');
+}
+
+function closeCanvas() {
+  document.getElementById('canvas-backdrop').classList.remove('show');
+  document.getElementById('canvas-panel').classList.remove('show');
+  document.getElementById('canvas-panel').classList.remove('fullscreen');
+}
+
+function toggleCanvasFullscreen() {
+  document.getElementById('canvas-panel').classList.toggle('fullscreen');
+}
+
+function canvasOnEdit() {
+  // Debounced push to history on manual typing
+  clearTimeout(window._canvasEditTimer);
+  window._canvasEditTimer = setTimeout(canvasPushHistory, 600);
+}
+
+function canvasPushHistory() {
+  const val = document.getElementById('canvas-textarea').value;
+  if (canvasHistoryStack[canvasHistoryPtr] === val) return;
+  canvasHistoryStack = canvasHistoryStack.slice(0, canvasHistoryPtr + 1);
+  canvasHistoryStack.push(val);
+  canvasHistoryPtr = canvasHistoryStack.length - 1;
+  updateCanvasUndoRedoButtons();
+}
+
+function canvasUndo() {
+  if (canvasHistoryPtr <= 0) return;
+  canvasHistoryPtr--;
+  document.getElementById('canvas-textarea').value = canvasHistoryStack[canvasHistoryPtr];
+  updateCanvasUndoRedoButtons();
+}
+
+function canvasRedo() {
+  if (canvasHistoryPtr >= canvasHistoryStack.length - 1) return;
+  canvasHistoryPtr++;
+  document.getElementById('canvas-textarea').value = canvasHistoryStack[canvasHistoryPtr];
+  updateCanvasUndoRedoButtons();
+}
+
+function updateCanvasUndoRedoButtons() {
+  document.getElementById('canvas-undo-btn').disabled = canvasHistoryPtr <= 0;
+  document.getElementById('canvas-redo-btn').disabled = canvasHistoryPtr >= canvasHistoryStack.length - 1;
+}
+
+function copyCanvasText() {
+  navigator.clipboard.writeText(document.getElementById('canvas-textarea').value);
+}
+
+function downloadCanvasText() {
+  const ext = ARTIFACT_EXT_MAP[canvasState.lang] || 'txt';
+  const blob = new Blob([document.getElementById('canvas-textarea').value], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (canvasState.title || 'canvas').replace(/[^a-z0-9_-]+/gi, '_') + '.' + ext;
+  a.click();
+}
+
+function canvasAskAICustom() {
+  const input = document.getElementById('canvas-custom-instruction');
+  const instruction = input.value.trim();
+  if (!instruction) return;
+  input.value = '';
+  canvasAskAI(instruction);
+}
+
+async function canvasAskAI(instruction) {
+  const ta = document.getElementById('canvas-textarea');
+  const status = document.getElementById('canvas-status');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const hasSelection = end > start;
+  const target = hasSelection ? ta.value.slice(start, end) : ta.value;
+  if (!target.trim()) { status.textContent = 'Nothing to edit.'; return; }
+
+  status.innerHTML = '<span class="toolbar-spinner"></span> Applying: ' + escapeHtml(instruction) + '...';
+  canvasPushHistory();
+  try {
+    const res = await apiFetch(API_URL + '/canvas-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: target, instruction, model: selectedModel })
+    });
+    const data = await res.json();
+    if (data.error) { status.textContent = '⚠️ ' + data.error; return; }
+    const result = data.result != null ? data.result : '';
+    if (hasSelection) {
+      ta.value = ta.value.slice(0, start) + result + ta.value.slice(end);
+      ta.setSelectionRange(start, start + result.length);
+    } else {
+      ta.value = result;
+    }
+    canvasPushHistory();
+    status.textContent = 'Done — ' + instruction;
+  } catch (e) {
+    status.textContent = '⚠️ Could not reach the server.';
+  }
+}
+
 // Wrap each rendered <pre><code> with a header + copy/artifact buttons, and each <img> with action buttons.
 function enhanceBubble(bubbleEl) {
   bubbleEl.querySelectorAll('pre').forEach(pre => {
@@ -5010,6 +5190,14 @@ function enhanceBubble(bubbleEl) {
     artifactBtn.innerHTML = `${EXPAND_ICON}<span>Artifact</span>`;
     artifactBtn.onclick = () => openArtifact(rawCode, langLabel === 'code' ? '' : langLabel);
     actionsWrap.appendChild(artifactBtn);
+
+    const canvasBtn = document.createElement('button');
+    canvasBtn.className = 'copy-code-btn open-canvas-btn';
+    canvasBtn.setAttribute('data-tooltip', 'Open in Canvas (editable)');
+    canvasBtn.setAttribute('aria-label', 'Open in Canvas');
+    canvasBtn.innerHTML = `${EXPAND_ICON}<span>Canvas</span>`;
+    canvasBtn.onclick = () => openCanvas(rawCode, langLabel === 'code' ? 'Untitled' : (langLabel.toUpperCase() + ' snippet'), langLabel === 'code' ? '' : langLabel);
+    actionsWrap.appendChild(canvasBtn);
 
     const btn = document.createElement('button');
     btn.className = 'copy-code-btn';
@@ -5307,6 +5495,7 @@ function addMessage(role, text, msgIndex) {
       ${role === 'assistant' ? `<div class="actions">
         <button data-tooltip="Copy message" aria-label="Copy message" onclick="copyText('${bubbleId}')">${COPY_ICON}</button>
         <button data-tooltip="Regenerate response" aria-label="Regenerate response" onclick="regenerateResponse(this)">${REGEN_ICON}</button>
+        ${hasIndex ? `<button data-tooltip="Open in Canvas (editable)" aria-label="Open in Canvas" onclick="openCanvas(history[${msgIndex}] ? history[${msgIndex}].message : '', 'Response', '')">${EXPAND_ICON}</button>` : ''}
         ${speakBtn}
         ${pinBtn}
         ${quoteBtn}

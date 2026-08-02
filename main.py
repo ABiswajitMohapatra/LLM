@@ -127,6 +127,12 @@ class QuickTaskRequest(BaseModel):
     model: str = None
 
 
+class CanvasEditRequest(BaseModel):
+    text: str
+    instruction: str
+    model: str = None
+
+
 class AnalyzeRequest(BaseModel):
     history: list[Message] = []
     model: str = None
@@ -406,6 +412,17 @@ def quick_task(req: QuickTaskRequest, user=Depends(get_current_user)):
         model=req.model,
     )
     return {"result": result, "task": req.task}
+
+
+@app.post("/canvas-edit")
+def canvas_edit(req: CanvasEditRequest, user=Depends(get_current_user)):
+    prompt = (
+        "Apply this instruction to the text and return ONLY the edited "
+        "text, no preamble, no explanation, no markdown fences:\n"
+        f"Instruction: {req.instruction}\n\nText:\n{req.text}"
+    )
+    result = engine.quick_task(prompt, "improve", model=req.model)
+    return {"result": result}
 
 
 @app.post("/analyze-conversation")
