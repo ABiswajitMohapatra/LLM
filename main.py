@@ -2,6 +2,7 @@ import asyncio
 import io
 import json
 import os
+import secrets
 from concurrent.futures import ThreadPoolExecutor
 
 import jwt as _pyjwt
@@ -78,6 +79,11 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(_bearer_schem
 # Store uploaded documents in memory: {filename: extracted_text}
 uploaded_documents = {}
 last_uploaded_filename = None
+# Shared-chat links: {short_id: {"t": title, "m": [{"role", "message"}, ...]}}.
+# Backing store for the "Share as link" button - lets the frontend hand out
+# a short URL (#share=<id>) instead of embedding the whole conversation as
+# a base64 blob in the URL itself.
+shared_chats = {}
 # Tracks files uploaded together in one multi-select action, so the chat
 # endpoint can default to using ALL of them (not just the single most
 # recent file) when the user attaches several files at once. Purely
@@ -161,6 +167,11 @@ class BackgroundTaskRequest(BaseModel):
     query: str
     model: str = None
     persona_prompt: str = None
+
+
+class ShareCreateRequest(BaseModel):
+    title: str = "Shared chat"
+    messages: list[Message] = []
 
 
 # ---------------------------------------------------------------------------
@@ -624,6 +635,28 @@ def documents(user=Depends(get_current_user)):
         "documents": list(uploaded_documents.keys()),
         "last_uploaded": last_uploaded_filename,
     }
+
+
+@app.post("/share")
+def create_share(req: ShareCreateRequest, user=Depends(get_current_user)):
+    """Creates a short, shareable link for a conversation. Login required
+    to create one (same as every other write in this API); the resulting
+    id is public/unauthenticated to view (GET below), same as before when
+    the payload was embedded directly in the URL."""
+    share_id = secrets.token_urlsafe(6)
+    shared_chats[share_id] = {
+        "t": req.title,
+        "m": [{"role": m.role, "message": m.message} for m in req.messages],
+    }
+    return {"id": share_id}
+
+
+@app.get("/share/{share_id}")
+def get_share(share_id: str):
+    data = shared_chats.get(share_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Shared chat not found or expired.")
+    return data
 
 
 if __name__ == "__main__":

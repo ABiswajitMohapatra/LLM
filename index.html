@@ -1495,6 +1495,7 @@
           <span id="token-text">~0 tokens</span>
         </div>
         <button id="piri-toggle-btn" onclick="togglePiriPanel()" data-tooltip="Navigate conversation" aria-label="Toggle Piri navigation panel" style="display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M4 20c5-1 9-5 10-10 .6-3 2-5 6-6-1 4-3 5.4-6 6-5 1-9 5-10 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg> Piri</button>
+        <button class="tm-item" id="share-chat-btn" onclick="shareChatLink()" data-tooltip="Share this conversation" aria-label="Share this conversation"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M8.6 10.6l6.8-3.7M8.6 13.4l6.8 3.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Share</button>
         <div class="tm-divider"></div>
         <button class="tm-item" onclick="openPersonaPanel()" data-tooltip="Custom persona / system prompt"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.8"/><path d="M2 20c0-3.5 4.5-7 10-7s10 3.5 10 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Persona</button>
         <div class="tm-divider"></div>
@@ -1511,7 +1512,6 @@
             Export
           </button>
           <div id="export-menu">
-            <button onclick="shareChatLink()">🔗 Share as link</button>
             <button onclick="exportMarkdown()">📝 Export as Markdown</button>
             <button onclick="exportPDF()">📄 Export as PDF</button>
           </div>
@@ -4209,21 +4209,30 @@ function b64DecodeUnicode(str) {
   return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
 }
 
-function shareChatLink() {
-  document.getElementById('export-menu').classList.remove('open');
+async function shareChatLink() {
+  document.getElementById('topbar-more-menu').classList.remove('open');
+  document.getElementById('topbar-more-btn').classList.remove('active');
   if (history.length === 0) { alert('Nothing to share yet.'); return; }
   const title = (conversations.find(c => c.id === currentConvId) || {}).title || 'Shared chat';
-  const payload = { t: title, m: history };
   try {
-    const encoded = b64EncodeUnicode(JSON.stringify(payload));
-    const url = location.origin + location.pathname + '#share=' + encoded;
-    if (url.length > 7500) {
-      alert('This chat is too long to share as a link. Try Export instead.');
-      return;
+    const res = await apiFetch(API_URL + '/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, messages: history })
+    });
+    if (!res.ok) throw new Error('Share request failed');
+    const data = await res.json();
+    const url = location.origin + location.pathname + '#share=' + data.id;
+    if (navigator.share) {
+      // Native OS share sheet - WhatsApp/Telegram/Mail/Copy/etc, whatever
+      // the device has installed, same as ChatGPT/Claude's share button.
+      await navigator.share({ title, text: 'Check out this conversation', url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert('Share link copied to clipboard!\n\nAnyone with this link can view this conversation (read-only).');
     }
-    navigator.clipboard.writeText(url);
-    alert('Share link copied to clipboard!\n\nAnyone with this link can view this conversation (read-only).');
   } catch (e) {
+    if (e && e.name === 'AbortError') return; // user cancelled the native share sheet
     alert('Could not generate a share link for this chat.');
   }
 }
@@ -4233,12 +4242,14 @@ function exitSharedView() {
   location.reload();
 }
 
-function tryRenderSharedView() {
+async function tryRenderSharedView() {
   const hash = location.hash;
   if (!hash.startsWith('#share=')) return false;
+  const shareId = hash.slice(7);
   try {
-    const encoded = hash.slice(7);
-    const payload = JSON.parse(b64DecodeUnicode(encoded));
+    const res = await fetch(API_URL + '/share/' + encodeURIComponent(shareId));
+    if (!res.ok) throw new Error('Shared chat not found');
+    const payload = await res.json();
     isSharedView = true;
     document.getElementById('sidebar').style.display = 'none';
     document.getElementById('sidebar-backdrop').style.display = 'none';
