@@ -191,6 +191,18 @@ class Message(Base):
     )
 
 
+class SharedChat(Base):
+    """Backing store for the 'Share as link' button - one row per short
+    share id, publicly readable (no user_id scoping, same as before when
+    the payload was embedded directly in the URL)."""
+    __tablename__ = "shared_chats"
+
+    id = Column(String(32), primary_key=True)
+    title = Column(String(500), nullable=False, default="Shared chat")
+    messages = Column(Text, nullable=False, default="[]")  # JSON-encoded list of {role, message}
+    created_at = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+
 # ----------------------------------------------------------------------
 # Setup / session helpers
 # ----------------------------------------------------------------------
@@ -431,3 +443,30 @@ def get_messages(session_id: int, user_id: int):
             .all()
         )
         return [_message_to_dict(m) for m in rows]
+
+
+# ----------------------------------------------------------------------
+# Shared-chat link helpers - backing store for the "Share as link" button.
+# Not scoped by user_id: a share link is meant to be viewable by anyone
+# who has it, unlike everything else above.
+# ----------------------------------------------------------------------
+
+def create_shared_chat(share_id: str, title: str, messages: list) -> dict:
+    with get_db() as session:
+        sc = SharedChat(id=share_id, title=(title or "Shared chat")[:500], messages=json.dumps(messages))
+        session.add(sc)
+        session.flush()
+        result = {"id": sc.id, "t": sc.title, "m": json.loads(sc.messages)}
+    return result
+
+
+def get_shared_chat(share_id: str):
+    with get_db() as session:
+        sc = session.query(SharedChat).filter(SharedChat.id == share_id).first()
+        if not sc:
+            return None
+        try:
+            messages = json.loads(sc.messages) if sc.messages else []
+        except (TypeError, ValueError):
+            messages = []
+        return {"t": sc.title, "m": messages}
