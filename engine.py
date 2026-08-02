@@ -1,23 +1,24 @@
+import base64
+import datetime
+import glob
+import io
+import json as _json
 import os
 import re
-import io
-import glob
-import base64
-import json as _json
-import datetime
+
 import numpy as np
-from groq import Groq
-from openai import OpenAI
-from fastembed import TextEmbedding
 import pdfplumber
-from PIL import Image
 import pytesseract
 from dotenv import load_dotenv
+from fastembed import TextEmbedding
+from groq import Groq
+from openai import OpenAI
+from PIL import Image
 
 try:
     from pptx import Presentation
-    from pptx.util import Inches, Pt
     from pptx.dml.color import RGBColor
+    from pptx.util import Inches, Pt
 except ImportError:
     Presentation = None
 
@@ -42,7 +43,6 @@ AVAILABLE_MODELS = {
     "openai/gpt-oss-120b": "GPT-OSS 120B",
     "openai/gpt-oss-20b": "GPT-OSS 20B",
     "llama-3.3-70b-versatile": "Llama 3.3 70B Versatile",
-    "openai/gpt-oss-120b": "GPT-OSS 120B",
     # Free OpenRouter models added below (existing Groq models untouched)
     # NOTE: DeepSeek and Qwen3-32B free tiers were discontinued by OpenRouter
     # (paid-only as of July 2026) - using currently-free models instead.
@@ -387,7 +387,6 @@ class UnsupportedFileError(Exception):
     """Raised when a file's content can't be extracted, so callers (the
     /upload route) can surface a proper error message to the user instead
     of silently returning empty text."""
-    pass
 
 
 def extract_text_from_docx(file) -> str:
@@ -422,8 +421,8 @@ def extract_text_from_doc(file) -> str:
     be installed on the host, and otherwise raise a clear, actionable error
     instead of pretending extraction succeeded with empty text.
     """
-    import subprocess
     import shutil as _shutil
+    import subprocess
     import tempfile
 
     raw = file.read() if hasattr(file, "read") else open(file, "rb").read()
@@ -738,9 +737,7 @@ def is_greeting_or_smalltalk(query: str) -> bool:
 def needs_web_search(query: str, retrieved) -> bool:
     if is_greeting_or_smalltalk(query):
         return False
-    if TIME_SENSITIVE_PATTERNS.search(query):
-        return True
-    return False
+    return bool(TIME_SENSITIVE_PATTERNS.search(query))
 
 
 def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> dict:
@@ -836,7 +833,7 @@ def format_web_context(tavily_result: dict) -> str:
     return "\n".join(lines)
 
 
-def _compose_system_prompt(persona_prompt: str = None, memory_context: str = None) -> str:
+def _compose_system_prompt(persona_prompt: str | None = None, memory_context: str | None = None) -> str:
     """
     Layers optional user-defined persona/custom-system-prompt AND optional
     cross-chat memory facts on TOP of the base SYSTEM_PROMPT, rather than
@@ -862,8 +859,8 @@ def _compose_system_prompt(persona_prompt: str = None, memory_context: str = Non
     return result
 
 
-def query_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str = None, persona_prompt: str = None,
-                temperature: float = None, memory_context: str = None) -> dict:
+def query_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str | None = None, persona_prompt: str | None = None,
+                temperature: float | None = None, memory_context: str | None = None) -> dict:
     active_client = _get_client_for_model(model or CHAT_MODEL)
     if active_client is None:
         missing = "OPENROUTER_API_KEY" if (model in OPENROUTER_MODELS) else "GROQ_API_KEY"
@@ -888,11 +885,11 @@ def query_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str = None, per
             }
         return result
     except Exception as e:
-        return {"answer": f"Error: {str(e)}", "web_used": False}
+        return {"answer": f"Error: {e!s}", "web_used": False}
 
 
-def stream_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str = None, persona_prompt: str = None,
-                 memory_context: str = None):
+def stream_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str | None = None, persona_prompt: str | None = None,
+                 memory_context: str | None = None):
     active_client = _get_client_for_model(model or CHAT_MODEL)
     if active_client is None:
         missing = "OPENROUTER_API_KEY" if (model in OPENROUTER_MODELS) else "GROQ_API_KEY"
@@ -914,7 +911,7 @@ def stream_groq(prompt: str, max_tokens: int = MAX_TOKENS, model: str = None, pe
             if delta:
                 yield delta
     except Exception as e:
-        yield f"\n\n[Error: {str(e)}]"
+        yield f"\n\n[Error: {e!s}]"
 
 
 def estimate_tokens(text: str) -> int:
@@ -932,7 +929,7 @@ QUICK_TASK_MAX_TOKENS = {
 }
 
 
-def quick_task(text: str, task: str, target_language: str = None, model: str = None) -> str:
+def quick_task(text: str, task: str, target_language: str | None = None, model: str | None = None) -> str:
     """
     One-off, non-chat text transformations used by the message toolbar
     (Translate / Summarize / Improve Writing / Explain). Deliberately
@@ -979,7 +976,7 @@ def quick_task(text: str, task: str, target_language: str = None, model: str = N
     return result["answer"]
 
 
-def analyze_conversation(history, model: str = None):
+def analyze_conversation(history, model: str | None = None):
     """
     Piri-style sidebar: reads the full chat history and returns a list of
     {title, msgIndex} sections marking where each new topic begins, so the
@@ -1021,7 +1018,7 @@ def analyze_conversation(history, model: str = None):
         return []
 
 
-def generate_chat_title(history, model: str = None):
+def generate_chat_title(history, model: str | None = None):
     """
     Generates a short topic-based chat title + 1-3 topic tags from the
     conversation content (not just the raw first message), so the sidebar
@@ -1081,7 +1078,7 @@ def generate_chat_title(history, model: str = None):
     return {"title": "", "tags": []}
 
 
-def generate_followups(query: str, answer: str, model: str = None):
+def generate_followups(query: str, answer: str, model: str | None = None):
     """
     Smart follow-up suggestion chips: after an assistant reply, suggests 2-3
     short, relevant next questions the user might want to ask. Stateless,
@@ -1145,7 +1142,7 @@ def summarize_messages(messages):
 # chat_with_agent_stream's default behavior since memory_context is opt-in.
 # ============================================================================
 
-def extract_memory_facts(history, model: str = None):
+def extract_memory_facts(history, model: str | None = None):
     """
     Pulls out 0-4 short, durable facts about the USER (not about the topic
     discussed) from a conversation - e.g. their name, job, preferences,
@@ -1197,7 +1194,7 @@ def extract_memory_facts(history, model: str = None):
 # chat replies - only fires when the user explicitly asks for it.
 # ============================================================================
 
-def verify_response(query: str, answer: str, model: str = None):
+def verify_response(query: str, answer: str, model: str | None = None):
     """
     Returns {confidence: 0-100 or None, flags: [{claim, reason, source_hint}],
     revised_answer: str or None}. confidence/flags come from the model
@@ -1279,14 +1276,14 @@ def verify_response(query: str, answer: str, model: str = None):
 # cannot interfere with normal streaming chat, RAG, or history state.
 # ============================================================================
 
-import uuid as _uuid
 import threading as _threading
+import uuid as _uuid
 
 _background_jobs = {}
 _background_jobs_lock = _threading.Lock()
 
 
-def start_background_task(query: str, model: str = None, persona_prompt: str = None):
+def start_background_task(query: str, model: str | None = None, persona_prompt: str | None = None):
     """
     Kicks off a chat query on a background thread and returns a job_id
     immediately. The caller polls get_background_task(job_id) for status.
@@ -1336,7 +1333,7 @@ COMPARISON_PATTERN = re.compile(
 )
 
 
-def resolve_referenced_documents(query: str, uploaded_docs: dict, last_uploaded: str = None, last_uploaded_batch=None):
+def resolve_referenced_documents(query: str, uploaded_docs: dict, last_uploaded: str | None = None, last_uploaded_batch=None):
     """
     Decides which uploaded document(s) a query is actually about, the same
     way ChatGPT/Claude/Gemini resolve "summarize this pdf" to your most
@@ -1645,7 +1642,7 @@ User Question:
 
 Give a complete, well-structured answer following your response style rules."""
 
-    doc_sources = sorted(set(src for _, src, _ in retrieved) | set(uploaded_sources_used))
+    doc_sources = sorted({src for _, src, _ in retrieved} | set(uploaded_sources_used))
     return prompt, doc_sources, web_used, False, citations
 
 
@@ -1720,7 +1717,7 @@ Write the full research report now."""
     return prompt, sources
 
 
-def research_report_stream(query: str, model: str = None):
+def research_report_stream(query: str, model: str | None = None):
     prompt, sources = build_research_prompt(query)
     if prompt is None:
         def _no_sources():
@@ -1857,9 +1854,8 @@ def _repair_truncated_json(cleaned: str) -> dict:
             continue
         if ch in "{[":
             opens.append(ch)
-        elif ch in "}]":
-            if opens:
-                opens.pop()
+        elif ch in "}]" and opens:
+            opens.pop()
 
     closers = {"{": "}", "[": "]"}
     s = s.rstrip().rstrip(",")
@@ -1888,7 +1884,7 @@ def _parse_slide_json(raw: str) -> dict:
         return _repair_truncated_json(cleaned)
 
 
-def generate_slide_content(topic: str, n_slides: int, template: str, model: str = None) -> dict:
+def generate_slide_content(topic: str, n_slides: int, template: str, model: str | None = None) -> dict:
     """Calls the LLM once and returns parsed slide-plan JSON."""
     prompt = build_slide_content_prompt(topic, n_slides, template)
     raw = "".join(stream_groq(prompt, max_tokens=PPT_MAX_TOKENS, model=model))
@@ -2039,7 +2035,7 @@ def _add_illustration(slide, image_query: str, left, top, width, height):
         print(f"[_add_illustration] Failed for '{image_query}': {e}")
 
 
-def generate_presentation(topic: str, n_slides: int = 8, template: str = "business", model: str = None) -> bytes:
+def generate_presentation(topic: str, n_slides: int = 8, template: str = "business", model: str | None = None) -> bytes:
     """
     Full pipeline: LLM plans the deck -> python-pptx renders it into a real,
     editable, theme-styled .pptx, returned as raw bytes ready to stream back
@@ -2102,7 +2098,7 @@ def discover_topics():
         if start != -1 and end > start:
             topics = _json.loads(raw[start:end])
             return topics[:12] if isinstance(topics, list) else []
-    except Exception as e:
+    except Exception:
         pass
     
     # Fallback hardcoded topics if LLM fails
@@ -2118,7 +2114,7 @@ def discover_topics():
     ]
 
 
-def execute_plugin(plugin_name: str, query: str, url: str = None, method: str = "GET", headers_json: str = None):
+def execute_plugin(plugin_name: str, query: str, url: str | None = None, method: str = "GET", headers_json: str | None = None):
     """
     Plugin execution: user-defined custom API endpoint.
     Frontend stores plugins as: {name, desc, url, method, headers_json}

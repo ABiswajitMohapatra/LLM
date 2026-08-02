@@ -25,17 +25,17 @@ Design:
   chunk time via a normalized-text hash set, per document.
 """
 
-import os
-import json
+import concurrent.futures
 import hashlib
+import json
+import os
 import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
-import numpy as np
 
 import faiss
+import numpy as np
 from rank_bm25 import BM25Okapi
 
 import engine  # reuse existing embedder, chunker constants, file loaders
@@ -98,7 +98,7 @@ def _load():
             _index = faiss.read_index(FAISS_PATH)
             with open(META_PATH, "r", encoding="utf-8") as f:
                 _metadata = json.load(f)
-            _next_id = (max((int(k) for k in _metadata.keys()), default=-1)) + 1
+            _next_id = (max((int(k) for k in _metadata), default=-1)) + 1
         except Exception as e:
             print(f"[RAG-STORE] Failed to load existing index, starting fresh: {e}")
             _index = None
@@ -205,7 +205,7 @@ def _call_with_timeout(fn, timeout_seconds, *args, **kwargs):
 # ---------------------------------------------------------------------------
 # Progress tracking
 # ---------------------------------------------------------------------------
-def get_progress(filename: str = None):
+def get_progress(filename: str | None = None):
     if filename:
         return _progress.get(filename, {"status": "not_indexed", "percent": 0})
     return dict(_progress)

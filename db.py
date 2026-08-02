@@ -19,17 +19,26 @@ with a clear message instead of silently falling back to local storage -
 by design, per deployment requirements.
 """
 
+import contextlib
+import datetime
+import json
 import os
 import sys
-import json
-import datetime
-import contextlib
 
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Text, DateTime, Boolean,
-    ForeignKey, UniqueConstraint, Index, func, select,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    func,
+    select,
 )
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship, scoped_session
+from sqlalchemy.orm import declarative_base, relationship, scoped_session, sessionmaker
 
 # ----------------------------------------------------------------------
 # Connection setup
@@ -200,7 +209,8 @@ def _migrate_missing_columns():
     deleted/folder_id/parent_id/tags were added to the model, this adds
     any columns that are missing so old deployments don't crash with
     'column ... does not exist'. Safe/idempotent to run on every startup."""
-    from sqlalchemy import inspect as _sa_inspect, text as _sa_text
+    from sqlalchemy import inspect as _sa_inspect
+    from sqlalchemy import text as _sa_text
 
     inspector = _sa_inspect(engine)
     if "chat_sessions" not in inspector.get_table_names():
@@ -294,7 +304,7 @@ def _message_to_dict(m) -> dict:
     }
 
 
-def create_chat_session(user_id: int, title: str = "New chat", parent_id: int = None) -> dict:
+def create_chat_session(user_id: int, title: str = "New chat", parent_id: int | None = None) -> dict:
     with get_db() as session:
         cs = ChatSession(user_id=user_id, title=(title or "New chat")[:500], parent_id=parent_id)
         session.add(cs)
@@ -384,7 +394,7 @@ def delete_chat_session(session_id: int, user_id: int) -> bool:
         return True
 
 
-def add_message(session_id: int, user_id: int, role: str, content: str, model: str = None):
+def add_message(session_id: int, user_id: int, role: str, content: str, model: str | None = None):
     """Adds a message to a session, but only if that session belongs to
     user_id - enforces per-user isolation at the write path too."""
     with get_db() as session:

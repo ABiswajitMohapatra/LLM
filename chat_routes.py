@@ -16,10 +16,10 @@ Wire into your existing FastAPI app with:
     app.include_router(chat_router)
 """
 
+
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
 
 import auth
 import db
@@ -33,7 +33,7 @@ chat_router = APIRouter(prefix="/chat-sessions", tags=["chat-sessions"])
 # here so this router doesn't depend on main.py's internals.
 # ----------------------------------------------------------------------
 
-def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+def get_current_user(authorization: str | None = Header(None)) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header.")
     token = authorization.split(" ", 1)[1].strip()
@@ -55,33 +55,33 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
 # ----------------------------------------------------------------------
 
 class CreateSessionBody(BaseModel):
-    title: Optional[str] = "New chat"
-    parent_id: Optional[int] = None
+    title: str | None = "New chat"
+    parent_id: int | None = None
 
 
 class UpdateSessionBody(BaseModel):
-    title: Optional[str] = None
-    pinned: Optional[bool] = None
-    archived: Optional[bool] = None
-    deleted: Optional[bool] = None
-    folder_id: Optional[str] = None
-    tags: Optional[List[str]] = None
+    title: str | None = None
+    pinned: bool | None = None
+    archived: bool | None = None
+    deleted: bool | None = None
+    folder_id: str | None = None
+    tags: list[str] | None = None
 
 
 class AddMessageBody(BaseModel):
     role: str
     content: str
-    model: Optional[str] = None
+    model: str | None = None
 
 
 class BulkMessage(BaseModel):
     role: str
     content: str
-    model: Optional[str] = None
+    model: str | None = None
 
 
 class BulkMessagesBody(BaseModel):
-    messages: List[BulkMessage]
+    messages: list[BulkMessage]
 
 
 # ----------------------------------------------------------------------

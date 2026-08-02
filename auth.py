@@ -39,16 +39,16 @@ Env vars (all optional, sensible defaults for local/dev use):
                           an email provider.
 """
 
-import os
-import re
+import datetime
 import hashlib
 import hmac
-import secrets
 import json
-import urllib.request
-import urllib.error
 import logging
-import datetime
+import os
+import re
+import secrets
+import urllib.error
+import urllib.request
 
 import jwt  # PyJWT
 
@@ -87,7 +87,7 @@ db.init_db()
 # PASSWORD HASHING (PBKDF2-HMAC-SHA256, stdlib only - no extra dependency)
 # ============================================================================
 
-def _hash_password(password: str, salt: str = None) -> tuple:
+def _hash_password(password: str, salt: str | None = None) -> tuple:
     salt = salt or secrets.token_hex(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 200_000)
     return digest.hex(), salt
@@ -110,7 +110,6 @@ def validate_password_strength(password: str):
 
 class AuthError(Exception):
     """User-facing auth error (bad credentials, validation failure, etc)."""
-    pass
 
 
 # ============================================================================
@@ -146,7 +145,7 @@ def get_user_by_id(user_id: int):
 
 
 def signup(name: str, email: str, password: str, confirm_password: str,
-           ip_address: str = None, user_agent: str = None):
+           ip_address: str | None = None, user_agent: str | None = None):
     name = (name or "").strip()
     email = (email or "").strip().lower()
 
@@ -421,7 +420,7 @@ def _send_login_notification_email(user: dict) -> bool:
     return sent
 
 
-def _send_admin_signup_notification(user: dict, ip_address: str = None, user_agent: str = None) -> bool:
+def _send_admin_signup_notification(user: dict, ip_address: str | None = None, user_agent: str | None = None) -> bool:
     if not ADMIN_NOTIFY_EMAIL:
         logger.warning("[auth] ADMIN_NOTIFY_EMAIL not configured - admin signup notification NOT sent")
         return False

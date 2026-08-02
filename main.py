@@ -1,19 +1,20 @@
-import os
-import json
-import io
 import asyncio
+import io
+import json
+import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional
-from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException, status
+
+import jwt as _pyjwt
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
-import jwt as _pyjwt
-import engine
-import rag_store
+
 import auth
 import chat_routes
+import engine
+import rag_store
 
 app = FastAPI(title="Mastishk API")
 app.add_middleware(
@@ -93,7 +94,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     query: str
-    history: List[Message] = []
+    history: list[Message] = []
     model: str = None
     research_mode: bool = False
     persona_prompt: str = None
@@ -121,12 +122,12 @@ class QuickTaskRequest(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    history: List[Message] = []
+    history: list[Message] = []
     model: str = None
 
 
 class TitleRequest(BaseModel):
-    history: List[Message] = []
+    history: list[Message] = []
     model: str = None
 
 
@@ -146,7 +147,7 @@ class PluginExecuteRequest(BaseModel):
 
 
 class MemoryExtractRequest(BaseModel):
-    history: List[Message] = []
+    history: list[Message] = []
     model: str = None
 
 
