@@ -18,3 +18,4 @@ sqlalchemy
 psycopg2-binary
 faiss-cpu
 rank_bm25
+pytest
