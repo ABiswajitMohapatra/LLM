@@ -169,13 +169,6 @@ def signup(name: str, email: str, password: str, confirm_password: str,
 
     new_user = get_user_by_id(user_id)
 
-    # Welcome email is best-effort: signup must succeed even if SMTP is
-    # down/misconfigured, so any failure here is only logged, never raised.
-    try:
-        _send_welcome_email(new_user)
-    except Exception as e:
-        logger.error("Unexpected error sending welcome email to %s: %s", email, e, exc_info=True)
-
     # Admin signup notification: best-effort, only after the user row is
     # already committed above - signup must succeed even if this fails.
     try:

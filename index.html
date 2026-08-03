@@ -1329,6 +1329,17 @@
   @keyframes ag-spin { to { transform: rotate(360deg); } }
   .ag-step { display: none; }
   .ag-step.active { display: block; }
+
+  /* password eye-toggle (added) */
+  .ag-pass-wrap { position: relative; }
+  .ag-pass-wrap input { padding-right: 38px !important; }
+  .ag-eye-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    cursor: pointer; user-select: none; display: flex; align-items: center;
+    color: var(--text-dim); opacity: .8;
+  }
+  .ag-eye-toggle:hover { opacity: 1; }
+  .ag-eye-toggle svg { width: 18px; height: 18px; display: block; }
 </style>
 </head>
 <body>
@@ -1346,7 +1357,14 @@
       <p class="ag-sub">Log in to continue</p>
       <div class="ag-error" id="ag-login-error"></div>
       <div class="ag-field"><label>Email</label><input type="email" id="ag-login-email" autocomplete="email"></div>
-      <div class="ag-field"><label>Password</label><input type="password" id="ag-login-password" autocomplete="current-password"></div>
+      <div class="ag-field"><label>Password</label>
+        <div class="ag-pass-wrap">
+          <input type="password" id="ag-login-password" autocomplete="current-password">
+          <span class="ag-eye-toggle" onclick="agTogglePass('ag-login-password', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </span>
+        </div>
+      </div>
       <button class="ag-btn" id="ag-login-btn" onclick="agLogin()"><span class="ag-spinner" id="ag-login-spinner"></span><span>Log in</span></button>
       <div class="ag-links">
         <a onclick="agShowStep('forgot')">Forgot password?</a>
@@ -1361,8 +1379,22 @@
       <div class="ag-error" id="ag-signup-error"></div>
       <div class="ag-field"><label>Name</label><input type="text" id="ag-signup-name" autocomplete="name"></div>
       <div class="ag-field"><label>Email</label><input type="email" id="ag-signup-email" autocomplete="email"></div>
-      <div class="ag-field"><label>Password</label><input type="password" id="ag-signup-password" autocomplete="new-password"></div>
-      <div class="ag-field"><label>Confirm password</label><input type="password" id="ag-signup-confirm" autocomplete="new-password"></div>
+      <div class="ag-field"><label>Password</label>
+        <div class="ag-pass-wrap">
+          <input type="password" id="ag-signup-password" autocomplete="new-password">
+          <span class="ag-eye-toggle" onclick="agTogglePass('ag-signup-password', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </span>
+        </div>
+      </div>
+      <div class="ag-field"><label>Confirm password</label>
+        <div class="ag-pass-wrap">
+          <input type="password" id="ag-signup-confirm" autocomplete="new-password">
+          <span class="ag-eye-toggle" onclick="agTogglePass('ag-signup-confirm', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </span>
+        </div>
+      </div>
       <button class="ag-btn" id="ag-signup-btn" onclick="agSignup()"><span class="ag-spinner" id="ag-signup-spinner"></span><span>Sign up</span></button>
       <div class="ag-links">
         <a onclick="agShowStep('login')">Already have an account? Log in</a>
@@ -1988,6 +2020,17 @@ const WANDBOX_COMPILE_URL = "https://wandbox.org/api/compile.json";
 // =====================
 
 // ====== AUTH (JWT login/signup/forgot-password + session handling) ======
+
+// (added) show/hide password toggle for login/signup fields
+function agTogglePass(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  iconEl.innerHTML = isHidden
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.8 21.8 0 0 1-3.22 4.36M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+}
 const AUTH_KEYS = { access: 'mastishk_access_token', refresh: 'mastishk_refresh_token', user: 'mastishk_user' };
 
 function getAccessToken() { return localStorage.getItem(AUTH_KEYS.access); }
