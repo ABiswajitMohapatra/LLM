@@ -621,6 +621,7 @@
     margin-right: 6px;
   }
   #ai-mode-btn:hover { background: var(--panel-2); color: var(--text); }
+  #ai-mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
   #ai-mode-menu {
     position: fixed; z-index: 999;
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
@@ -3289,6 +3290,11 @@ function selectAiMode(mode) {
   researchModeOn = (mode === 'research');
   const rtBtn = document.getElementById('research-toggle');
   if (rtBtn) rtBtn.classList.toggle('active', researchModeOn);
+  const modeBtn = document.getElementById('ai-mode-btn');
+  if (modeBtn) {
+    modeBtn.classList.toggle('active', mode !== 'standard');
+    modeBtn.setAttribute('data-tooltip', 'AI Mode: ' + (mode === 'expert' ? 'Expert Debate' : mode === 'research' ? 'Deep Research' : 'Standard'));
+  }
   renderAiModeMenu();
   document.getElementById('ai-mode-menu').classList.remove('open');
 }
