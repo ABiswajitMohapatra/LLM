@@ -613,6 +613,28 @@
   #model-pill-menu button:hover { background: var(--border); }
   #model-pill-menu button.selected { color: var(--accent); font-weight: 600; }
 
+  #ai-mode-wrap { position: relative; }
+  #ai-mode-btn {
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    padding: 6px; border-radius: 7px; font-size: 16px; line-height: 1;
+  }
+  #ai-mode-btn:hover { background: var(--panel-2); color: var(--text); }
+  #ai-mode-menu {
+    position: absolute; left: 0; top: calc(100% + 6px); z-index: 41;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px; min-width: 190px; box-shadow: 0 6px 18px rgba(0,0,0,.25); display: none;
+  }
+  #ai-mode-menu.open { display: block; }
+  #ai-mode-menu button {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; text-align: left; background: none; border: none;
+    color: var(--text); font-size: 13px; padding: 8px 9px; border-radius: 7px; cursor: pointer;
+  }
+  #ai-mode-menu button:hover { background: var(--border); }
+  #ai-mode-menu .ai-mode-check { color: var(--accent); font-size: 13px; visibility: hidden; }
+  #ai-mode-menu button.selected .ai-mode-check { visibility: visible; }
+
   /* Backdrop for mobile drawer */
   #sidebar-backdrop {
     display: none;
@@ -1454,6 +1476,14 @@
     <button onclick="toggleSidebar()" data-tooltip="Close sidebar" aria-label="Close sidebar" style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:6px;border-radius:7px;display:flex;">
       <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.8"/></svg>
     </button>
+    <div id="ai-mode-wrap">
+      <button id="ai-mode-btn" onclick="toggleAiModeMenu(event)" data-tooltip="AI Mode" aria-label="AI Mode"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M9.5 2a3.5 3.5 0 0 0-3.4 4.3A3.5 3.5 0 0 0 4 9.5a3.5 3.5 0 0 0 1 6.6A3.5 3.5 0 0 0 8.5 21a3.5 3.5 0 0 0 3.5-3.4V5.5A3.5 3.5 0 0 0 9.5 2Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 2a3.5 3.5 0 0 1 3.4 4.3A3.5 3.5 0 0 1 20 9.5a3.5 3.5 0 0 1-1 6.6A3.5 3.5 0 0 1 15.5 21 3.5 3.5 0 0 1 12 17.6V5.5A3.5 3.5 0 0 1 14.5 2Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div id="ai-mode-menu">
+        <button class="selected" data-mode="standard" onclick="selectAiMode('standard')">Standard <span class="ai-mode-check">✓</span></button>
+        <button data-mode="expert" onclick="selectAiMode('expert')">Expert Debate <span class="ai-mode-check">✓</span></button>
+        <button data-mode="research" onclick="selectAiMode('research')">Deep Research <span class="ai-mode-check">✓</span></button>
+      </div>
+    </div>
   </div>
   <button class="new-chat-btn" onclick="newChat()">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -2386,6 +2416,9 @@ let history = [];
 let extraFileContent = "";
 let isStreaming = false;
 let researchModeOn = false;
+// AI Mode: 'standard' (default) | 'expert' (Expert Debate) | 'research' (Deep Research)
+// Starts as 'standard' always; only changes via explicit user selection in the AI Mode dropdown.
+let aiMode = 'standard';
 // Compare mode: OFF by default, purely opt-in via the "⚖️ Compare" button.
 // Does not run on every response - only affects sendMessage() when a user
 // explicitly enables it, and never fires unless the toggle is active.
@@ -3223,6 +3256,49 @@ function toggleModelPill(evt) {
   const isOpen = menu.classList.contains('open');
   document.querySelectorAll('.lang-menu.open, #model-pill-menu.open').forEach(m => m.classList.remove('open'));
   if (!isOpen) menu.classList.add('open');
+}
+
+// ===== AI MODE DROPDOWN (Standard / Expert Debate / Deep Research) =====
+// Additive feature: does not alter any existing button/toggle behavior.
+// Default is always 'standard' on load; a mode only activates when the
+// user explicitly picks it from this dropdown.
+function toggleAiModeMenu(e) {
+  if (e) e.stopPropagation();
+  document.querySelectorAll('.lang-menu.open, #model-pill-menu.open, #attach-menu.open').forEach(m => m.classList.remove('open'));
+  document.getElementById('ai-mode-menu').classList.toggle('open');
+}
+function renderAiModeMenu() {
+  document.querySelectorAll('#ai-mode-menu button').forEach(btn => {
+    btn.classList.toggle('selected', btn.getAttribute('data-mode') === aiMode);
+  });
+}
+function selectAiMode(mode) {
+  aiMode = mode;
+  // Deep Research reuses the existing research pipeline flag (research_mode
+  // sent to /chat); Expert Debate is applied via an extra system instruction
+  // at send-time and does not touch researchModeOn or any other toggle.
+  researchModeOn = (mode === 'research');
+  const rtBtn = document.getElementById('research-toggle');
+  if (rtBtn) rtBtn.classList.toggle('active', researchModeOn);
+  renderAiModeMenu();
+  document.getElementById('ai-mode-menu').classList.remove('open');
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('#ai-mode-wrap')) {
+    const m = document.getElementById('ai-mode-menu');
+    if (m) m.classList.remove('open');
+  }
+});
+const EXPERT_DEBATE_INSTRUCTIONS = "You are in Expert Debate mode. Answer the user's query using exactly four labeled sections, in this order: \n1. **Research Expert** — a concise opinion (2-4 lines).\n2. **Security Expert** — a concise opinion (2-4 lines).\n3. **Cost/Performance Expert** — a concise opinion (2-4 lines).\n4. **Final Judge** — compare all three opinions above and give one clear recommendation with a short reason.\nUse this exact four-part format only for this response.";
+// Wraps getActivePersonaPrompt() without modifying it, so Standard and Deep
+// Research keep their exact original persona behavior unchanged. Only when
+// Expert Debate is explicitly active do we append the debate instructions.
+function getEffectivePersonaPrompt() {
+  const base = getActivePersonaPrompt();
+  if (aiMode === 'expert') {
+    return (base ? base + '\n\n' : '') + EXPERT_DEBATE_INSTRUCTIONS;
+  }
+  return base;
 }
 
 function toggleResearchMode() {
@@ -5780,7 +5856,7 @@ async function streamAssistantReply(query) {
     const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getActivePersonaPrompt(), memory_context: getMemoryContextString() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getEffectivePersonaPrompt(), memory_context: getMemoryContextString() }),
       signal: currentAbortController.signal
     });
 
@@ -5890,7 +5966,7 @@ async function streamOneCompareSide(query, model, bubbleEl) {
     const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model, project_context: getActiveProjectContext(), research_mode: false, persona_prompt: getActivePersonaPrompt() })
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model, project_context: getActiveProjectContext(), research_mode: false, persona_prompt: getEffectivePersonaPrompt() })
     });
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
