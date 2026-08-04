@@ -2144,7 +2144,7 @@
       </div>
       <div class="app-group-title">Mobile</div>
       <div class="app-grid two-col">
-        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M10 19h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="app-card-name">Android</span><span class="app-card-status">Coming Soon</span></div>
+        <div class="app-card" id="android-install-card" onclick="triggerAppInstall()" style="cursor:pointer;"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M10 19h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="app-card-name">Android</span><span class="app-card-status" id="android-install-status">Install</span></div>
         <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg><span class="app-card-name">iOS</span><span class="app-card-status">Coming Soon</span></div>
       </div>
       <div class="app-note">Desktop and mobile applications are currently under development.</div>
@@ -4079,6 +4079,37 @@ function openAboutPanel() { document.getElementById('about-backdrop').classList.
 function closeAboutPanel() { document.getElementById('about-backdrop').classList.remove('show'); }
 function openGetAppPanel() { document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeGetAppPanel() { document.getElementById('getapp-backdrop').classList.remove('show'); }
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const st = document.getElementById('android-install-status');
+  if (st) st.textContent = 'Install';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const st = document.getElementById('android-install-status');
+  if (st) st.textContent = 'Installed';
+});
+function triggerAppInstall() {
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    alert('Mastishk is already installed on this device.');
+    return;
+  }
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        const st = document.getElementById('android-install-status');
+        if (st) st.textContent = 'Installed';
+      }
+      deferredInstallPrompt = null;
+    });
+  } else {
+    alert('To install: open Chrome menu (⋮) and tap "Install app" or "Add to Home screen".');
+  }
+}
 
 (function initSettingsSliders() {
   const fontSize = document.getElementById('settings-font-size');
