@@ -546,8 +546,8 @@
   @keyframes mic-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
   #mic-wrap { position: relative; display: flex; align-items: center; }
   #voice-mode-popup {
-    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
-    width: 30px; height: 30px; border-radius: 50%;
+    position: absolute; top: 50%; right: calc(100% + 6px); transform: translateY(-50%) translateX(4px);
+    width: 28px; height: 28px; border-radius: 50%;
     background: var(--panel); border: 1px solid var(--border); color: var(--text-dim);
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     opacity: 0; pointer-events: none;
@@ -555,7 +555,7 @@
     box-shadow: 0 4px 12px rgba(0,0,0,.25);
   }
   #mic-wrap:hover #voice-mode-popup {
-    opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0);
+    opacity: 1; pointer-events: auto; transform: translateY(-50%) translateX(0);
   }
   #voice-mode-popup:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
   #voice-mode-overlay {
