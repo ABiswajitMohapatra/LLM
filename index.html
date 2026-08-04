@@ -504,14 +504,6 @@
     0%, 60%, 100% { transform: translateY(0); opacity: .4; }
     30% { transform: translateY(-4px); opacity: 1; }
   }
-  .thinking-wrap { display: inline-flex; align-items: center; gap: 8px; }  .thinking-status {
-    font-size: 13px; color: var(--text-dim); font-weight: 500;
-    animation: thinking-fade 1.6s ease-in-out infinite;
-  }
-  @keyframes thinking-fade {
-    0%, 100% { opacity: .55; }
-    50% { opacity: 1; }
-  }
 
   /* Input */
   #input-area { padding: 12px 18px 20px; }
@@ -544,53 +536,6 @@
   #send-btn svg, #attach-btn svg, #mic-btn svg, #piri-input-btn svg { width: 18px; height: 18px; }
   #mic-btn.recording { background: #ef4444; border-color: #ef4444; color: #fff; animation: mic-pulse 1.2s infinite; }
   @keyframes mic-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
-  #mic-wrap { position: relative; display: flex; align-items: center; }
-  #voice-mode-popup {
-    position: absolute; top: 50%; right: calc(100% + 6px); transform: translateY(-50%) translateX(4px);
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--panel); border: 1px solid var(--border); color: var(--text-dim);
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-    opacity: 0; pointer-events: none;
-    transition: opacity .15s ease, transform .15s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,.25);
-  }
-  #mic-wrap:hover #voice-mode-popup {
-    opacity: 1; pointer-events: auto; transform: translateY(-50%) translateX(0);
-  }
-  #voice-mode-popup:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
-  #voice-mode-overlay {
-    display: none;
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--bg);
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 22px;
-  }
-  #voice-mode-overlay.open { display: flex; }
-  #voice-mode-close {
-    position: absolute; top: 22px; right: 22px;
-    width: 40px; height: 40px; border-radius: 50%;
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-  }
-  #voice-mode-close:hover { background: var(--panel); }
-  #voice-mode-orb { position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; }
-  .voice-mode-core {
-    width: 60px; height: 60px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    box-shadow: 0 0 30px rgba(124,92,255,.55);
-  }
-  .voice-mode-ring {
-    position: absolute; inset: 0; border-radius: 50%;
-    border: 2px solid var(--accent);
-    opacity: 0; animation: voice-ring 2.4s ease-out infinite;
-  }
-  .voice-mode-ring:nth-child(2) { animation-delay: 1.2s; }
-  @keyframes voice-ring {
-    0% { transform: scale(.4); opacity: .6; }
-    100% { transform: scale(1.4); opacity: 0; }
-  }
-  #voice-mode-status { font-size: 17px; font-weight: 600; color: var(--text); }
-  #voice-mode-hint { font-size: 12.5px; color: var(--text-dim); }
   #send-btn.stop-mode { color: #ef4444; }
   #send-btn:disabled { opacity: .4; cursor: not-allowed; }
   #hint { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 8px; }
@@ -1667,14 +1612,9 @@
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:4px;">
-          <div id="mic-wrap">
-            <div id="voice-mode-popup" onclick="startContinuousVoiceMode()" data-tooltip="Start continuous voice conversation">
-              <svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M4 15V9a8 8 0 0 1 16 0v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 15a2 2 0 0 0 2 2h1v-6H6a2 2 0 0 0-2 2v2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M20 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2v2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            </div>
-            <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            </button>
-          </div>
+          <button id="mic-btn" onclick="toggleVoiceInput()" data-tooltip="Voice input" aria-label="Voice input">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
           <button id="piri-input-btn" onclick="togglePiriPanel()" data-tooltip="Piri" aria-label="Toggle Piri navigation panel">
             <svg viewBox="0 0 24 24" fill="none"><path d="M4 20c5-1 9-5 10-10 .6-3 2-5 6-6-1 4-3 5.4-6 6-5 1-9 5-10 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
           </button>
@@ -1804,16 +1744,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<!-- Continuous voice mode overlay -->
-<div id="voice-mode-overlay">
-  <button id="voice-mode-close" onclick="stopContinuousVoiceMode()" aria-label="End voice conversation">
-    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-  </button>
-  <div id="voice-mode-orb"><div class="voice-mode-ring"></div><div class="voice-mode-ring"></div><div class="voice-mode-core"></div></div>
-  <div id="voice-mode-status">Listening…</div>
-  <div id="voice-mode-hint">Tap the X to end the conversation</div>
 </div>
 
 <!-- Piri navigation panel -->
@@ -4976,76 +4906,6 @@ function toggleVoiceInput() {
   recognition.start();
 }
 
-// ---------- CONTINUOUS VOICE MODE (voice-to-voice, no text shown) ----------
-let voiceModeActive = false;
-let voiceModeRecognition = null;
-
-function startContinuousVoiceMode() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) { alert('Voice mode is not supported in this browser. Try Chrome.'); return; }
-  if (!('speechSynthesis' in window)) { alert('Speech output is not supported in this browser.'); return; }
-  if (voiceModeActive || isRecording) return;
-  voiceModeActive = true;
-  document.getElementById('voice-mode-overlay').classList.add('open');
-  voiceModeListen();
-}
-
-function stopContinuousVoiceMode() {
-  voiceModeActive = false;
-  if (voiceModeRecognition) { try { voiceModeRecognition.stop(); } catch (e) {} }
-  window.speechSynthesis.cancel();
-  document.getElementById('voice-mode-overlay').classList.remove('open');
-}
-
-function setVoiceModeStatus(text) {
-  const el = document.getElementById('voice-mode-status');
-  if (el) el.textContent = text;
-}
-
-function voiceModeListen() {
-  if (!voiceModeActive) return;
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  voiceModeRecognition = new SpeechRecognition();
-  voiceModeRecognition.lang = 'en-US';
-  voiceModeRecognition.interimResults = false;
-  voiceModeRecognition.continuous = false;
-  setVoiceModeStatus('Listening…');
-  voiceModeRecognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    if (!transcript.trim()) { voiceModeListen(); return; }
-    setVoiceModeStatus('Thinking…');
-    sendVoiceModeQuery(transcript);
-  };
-  voiceModeRecognition.onerror = () => { if (voiceModeActive) setTimeout(voiceModeListen, 400); };
-  voiceModeRecognition.onend = () => {};
-  try { voiceModeRecognition.start(); } catch (e) {}
-}
-
-async function sendVoiceModeQuery(text) {
-  if (!voiceModeActive) return;
-  addMessage('user', escapeHtml(text), history.length);
-  history.push({ role: 'user', message: text });
-  await streamAssistantReply(text);
-  if (!voiceModeActive) return;
-  const lastMsg = history[history.length - 1];
-  const replyText = lastMsg && lastMsg.role === 'assistant' ? lastMsg.message : '';
-  speakVoiceModeReply(replyText);
-}
-
-function speakVoiceModeReply(text) {
-  if (!voiceModeActive) return;
-  window.speechSynthesis.cancel();
-  if (!text || !text.trim()) { voiceModeListen(); return; }
-  setVoiceModeStatus('Speaking…');
-  const utter = new SpeechSynthesisUtterance(text.replace(/[*_`#>]/g, ''));
-  utter.rate = (typeof ttsRate !== 'undefined' && ttsRate) ? ttsRate : 1;
-  const voice = (typeof getPreferredVoice === 'function') ? getPreferredVoice() : null;
-  if (voice) utter.voice = voice;
-  utter.onend = () => { if (voiceModeActive) voiceModeListen(); };
-  utter.onerror = () => { if (voiceModeActive) voiceModeListen(); };
-  window.speechSynthesis.speak(utter);
-}
-
 const BOT_ICON = `<img src="biswalex_logo.svg" alt="" style="width:16px;height:16px;">`;
 const USER_ICON = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.14 0-8 2.13-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.87-3.86-5-8-5Z" fill="currentColor"/></svg>`;
 const COPY_ICON = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.6"/></svg>`;
@@ -5871,30 +5731,9 @@ async function regenerateResponse(btn) {
   await streamAssistantReply(lastUserMsg.message);
 }
 
-const THINKING_PHRASES = [
-  "Thinking", "Analyzing your request", "Reasoning through it",
-  "Calculating", "Weighing options", "Working out the details",
-  "Cross-checking facts", "Structuring the answer", "Composing response",
-  "Double-checking logic", "Putting it together"
-];
-function startThinkingAnimation(bubbleEl) {
-  let i = 0;
-  const render = () => {
-    bubbleEl.innerHTML =
-      '<div class="thinking-wrap"><span class="thinking-status">' +
-      THINKING_PHRASES[i % THINKING_PHRASES.length] + '…</span>' +
-      '<div class="typing-dots"><span></span><span></span><span></span></div></div>';
-    i++;
-  };
-  render();
-  const timer = setInterval(render, 1400);
-  return () => clearInterval(timer);
-}
-
 async function streamAssistantReply(query) {
   const bubbleId = addMessage('assistant', '<div class="typing-dots"><span></span><span></span><span></span></div>', history.length);
   const bubbleEl = document.getElementById(bubbleId);
-  const stopThinking = startThinkingAnimation(bubbleEl);
   isStreaming = true;
   setSendButtonMode(true);
   setStreamingTitle(true);
@@ -5932,7 +5771,7 @@ async function streamAssistantReply(query) {
         try {
           const payload = JSON.parse(jsonStr);
           if (payload.type === "chunk") {
-            if (firstChunk) { fullText = ""; firstChunk = false; _firstChunkAt = Date.now(); stopThinking(); }
+            if (firstChunk) { fullText = ""; firstChunk = false; _firstChunkAt = Date.now(); }
             fullText += payload.text;
             bubbleEl.innerHTML = renderMarkdown(fullText) + '<span class="cursor"></span>';
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
@@ -5946,7 +5785,6 @@ async function streamAssistantReply(query) {
       }
     }
   } catch (err) {
-    stopThinking();
     if (err.name === 'AbortError') {
       wasAborted = true;
       bubbleEl.innerHTML = renderMarkdown(fullText || "_Stopped._");
