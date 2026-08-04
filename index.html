@@ -504,6 +504,15 @@
     0%, 60%, 100% { transform: translateY(0); opacity: .4; }
     30% { transform: translateY(-4px); opacity: 1; }
   }
+  .thinking-wrap { display: inline-flex; align-items: center; gap: 8px; }
+  .thinking-status {
+    font-size: 13px; color: var(--text-dim); font-weight: 500;
+    animation: thinking-fade 1.6s ease-in-out infinite;
+  }
+  @keyframes thinking-fade {
+    0%, 100% { opacity: .55; }
+    50% { opacity: 1; }
+  }
 
   /* Input */
   #input-area { padding: 12px 18px 20px; }
@@ -5731,9 +5740,30 @@ async function regenerateResponse(btn) {
   await streamAssistantReply(lastUserMsg.message);
 }
 
+const THINKING_PHRASES = [
+  "Thinking", "Analyzing your request", "Reasoning through it",
+  "Calculating", "Weighing options", "Working out the details",
+  "Cross-checking facts", "Structuring the answer", "Composing response",
+  "Double-checking logic", "Putting it together"
+];
+function startThinkingAnimation(bubbleEl) {
+  let i = 0;
+  const render = () => {
+    bubbleEl.innerHTML =
+      '<div class="thinking-wrap"><span class="thinking-status">' +
+      THINKING_PHRASES[i % THINKING_PHRASES.length] + '…</span>' +
+      '<div class="typing-dots"><span></span><span></span><span></span></div></div>';
+    i++;
+  };
+  render();
+  const timer = setInterval(render, 1400);
+  return () => clearInterval(timer);
+}
+
 async function streamAssistantReply(query) {
   const bubbleId = addMessage('assistant', '<div class="typing-dots"><span></span><span></span><span></span></div>', history.length);
   const bubbleEl = document.getElementById(bubbleId);
+  const stopThinking = startThinkingAnimation(bubbleEl);
   isStreaming = true;
   setSendButtonMode(true);
   setStreamingTitle(true);
@@ -5771,7 +5801,7 @@ async function streamAssistantReply(query) {
         try {
           const payload = JSON.parse(jsonStr);
           if (payload.type === "chunk") {
-            if (firstChunk) { fullText = ""; firstChunk = false; _firstChunkAt = Date.now(); }
+            if (firstChunk) { fullText = ""; firstChunk = false; _firstChunkAt = Date.now(); stopThinking(); }
             fullText += payload.text;
             bubbleEl.innerHTML = renderMarkdown(fullText) + '<span class="cursor"></span>';
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
@@ -5785,6 +5815,7 @@ async function streamAssistantReply(query) {
       }
     }
   } catch (err) {
+    stopThinking();
     if (err.name === 'AbortError') {
       wasAborted = true;
       bubbleEl.innerHTML = renderMarkdown(fullText || "_Stopped._");
