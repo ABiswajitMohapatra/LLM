@@ -621,7 +621,7 @@
   }
   #ai-mode-btn:hover { background: var(--panel-2); color: var(--text); }
   #ai-mode-menu {
-    position: absolute; left: 0; top: calc(100% + 6px); z-index: 41;
+    position: fixed; z-index: 999;
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
     padding: 4px; min-width: 190px; box-shadow: 0 6px 18px rgba(0,0,0,.25); display: none;
   }
@@ -3265,7 +3265,15 @@ function toggleModelPill(evt) {
 function toggleAiModeMenu(e) {
   if (e) e.stopPropagation();
   document.querySelectorAll('.lang-menu.open, #model-pill-menu.open, #attach-menu.open').forEach(m => m.classList.remove('open'));
-  document.getElementById('ai-mode-menu').classList.toggle('open');
+  const menu = document.getElementById('ai-mode-menu');
+  const btn = document.getElementById('ai-mode-btn');
+  const willOpen = !menu.classList.contains('open');
+  if (willOpen) {
+    const r = btn.getBoundingClientRect();
+    menu.style.top = (r.bottom + 6) + 'px';
+    menu.style.left = r.left + 'px';
+  }
+  menu.classList.toggle('open');
 }
 function renderAiModeMenu() {
   document.querySelectorAll('#ai-mode-menu button').forEach(btn => {
