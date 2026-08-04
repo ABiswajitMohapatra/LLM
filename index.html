@@ -114,14 +114,22 @@
     transition: width .25s ease, margin-left .25s ease, transform .25s ease;
     position: relative;
     z-index: 1;
+    overflow: hidden;
+    height: 100%;
+  }
+  #sidebar-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #3a3a40 transparent;
+    display: flex;
+    flex-direction: column;
   }
-  #sidebar::-webkit-scrollbar { width: 6px; }
-  #sidebar::-webkit-scrollbar-track { background: transparent; }
-  #sidebar::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 10px; }
-  #sidebar::-webkit-scrollbar-thumb:hover { background: #4a4a52; }
+  #sidebar-scroll::-webkit-scrollbar { width: 6px; }
+  #sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  #sidebar-scroll::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 10px; }
+  #sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #4a4a52; }
   #sidebar.hidden { 
     width: 0;
     overflow: hidden;
@@ -218,10 +226,12 @@
   .sidebar-footer {
     border-top: 1px solid var(--border);
     padding-top: 10px;
+    margin-top: 8px;
     display: flex;
     align-items: center;
     gap: 10px;
     position: relative;
+    flex-shrink: 0;
   }
   #user-avatar-btn {
     width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
@@ -711,6 +721,112 @@
   }
   .panel-divider { border-top: 1px solid var(--border); margin: 14px 0; padding-top: 14px; }
   .empty-hint { color: var(--text-dim); font-size: 13px; padding: 6px 0 14px; }
+
+  /* ===== Settings / Help / About / Get App modals ===== */
+  .st-section { margin-bottom: 18px; }
+  .st-section:last-child { margin-bottom: 4px; }
+  .st-section-title {
+    font-size: 11px; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+  }
+  .st-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .st-row:last-child { border-bottom: none; }
+  .st-row-label { font-size: 13.5px; color: var(--text); }
+  .st-row-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  .st-select {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 7px 10px; font-size: 13px; outline: none;
+    font-family: inherit; cursor: pointer; min-width: 120px;
+  }
+  .st-select:focus { border-color: var(--accent); }
+  .st-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+  .st-switch input { opacity: 0; width: 0; height: 0; }
+  .st-switch-track {
+    position: absolute; inset: 0; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 22px; cursor: pointer; transition: background .2s ease;
+  }
+  .st-switch-track::before {
+    content: ""; position: absolute; width: 16px; height: 16px; left: 2px; top: 1px;
+    background: #fff; border-radius: 50%; transition: transform .2s ease;
+  }
+  .st-switch input:checked + .st-switch-track { background: var(--accent); border-color: var(--accent); }
+  .st-switch input:checked + .st-switch-track::before { transform: translateX(18px); }
+  .st-range-row { display: flex; align-items: center; gap: 10px; }
+  .st-range-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .st-range-val { font-size: 12px; color: var(--text-dim); min-width: 28px; text-align: right; }
+  .st-danger-btn {
+    background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.35); color: #f87171;
+    padding: 8px 12px; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-weight: 600;
+  }
+  .st-danger-btn:hover { background: rgba(248,113,113,.18); }
+  .panel-footer {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+    padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+
+  /* Help center */
+  #help-search-wrap {
+    display: flex; align-items: center; gap: 8px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; margin-bottom: 14px;
+  }
+  #help-search-wrap svg { flex-shrink: 0; color: var(--text-dim); width: 16px; height: 16px; }
+  #help-search-wrap input {
+    flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px;
+  }
+  .help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .help-item {
+    display: flex; align-items: center; gap: 9px; padding: 10px; border: 1px solid var(--border);
+    border-radius: 10px; cursor: pointer; font-size: 13px; color: var(--text); background: none;
+    text-align: left; width: 100%;
+  }
+  .help-item:hover { background: var(--panel-2); border-color: var(--accent); }
+  .help-item svg { flex-shrink: 0; color: var(--accent); width: 16px; height: 16px; }
+  .help-footer-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 0; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-dim);
+  }
+  .help-badge {
+    font-size: 10.5px; background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text-dim); padding: 2px 8px; border-radius: 20px;
+  }
+
+  /* About */
+  .about-hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 0 18px; }
+  .about-logo {
+    width: 56px; height: 56px; border-radius: 14px; background: #fff;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(124,92,255,.35);
+  }
+  .about-logo img { width: 60%; height: 60%; filter: brightness(0); }
+  .about-name { font-size: 17px; font-weight: 700; }
+  .about-version { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .about-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; text-align: center; padding: 0 4px 16px; }
+  .about-powered-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .about-powered-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .about-chip {
+    font-size: 12px; padding: 6px 12px; border-radius: 20px; background: var(--panel-2);
+    border: 1px solid var(--border); color: var(--text);
+  }
+  .about-footer { text-align: center; font-size: 12px; color: var(--text-dim); padding-top: 14px; border-top: 1px solid var(--border); line-height: 1.8; }
+
+  /* Get App */
+  .app-illustration { display: flex; align-items: center; justify-content: center; padding: 10px 0 18px; }
+  .app-illustration svg { width: 72px; height: 72px; color: var(--accent); }
+  .app-group-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 8px; }
+  .app-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .app-grid.two-col { grid-template-columns: 1fr 1fr; }
+  .app-card {
+    display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2);
+    cursor: default;
+  }
+  .app-card svg { width: 24px; height: 24px; color: var(--text); }
+  .app-card-name { font-size: 12.5px; font-weight: 600; }
+  .app-card-status { font-size: 10.5px; color: var(--text-dim); background: var(--panel); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); }
+  .app-note { font-size: 12px; color: var(--text-dim); text-align: center; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.6; }
 
   /* ===== Piri navigation panel ===== */
   #piri-toggle-btn {
@@ -1469,6 +1585,7 @@
   </button>
 </div>
 <div id="sidebar">
+  <div id="sidebar-scroll">
   <div id="brand" style="justify-content:space-between;">
     <div style="display:flex;align-items:center;gap:10px;">
       <div id="brand-mark">
@@ -1534,6 +1651,7 @@
   </div>
 
   <div id="history-list"></div>
+  </div>
   <div class="sidebar-footer" id="sidebar-footer">
     <button id="user-avatar-btn" onclick="toggleUserMenu(event)" aria-label="User menu">
       <span id="user-avatar-initials">--</span>
@@ -1541,6 +1659,11 @@
     <div id="user-menu">
       <div id="user-menu-name"></div>
       <div id="user-menu-email"></div>
+      <div class="tm-divider"></div>
+      <button class="tm-item" onclick="openSettingsPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> Settings</button>
+      <button class="tm-item" onclick="openHelpPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Get Help</button>
+      <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Mastishk</button>
+      <button class="tm-item" onclick="openGetAppPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Get App</button>
       <div class="tm-divider"></div>
       <button class="tm-item" onclick="agLogout()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
     </div>
@@ -1837,6 +1960,189 @@
         <button class="theme-swatch" data-theme-btn="catppuccin" onclick="setTheme('catppuccin')" data-tooltip="Catppuccin" aria-label="Catppuccin theme" style="background:linear-gradient(135deg,#cba6f7,#1e1e2e);"></button>
         <button data-theme-btn="system" onclick="setTheme('system')" data-tooltip="Match system" aria-label="System theme">💻</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div id="settings-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeSettingsPanel()">
+  <div class="panel-box wide">
+    <div class="panel-header"><h3>⚙️ Settings</h3><button class="icon-close" onclick="closeSettingsPanel()">✕</button></div>
+    <div class="panel-body">
+
+      <div class="st-section">
+        <div class="st-section-title">General</div>
+        <div class="st-row">
+          <div class="st-row-label">Language</div>
+          <select class="st-select" id="settings-language">
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Spanish</option>
+            <option>French</option>
+          </select>
+        </div>
+        <div class="st-row">
+          <div class="st-row-label">Notifications</div>
+          <label class="st-switch"><input type="checkbox" id="settings-notifications" checked><span class="st-switch-track"></span></label>
+        </div>
+        <div class="st-row">
+          <div class="st-row-label">Send with Enter</div>
+          <label class="st-switch"><input type="checkbox" id="settings-send-enter" checked><span class="st-switch-track"></span></label>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <div class="st-section-title">Appearance</div>
+        <div class="st-row">
+          <div class="st-row-label">Theme</div>
+          <select class="st-select" id="settings-theme-mode">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="system">System</option>
+          </select>
+        </div>
+        <div class="st-row">
+          <div class="st-row-label">Chat Width</div>
+          <select class="st-select" id="settings-chat-width">
+            <option>Normal</option>
+            <option>Wide</option>
+            <option>Full</option>
+          </select>
+        </div>
+        <div class="st-row">
+          <div class="st-row-label">Font Size</div>
+          <div class="st-range-row" style="min-width:160px;">
+            <input type="range" id="settings-font-size" min="12" max="20" value="15">
+            <span class="st-range-val" id="settings-font-size-val">15</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <div class="st-section-title">AI</div>
+        <div class="st-row">
+          <div class="st-row-label">Default Model</div>
+          <select class="st-select" id="settings-default-model">
+            <option>Auto</option>
+            <option>GPT-4</option>
+            <option>Claude</option>
+            <option>Gemini</option>
+            <option>DeepSeek</option>
+          </select>
+        </div>
+        <div class="st-row">
+          <div>
+            <div class="st-row-label">Temperature</div>
+            <div class="st-row-sub">UI only — not yet connected</div>
+          </div>
+          <div class="st-range-row" style="min-width:160px;">
+            <input type="range" id="settings-temperature" min="0" max="10" value="7">
+            <span class="st-range-val" id="settings-temperature-val">0.7</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="st-section">
+        <div class="st-section-title">Data</div>
+        <div class="st-row">
+          <div class="st-row-label">Export Chats</div>
+          <button class="panel-secondary-btn" onclick="alert('Coming soon')">Export</button>
+        </div>
+        <div class="st-row">
+          <div class="st-row-label">Delete All Chats</div>
+          <button class="st-danger-btn" onclick="alert('Coming soon')">Delete All</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="panel-footer">
+      <button class="panel-secondary-btn" onclick="closeSettingsPanel()">Cancel</button>
+      <button class="panel-primary-btn" onclick="closeSettingsPanel()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Get Help panel -->
+<div id="help-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeHelpPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>🆘 Help Center</h3><button class="icon-close" onclick="closeHelpPanel()">✕</button></div>
+    <div class="panel-body">
+      <div id="help-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Search for help...">
+      </div>
+      <div class="help-grid">
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><path d="M4 19V10M10 19V5M16 19v-7M20 19H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Getting Started</button>
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> AI Models</button>
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Projects</button>
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Templates</button>
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 15V9M11 15v-3M15 15V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Keyboard Shortcuts</button>
+        <button class="help-item" onclick="closeHelpPanel()"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> FAQ</button>
+        <button class="help-item" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Report a Bug</button>
+        <button class="help-item" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Feature Request</button>
+      </div>
+      <button class="help-item" style="width:100%;justify-content:center;margin-bottom:6px;" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 6 8 7 8-7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Contact Support</button>
+      <div class="help-footer-row">
+        <span>Support Email</span>
+        <span class="help-badge">Coming Soon</span>
+      </div>
+      <div class="help-footer-row" style="border-top:none;">
+        <span>System Status</span>
+        <span class="help-badge">Coming Soon</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- About Mastishk panel -->
+<div id="about-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeAboutPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>ℹ️ About</h3><button class="icon-close" onclick="closeAboutPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="about-hero">
+        <div class="about-logo"><img src="biswalex_logo.svg" alt="Mastishk logo"></div>
+        <div class="about-name">Mastishk AI</div>
+        <div class="about-version">Version 1.0</div>
+      </div>
+      <div class="about-desc">Mastishk is an AI workspace designed to help users write, code, research, analyze and create with multiple AI models.</div>
+      <div class="about-powered-title">Powered By</div>
+      <div class="about-powered-grid">
+        <span class="about-chip">OpenAI</span>
+        <span class="about-chip">Anthropic</span>
+        <span class="about-chip">Google</span>
+        <span class="about-chip">DeepSeek</span>
+        <span class="about-chip">Open Source Models</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Website</button>
+        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Documentation</button>
+        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Privacy Policy</button>
+      </div>
+      <div class="about-footer">Made in India 🇮🇳<br>© 2026 Mastishk</div>
+    </div>
+  </div>
+</div>
+
+<!-- Get App panel -->
+<div id="getapp-backdrop" class="panel-backdrop" onclick="if(event.target===this)closeGetAppPanel()">
+  <div class="panel-box">
+    <div class="panel-header"><h3>📲 Get the App</h3><button class="icon-close" onclick="closeGetAppPanel()">✕</button></div>
+    <div class="panel-body">
+      <div class="app-illustration">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="app-group-title">Desktop</div>
+      <div class="app-grid">
+        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="app-card-name">Windows</span><span class="app-card-status">Coming Soon</span></div>
+        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><path d="M16.5 12.6c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.6-1.3-.1-2.5.7-3.1.7-.6 0-1.6-.7-2.7-.7-1.4 0-2.7.8-3.4 2-1.4 2.5-.4 6.2 1.1 8.2.7 1 1.6 2.1 2.7 2 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.1-3.1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span class="app-card-name">macOS</span><span class="app-card-status">Coming Soon</span></div>
+        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2a4 4 0 0 0-4 4v3l-2 5v6h12v-6l-2-5V6a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="app-card-name">Linux</span><span class="app-card-status">Coming Soon</span></div>
+      </div>
+      <div class="app-group-title">Mobile</div>
+      <div class="app-grid two-col">
+        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M10 19h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="app-card-name">Android</span><span class="app-card-status">Coming Soon</span></div>
+        <div class="app-card"><svg viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg><span class="app-card-name">iOS</span><span class="app-card-status">Coming Soon</span></div>
+      </div>
+      <div class="app-note">Desktop and mobile applications are currently under development.</div>
     </div>
   </div>
 </div>
@@ -3702,6 +4008,29 @@ function renderArchiveList() {
 
 function openThemePanel() { document.getElementById('theme-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
+
+/* ===== Settings / Get Help / About / Get App (UI-only placeholders) ===== */
+function openSettingsPanel() { document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeSettingsPanel() { document.getElementById('settings-backdrop').classList.remove('show'); }
+function openHelpPanel() { document.getElementById('help-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeHelpPanel() { document.getElementById('help-backdrop').classList.remove('show'); }
+function openAboutPanel() { document.getElementById('about-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeAboutPanel() { document.getElementById('about-backdrop').classList.remove('show'); }
+function openGetAppPanel() { document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function closeGetAppPanel() { document.getElementById('getapp-backdrop').classList.remove('show'); }
+
+(function initSettingsSliders() {
+  const fontSize = document.getElementById('settings-font-size');
+  const fontSizeVal = document.getElementById('settings-font-size-val');
+  if (fontSize && fontSizeVal) {
+    fontSize.addEventListener('input', () => { fontSizeVal.textContent = fontSize.value; });
+  }
+  const temp = document.getElementById('settings-temperature');
+  const tempVal = document.getElementById('settings-temperature-val');
+  if (temp && tempVal) {
+    temp.addEventListener('input', () => { tempVal.textContent = (temp.value / 10).toFixed(1); });
+  }
+})();
 
 /* ===================== Topbar "more" dropdown ===================== */
 function toggleTopbarMore(evt) {
