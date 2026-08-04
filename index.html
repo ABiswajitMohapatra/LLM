@@ -1666,7 +1666,7 @@
       <div class="tm-divider"></div>
       <button class="tm-item" onclick="openSettingsPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> Settings</button>
       <button class="tm-item" onclick="openHelpPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Get Help</button>
-      <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Mastishk</button>
+      <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Us</button>
       <button class="tm-item" onclick="openGetAppPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Get App</button>
       <div class="tm-divider"></div>
       <button class="tm-item" onclick="agLogout()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
@@ -4093,21 +4093,25 @@ window.addEventListener('appinstalled', () => {
   if (st) st.textContent = 'Installed';
 });
 function triggerAppInstall() {
+  const st = document.getElementById('android-install-status');
   if (window.matchMedia('(display-mode: standalone)').matches) {
-    alert('Mastishk is already installed on this device.');
+    if (st) st.textContent = 'Installed';
     return;
   }
   if (deferredInstallPrompt) {
     deferredInstallPrompt.prompt();
     deferredInstallPrompt.userChoice.then(choice => {
-      if (choice.outcome === 'accepted') {
-        const st = document.getElementById('android-install-status');
-        if (st) st.textContent = 'Installed';
-      }
+      if (choice.outcome === 'accepted' && st) st.textContent = 'Installed';
       deferredInstallPrompt = null;
     });
   } else {
-    alert('To install: open Chrome menu (⋮) and tap "Install app" or "Add to Home screen".');
+    // Chrome hasn't offered a native install prompt yet — this happens if
+    // the page isn't served over https, isn't opened as the top-level site
+    // (e.g. inside a preview/iframe), or the prompt already fired once and
+    // was dismissed earlier in this session. Give the manual fallback path
+    // instead of a blocking alert.
+    if (st) st.textContent = 'Use ⋮ menu';
+    alert('Chrome menu (⋮) → "Install app" / "Add to Home screen".\n\nNote: the automatic install button only appears when this page is opened directly at its real https:// URL in Chrome — not inside a preview/embedded frame.');
   }
 }
 
