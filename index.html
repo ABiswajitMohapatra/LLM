@@ -371,6 +371,10 @@
     text-align: left; max-width: 260px;
   }
   .suggestion-chip:hover { border-color: var(--accent); background: var(--panel); }
+  html[data-chat-width="wide"] .msg-row { max-width: 1080px; }
+  html[data-chat-width="wide"] #input-wrap { max-width: 1080px; }
+  html[data-chat-width="full"] .msg-row { max-width: 100%; }
+  html[data-chat-width="full"] #input-wrap { max-width: 100%; }
   .msg-row { display: flex; align-items: flex-start; padding: 14px 18px; gap: 10px; max-width: 820px; margin: 0 auto; }
   .msg-row.user { justify-content: flex-end; }
   .avatar {
@@ -1995,9 +1999,16 @@
         <div class="st-section-title">Appearance</div>
         <div class="st-row">
           <div class="st-row-label">Theme</div>
-          <select class="st-select" id="settings-theme-mode">
+          <select class="st-select" id="settings-theme-mode" onchange="setTheme(this.value)">
             <option value="dark">Dark</option>
             <option value="light">Light</option>
+            <option value="oled">OLED</option>
+            <option value="purple">Purple</option>
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
+            <option value="nord">Nord</option>
+            <option value="dracula">Dracula</option>
+            <option value="catppuccin">Catppuccin</option>
             <option value="system">System</option>
           </select>
         </div>
@@ -2022,13 +2033,7 @@
         <div class="st-section-title">AI</div>
         <div class="st-row">
           <div class="st-row-label">Default Model</div>
-          <select class="st-select" id="settings-default-model">
-            <option>Auto</option>
-            <option>GPT-4</option>
-            <option>Claude</option>
-            <option>Gemini</option>
-            <option>DeepSeek</option>
-          </select>
+          <select class="st-select" id="settings-default-model"></select>
         </div>
         <div class="st-row">
           <div>
@@ -2057,7 +2062,7 @@
     </div>
     <div class="panel-footer">
       <button class="panel-secondary-btn" onclick="closeSettingsPanel()">Cancel</button>
-      <button class="panel-primary-btn" onclick="closeSettingsPanel()">Save Changes</button>
+      <button class="panel-primary-btn" onclick="saveSettingsPanel()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -2081,14 +2086,14 @@
         <button class="help-item" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Report a Bug</button>
         <button class="help-item" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Feature Request</button>
       </div>
-      <button class="help-item" style="width:100%;justify-content:center;margin-bottom:6px;" onclick="alert('Coming soon')"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 6 8 7 8-7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Contact Support</button>
+      <button class="help-item" style="width:100%;justify-content:center;margin-bottom:6px;" onclick="window.location.href='mailto:biswajitmohapatrachem170@gmail.com'"><svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 6 8 7 8-7" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg> Contact Support</button>
       <div class="help-footer-row">
         <span>Support Email</span>
-        <span class="help-badge">Coming Soon</span>
+        <a href="mailto:biswajitmohapatrachem170@gmail.com" class="help-badge" style="text-decoration:none;">biswajitmohapatrachem170@gmail.com</a>
       </div>
       <div class="help-footer-row" style="border-top:none;">
         <span>System Status</span>
-        <span class="help-badge">Coming Soon</span>
+        <span class="help-badge" style="color:#22c55e;">🟢 All Systems Operational</span>
       </div>
     </div>
   </div>
@@ -2114,9 +2119,9 @@
         <span class="about-chip">Open Source Models</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Website</button>
-        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Documentation</button>
-        <button class="panel-secondary-btn" onclick="alert('Coming soon')">Privacy Policy</button>
+        <button class="panel-secondary-btn" onclick="window.open('https://masthisk-website.vercel.app/','_blank')">Website</button>
+        <button class="panel-secondary-btn" onclick="window.open('https://masthisk-website.vercel.app/docs','_blank')">Documentation</button>
+        <button class="panel-secondary-btn" onclick="window.open('https://masthisk-website.vercel.app/privacy','_blank')">Privacy Policy</button>
       </div>
       <div class="about-footer">Made in India 🇮🇳<br>© 2026 Mastishk</div>
     </div>
@@ -3805,6 +3810,7 @@ function initTheme() {
   });
 }
 initTheme();
+initSettings();
 
 // ---------- FOLDERS ----------
 function foldersStorageKey() {
@@ -4010,8 +4016,63 @@ function openThemePanel() { document.getElementById('theme-backdrop').classList.
 function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
 
 /* ===== Settings / Get Help / About / Get App (UI-only placeholders) ===== */
-function openSettingsPanel() { document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function openSettingsPanel() { populateSettingsPanel(); document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeSettingsPanel() { document.getElementById('settings-backdrop').classList.remove('show'); }
+
+const SETTINGS_KEY = 'biswalex_settings';
+function getSavedSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; }
+}
+function populateSettingsPanel() {
+  const s = getSavedSettings();
+  const modelSel = document.getElementById('settings-default-model');
+  if (modelSel) {
+    modelSel.innerHTML = '<option value="">Auto</option>' +
+      (availableModels || []).map(m => `<option value="${m.id}">${escapeHtml(m.label)}</option>`).join('');
+    modelSel.value = s.defaultModel || selectedModel || '';
+  }
+  const langSel = document.getElementById('settings-language');
+  if (langSel) langSel.value = s.language || 'English';
+  const notif = document.getElementById('settings-notifications');
+  if (notif) notif.checked = s.notifications !== false;
+  const sendEnter = document.getElementById('settings-send-enter');
+  if (sendEnter) sendEnter.checked = s.sendWithEnter !== false;
+  const themeSel = document.getElementById('settings-theme-mode');
+  if (themeSel) themeSel.value = localStorage.getItem('biswalex_theme') || 'dark';
+  const widthSel = document.getElementById('settings-chat-width');
+  if (widthSel) widthSel.value = s.chatWidth || 'Normal';
+  const fontSize = document.getElementById('settings-font-size');
+  const fontSizeVal = document.getElementById('settings-font-size-val');
+  if (fontSize) { fontSize.value = s.fontSize || 15; if (fontSizeVal) fontSizeVal.textContent = fontSize.value; }
+  const temp = document.getElementById('settings-temperature');
+  const tempVal = document.getElementById('settings-temperature-val');
+  if (temp) { temp.value = s.temperature != null ? s.temperature : 7; if (tempVal) tempVal.textContent = (temp.value / 10).toFixed(1); }
+}
+function applySettings(s) {
+  document.documentElement.style.setProperty('--chat-font-size', (s.fontSize || 15) + 'px');
+  document.querySelectorAll('.bubble').forEach(b => b.style.fontSize = (s.fontSize || 15) + 'px');
+  const widthMap = { Normal: 'normal', Wide: 'wide', Full: 'full' };
+  document.documentElement.setAttribute('data-chat-width', widthMap[s.chatWidth || 'Normal']);
+  if (s.defaultModel) { selectedModel = s.defaultModel; localStorage.setItem('biswalex_model', s.defaultModel); if (typeof updateModelLabel === 'function') updateModelLabel(); }
+}
+function saveSettingsPanel() {
+  const s = {
+    language: document.getElementById('settings-language').value,
+    notifications: document.getElementById('settings-notifications').checked,
+    sendWithEnter: document.getElementById('settings-send-enter').checked,
+    chatWidth: document.getElementById('settings-chat-width').value,
+    fontSize: parseInt(document.getElementById('settings-font-size').value, 10),
+    defaultModel: document.getElementById('settings-default-model').value,
+    temperature: parseInt(document.getElementById('settings-temperature').value, 10)
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  applySettings(s);
+  closeSettingsPanel();
+}
+function initSettings() {
+  const s = getSavedSettings();
+  applySettings(s);
+}
 function openHelpPanel() { document.getElementById('help-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeHelpPanel() { document.getElementById('help-backdrop').classList.remove('show'); }
 function openAboutPanel() { document.getElementById('about-backdrop').classList.add('show'); closeSidebarOnMobile(); }
@@ -5137,7 +5198,8 @@ function autoGrow(el) {
 }
 
 function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  const sendWithEnter = getSavedSettings().sendWithEnter !== false;
+  if (e.key === 'Enter' && !e.shiftKey && sendWithEnter) {
     e.preventDefault();
     sendMessage();
   }
