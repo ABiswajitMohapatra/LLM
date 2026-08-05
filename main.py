@@ -3,6 +3,9 @@ import io
 import json
 import os
 import secrets
+import urllib.error
+import urllib.parse
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 import jwt as _pyjwt
@@ -227,6 +230,13 @@ class FeedbackRequest(BaseModel):
     admin_email: str = ""
 
 
+class GenerateImageRequest(BaseModel):
+    prompt: str
+    width: int = 1024
+    height: int = 1024
+    seed: int | None = None
+
+
 @app.get("/")
 def health():
     return {
@@ -321,6 +331,36 @@ def submit_feedback(req: FeedbackRequest):
     )
     sent = auth._send_email(to_email, "New User Feedback - Mastishk", body)
     return {"message": "Feedback submitted.", "email_sent": sent}
+
+
+POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY")
+
+
+@app.post("/generate-image")
+def generate_image(req: GenerateImageRequest, user=Depends(get_current_user)):
+    """Proxies image generation to Pollinations so the sk_ secret key never
+    reaches the browser - the key lives only in this process's env vars."""
+    prompt = req.prompt.strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt is required.")
+    if not POLLINATIONS_API_KEY:
+        raise HTTPException(status_code=500, detail="Image generation is not configured (missing POLLINATIONS_API_KEY).")
+
+    params = {"width": req.width, "height": req.height, "nologo": "true"}
+    if req.seed is not None:
+        params["seed"] = req.seed
+    url = f"https://gen.pollinations.ai/image/{urllib.parse.quote(prompt)}?{urllib.parse.urlencode(params)}"
+    request = urllib.request.Request(url, headers={"Authorization": f"Bearer {POLLINATIONS_API_KEY}"})
+    try:
+        with urllib.request.urlopen(request, timeout=60) as resp:
+            image_bytes = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+    except urllib.error.HTTPError as e:
+        raise HTTPException(status_code=e.code, detail=f"Image generation failed: {e.reason}")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Image generation failed: {e}")
+
+    return StreamingResponse(io.BytesIO(image_bytes), media_type=content_type)
 
 
 @app.get("/rag-status")
