@@ -5792,10 +5792,20 @@ function renderArtifactBody() {
   }
 
   if (type === 'html') {
-    body.innerHTML = `<iframe sandbox="allow-scripts allow-forms allow-modals allow-popups" srcdoc="${escapeHtml(code)}"></iframe>`;
+    const fr1 = document.createElement('iframe');
+    fr1.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+    fr1.style.cssText = 'width:100%;height:100%;border:none;background:#fff;display:block;';
+    body.innerHTML = '';
+    body.appendChild(fr1);
+    fr1.srcdoc = code;
   } else if (type === 'svg') {
     const doc = `<!DOCTYPE html><html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff;}</style></head><body>${code}</body></html>`;
-    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+    const fr2 = document.createElement('iframe');
+    fr2.setAttribute('sandbox', 'allow-scripts');
+    fr2.style.cssText = 'width:100%;height:100%;border:none;background:#fff;display:block;';
+    body.innerHTML = '';
+    body.appendChild(fr2);
+    fr2.srcdoc = doc;
   } else if (type === 'react') {
     const cleanCode = code.replace(/export\s+default\s+/g, '');
     const compName = guessReactComponentName(cleanCode);
@@ -5816,7 +5826,12 @@ try {
 }
 <\/script>
 </body></html>`;
-    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+    const fr3 = document.createElement('iframe');
+    fr3.setAttribute('sandbox', 'allow-scripts');
+    fr3.style.cssText = 'width:100%;height:100%;border:none;background:#fff;display:block;';
+    body.innerHTML = '';
+    body.appendChild(fr3);
+    fr3.srcdoc = doc;
   } else if (type === 'mermaid') {
     const doc = `<!DOCTYPE html><html><head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"><\/script>
@@ -5825,7 +5840,12 @@ try {
 <pre class="mermaid">${code}</pre>
 <script>mermaid.initialize({startOnLoad:true});<\/script>
 </body></html>`;
-    body.innerHTML = `<iframe sandbox="allow-scripts" srcdoc="${escapeHtml(doc)}"></iframe>`;
+    const fr4 = document.createElement('iframe');
+    fr4.setAttribute('sandbox', 'allow-scripts');
+    fr4.style.cssText = 'width:100%;height:100%;border:none;background:#fff;display:block;';
+    body.innerHTML = '';
+    body.appendChild(fr4);
+    fr4.srcdoc = doc;
   } else if (type === 'markdown') {
     body.innerHTML = `<div class="artifact-markdown">${renderMarkdown(code)}</div>`;
   } else {
