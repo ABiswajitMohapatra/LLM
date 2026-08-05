@@ -3054,36 +3054,25 @@ function generateImage() {
   if (!prompt) { output.textContent = 'Type a prompt first.'; return; }
   const [w, h] = document.getElementById('image-ratio').value.split('x');
   const seed = Math.floor(Math.random() * 1e6);
+  // Pollinations migrated to a new unified host (gen.pollinations.ai); the
+  // old image.pollinations.ai host has been flaky/unreachable since their
+  // migration, so try the new host first and fall back to the old one.
+  const urls = [
+    `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`,
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`
+  ];
   lastImagePrompt = prompt;
   output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
   actions.style.display = 'none';
-  // image.pollinations.ai/prompt is still the correct img-tag endpoint (not gen.*).
-  // Using img.src directly (no fetch) avoids CORS — browser loads it natively.
-  // Added model=flux and a 60s timeout since Pollinations can be slow.
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=flux`;
-  const img = new Image();
-  img.style.maxWidth = '100%';
-  img.alt = prompt;
-  let done = false;
-  const timer = setTimeout(() => {
-    if (!done) { done = true; output.textContent = '⚠️ Could not generate image. Try again.'; }
-  }, 60000);
-  img.onload = () => {
-    if (done) return;
-    done = true;
-    clearTimeout(timer);
-    lastGeneratedImageUrl = url;
-    output.innerHTML = '';
-    output.appendChild(img);
-    actions.style.display = 'flex';
-  };
-  img.onerror = () => {
-    if (done) return;
-    done = true;
-    clearTimeout(timer);
-    output.textContent = '⚠️ Could not generate image. Try again.';
-  };
-  img.src = url;
+  function tryUrl(i) {
+    if (i >= urls.length) { output.textContent = '⚠️ Could not generate image. Try again.'; return; }
+    const img = new Image();
+    img.onload = () => { lastGeneratedImageUrl = urls[i]; output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
+    img.onerror = () => tryUrl(i + 1);
+    img.src = urls[i];
+    img.alt = prompt;
+  }
+  tryUrl(0);
 }
 
 function regenerateImage() { generateImage(); }
