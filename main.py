@@ -360,6 +360,7 @@ def generate_image(req: GenerateImageRequest, user=Depends(get_current_user)):
             err_body = e.read().decode("utf-8", errors="replace")
         except Exception:
             err_body = ""
+        print(f"[generate-image] Pollinations HTTPError {e.code}: {e.reason} - {err_body}")
         raise HTTPException(status_code=e.code, detail=f"Image generation failed: {e.reason} - {err_body}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Image generation failed: {e}")
