@@ -686,6 +686,7 @@
     gap: 14px;
     width: 56px;
     padding-top: 14px;
+    padding-bottom: 14px;
     background: var(--panel-2);
     border-right: 1px solid var(--border);
     box-shadow: 1px 0 0 var(--border);
@@ -700,6 +701,13 @@
   }
   #sidebar-rail button:hover { background: var(--panel-2); color: var(--text); }
   #sidebar-rail button svg { width: 18px; height: 18px; }
+  #rail-avatar-btn {
+    margin-top: auto;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg,var(--indigo,#6d5efc),var(--blue,#4f9dff));
+    color: #fff; font-size: 12px; font-weight: 600; font-family: inherit;
+  }
+  #rail-avatar-btn:hover { opacity: .85; background: linear-gradient(135deg,var(--indigo,#6d5efc),var(--blue,#4f9dff)); }
 
   .image-output { display:flex; align-items:center; justify-content:center; min-height:220px; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .image-output img { max-width:100%; max-height:360px; display:block; }
@@ -1606,6 +1614,9 @@
   </button>
   <button onclick="toggleSidebar()" data-tooltip="History" aria-label="History">
     <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+  <button id="rail-avatar-btn" onclick="toggleUserMenu(event)" data-tooltip="Account" aria-label="User menu">
+    <span id="rail-avatar-initials">--</span>
   </button>
 </div>
 <div id="sidebar">
@@ -2701,6 +2712,7 @@ function getInitials(name, email) {
 function renderUserAvatar() {
   const user = getStoredUser();
   const initialsEl = document.getElementById('user-avatar-initials');
+  const railInitialsEl = document.getElementById('rail-avatar-initials');
   const nameEl = document.getElementById('user-menu-name');
   const emailEl = document.getElementById('user-menu-email');
   const sidebarNameEl = document.getElementById('sidebar-user-name');
@@ -2708,12 +2720,14 @@ function renderUserAvatar() {
   if (langEl) langEl.value = getSavedSettings().language || 'English';
   if (!user) {
     if (initialsEl) initialsEl.textContent = '--';
+    if (railInitialsEl) railInitialsEl.textContent = '--';
     if (nameEl) nameEl.textContent = '';
     if (emailEl) emailEl.textContent = '';
     if (sidebarNameEl) sidebarNameEl.textContent = '';
     return;
   }
   if (initialsEl) initialsEl.textContent = getInitials(user.name, user.email);
+  if (railInitialsEl) railInitialsEl.textContent = getInitials(user.name, user.email);
   if (nameEl) nameEl.textContent = user.name || '';
   if (emailEl) emailEl.textContent = user.email || '';
   if (sidebarNameEl) sidebarNameEl.textContent = user.name || '';
@@ -4148,7 +4162,7 @@ document.addEventListener('click', function(e){
   if (wrap && !wrap.contains(e.target)) closeGetHelpMenu();
 });
 
-var HELP_CENTER_WEBSITE_URL = ""; // TODO: add website link here later
+var HELP_CENTER_WEBSITE_URL = "https://help-us-theta.vercel.app/";
 function openHelpCenterWebsite() {
   if (HELP_CENTER_WEBSITE_URL) { window.open(HELP_CENTER_WEBSITE_URL, '_blank'); }
   else { alert('Coming soon'); }
