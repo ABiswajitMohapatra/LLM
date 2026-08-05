@@ -272,6 +272,13 @@
   }
   #get-help-menu.open { display: block; }
   #get-help-menu .tm-item { white-space: nowrap; }
+  #about-menu {
+    display: none; position: absolute; left: 0; top: 100%; margin-top: 4px; width: 100%;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 6px; box-shadow: 0 6px 20px rgba(0,0,0,.35); z-index: 40;
+  }
+  #about-menu.open { display: block; }
+  #about-menu .tm-item { white-space: nowrap; }
 
   /* Main */
   #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
@@ -699,15 +706,15 @@
   }
   #sidebar-rail button:hover { background: var(--panel-2); color: var(--text); }
   #sidebar-rail button svg { width: 18px; height: 18px; }
-  #rail-avatar-btn {
+  #sidebar-rail button#rail-avatar-btn {
     margin-top: auto;
     width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     display: flex; align-items: center; justify-content: center;
     border: none; cursor: pointer; padding: 0;
   }
-  #rail-avatar-btn span { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: .3px; font-family: inherit; }
-  #rail-avatar-btn:hover { opacity: .85; }
+  #sidebar-rail button#rail-avatar-btn span { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: .3px; font-family: inherit; }
+  #sidebar-rail button#rail-avatar-btn:hover { opacity: .85; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
 
   .image-output { display:flex; align-items:center; justify-content:center; min-height:220px; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .image-output img { max-width:100%; max-height:360px; display:block; }
@@ -1707,7 +1714,14 @@
     <button class="tm-item" onclick="closeGetHelpMenu();openFeedbackPanel()">User Feedback</button>
   </div>
   </div>
-  <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Us</button>
+  <div id="about-wrap" style="position:relative;">
+  <button class="tm-item" onclick="toggleAboutMenu(event)"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Us</button>
+  <div id="about-menu">
+    <button class="tm-item" onclick="closeAboutMenu();window.open('https://masthisk-website.vercel.app/','_blank')">Website</button>
+    <button class="tm-item" onclick="closeAboutMenu();window.open('https://masthisk-website.vercel.app/docs','_blank')">Documentation</button>
+    <button class="tm-item" onclick="closeAboutMenu();window.open('https://masthisk-website.vercel.app/privacy','_blank')">Privacy Policy</button>
+  </div>
+  </div>
   <button class="tm-item" onclick="openGetAppPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Get App</button>
   <div class="tm-item" id="user-menu-language-row"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Language
     <select id="user-menu-language" onchange="changeUserMenuLanguage(this.value)">
@@ -4187,6 +4201,16 @@ function closeGetHelpMenu() { document.getElementById('get-help-menu').classList
 document.addEventListener('click', function(e){
   var wrap = document.getElementById('get-help-wrap');
   if (wrap && !wrap.contains(e.target)) closeGetHelpMenu();
+});
+
+function toggleAboutMenu(evt) {
+  evt.stopPropagation();
+  document.getElementById('about-menu').classList.toggle('open');
+}
+function closeAboutMenu() { document.getElementById('about-menu').classList.remove('open'); }
+document.addEventListener('click', function(e){
+  var wrap = document.getElementById('about-wrap');
+  if (wrap && !wrap.contains(e.target)) closeAboutMenu();
 });
 
 var HELP_CENTER_WEBSITE_URL = "https://help-us-theta.vercel.app/";
