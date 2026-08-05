@@ -3057,28 +3057,33 @@ function generateImage() {
   lastImagePrompt = prompt;
   output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
   actions.style.display = 'none';
-  // FIX: switched from new Image() to fetch()+blob to handle Pollinations redirects/CORS properly.
-  // new Image() was silently failing because Pollinations returns a redirect that browsers
-  // block as a CORS error in img.onload context. fetch() follows the redirect and gives us
-  // the actual image bytes, which we turn into a local blob URL that always renders.
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true&nofeed=true`;
-  fetch(url)
-    .then(res => {
-      if (!res.ok) throw new Error('failed');
-      return res.blob();
-    })
-    .then(blob => {
-      const blobUrl = URL.createObjectURL(blob);
-      lastGeneratedImageUrl = blobUrl;
-      const img = new Image();
-      img.src = blobUrl;
-      img.alt = prompt;
-      img.style.maxWidth = '100%';
-      output.innerHTML = '';
-      output.appendChild(img);
-      actions.style.display = 'flex';
-    })
-    .catch(() => { output.textContent = '⚠️ Could not generate image. Try again.'; });
+  // image.pollinations.ai/prompt is still the correct img-tag endpoint (not gen.*).
+  // Using img.src directly (no fetch) avoids CORS — browser loads it natively.
+  // Added model=flux and a 60s timeout since Pollinations can be slow.
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true&model=flux`;
+  const img = new Image();
+  img.style.maxWidth = '100%';
+  img.alt = prompt;
+  let done = false;
+  const timer = setTimeout(() => {
+    if (!done) { done = true; output.textContent = '⚠️ Could not generate image. Try again.'; }
+  }, 60000);
+  img.onload = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    lastGeneratedImageUrl = url;
+    output.innerHTML = '';
+    output.appendChild(img);
+    actions.style.display = 'flex';
+  };
+  img.onerror = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    output.textContent = '⚠️ Could not generate image. Try again.';
+  };
+  img.src = url;
 }
 
 function regenerateImage() { generateImage(); }
