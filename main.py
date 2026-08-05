@@ -356,7 +356,11 @@ def generate_image(req: GenerateImageRequest, user=Depends(get_current_user)):
             image_bytes = resp.read()
             content_type = resp.headers.get("Content-Type", "image/jpeg")
     except urllib.error.HTTPError as e:
-        raise HTTPException(status_code=e.code, detail=f"Image generation failed: {e.reason}")
+        try:
+            err_body = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            err_body = ""
+        raise HTTPException(status_code=e.code, detail=f"Image generation failed: {e.reason} - {err_body}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Image generation failed: {e}")
 
