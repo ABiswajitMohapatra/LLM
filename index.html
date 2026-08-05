@@ -246,16 +246,14 @@
   #user-menu-language { margin-left: auto; background: none; color: var(--text-dim); border: none; font-size: 12.5px; cursor: pointer; }
   #user-menu {
     display: none;
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
+    position: fixed;
     min-width: 200px;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,.25);
-    z-index: 50;
+    z-index: 60;
   }
   #user-menu.open { display: block; }
   #user-menu-name { font-size: 13px; font-weight: 600; color: var(--text); padding: 6px 8px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -703,11 +701,13 @@
   #sidebar-rail button svg { width: 18px; height: 18px; }
   #rail-avatar-btn {
     margin-top: auto;
-    width: 32px; height: 32px; border-radius: 50%;
-    background: linear-gradient(135deg,var(--indigo,#6d5efc),var(--blue,#4f9dff));
-    color: #fff; font-size: 12px; font-weight: 600; font-family: inherit;
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; padding: 0;
   }
-  #rail-avatar-btn:hover { opacity: .85; background: linear-gradient(135deg,var(--indigo,#6d5efc),var(--blue,#4f9dff)); }
+  #rail-avatar-btn span { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: .3px; font-family: inherit; }
+  #rail-avatar-btn:hover { opacity: .85; }
 
   .image-output { display:flex; align-items:center; justify-content:center; min-height:220px; background:var(--code-bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .image-output img { max-width:100%; max-height:360px; display:block; }
@@ -1692,32 +1692,33 @@
       <span id="user-avatar-initials">--</span>
     </button>
     <span id="sidebar-user-name"></span>
-    <div id="user-menu">
-      <div id="user-menu-name"></div>
-      <div id="user-menu-email"></div>
-      <div class="tm-divider"></div>
-      <button class="tm-item" onclick="openSettingsPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> Settings</button>
-      <div id="get-help-wrap" style="position:relative;">
-      <button class="tm-item" onclick="toggleGetHelpMenu(event)"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Get Help</button>
-      <div id="get-help-menu">
-        <button class="tm-item" onclick="closeGetHelpMenu();openHelpCenterWebsite()">Help Center</button>
-        <button class="tm-item" onclick="closeGetHelpMenu();openFeedbackPanel()">User Feedback</button>
-      </div>
-      </div>
-      <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Us</button>
-      <button class="tm-item" onclick="openGetAppPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Get App</button>
-      <div class="tm-item" id="user-menu-language-row"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Language
-        <select id="user-menu-language" onchange="changeUserMenuLanguage(this.value)">
-          <option>English</option>
-          <option>Hindi</option>
-          <option>Spanish</option>
-          <option>French</option>
-        </select>
-      </div>
-      <div class="tm-divider"></div>
-      <button class="tm-item" onclick="agLogout()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
-    </div>
   </div>
+</div>
+
+<div id="user-menu">
+  <div id="user-menu-name"></div>
+  <div id="user-menu-email"></div>
+  <div class="tm-divider"></div>
+  <button class="tm-item" onclick="openSettingsPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> Settings</button>
+  <div id="get-help-wrap" style="position:relative;">
+  <button class="tm-item" onclick="toggleGetHelpMenu(event)"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg> Get Help</button>
+  <div id="get-help-menu">
+    <button class="tm-item" onclick="closeGetHelpMenu();openHelpCenterWebsite()">Help Center</button>
+    <button class="tm-item" onclick="closeGetHelpMenu();openFeedbackPanel()">User Feedback</button>
+  </div>
+  </div>
+  <button class="tm-item" onclick="openAboutPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/></svg> About Us</button>
+  <button class="tm-item" onclick="openGetAppPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Get App</button>
+  <div class="tm-item" id="user-menu-language-row"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Language
+    <select id="user-menu-language" onchange="changeUserMenuLanguage(this.value)">
+      <option>English</option>
+      <option>Hindi</option>
+      <option>Spanish</option>
+      <option>French</option>
+    </select>
+  </div>
+  <div class="tm-divider"></div>
+  <button class="tm-item" onclick="agLogout()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Logout</button>
 </div>
 
 <div id="main">
@@ -2742,12 +2743,38 @@ function changeUserMenuLanguage(value) {
 
 function toggleUserMenu(e) {
   if (e) e.stopPropagation();
-  document.getElementById('user-menu').classList.toggle('open');
+  const menu = document.getElementById('user-menu');
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) { menu.classList.remove('open'); return; }
+  const btn = (e && e.currentTarget) || document.getElementById('user-avatar-btn');
+  const rect = btn.getBoundingClientRect();
+  menu.classList.add('open');
+  // Measure after showing so offsetHeight is accurate
+  const menuHeight = menu.offsetHeight;
+  const menuWidth = menu.offsetWidth;
+  if (btn.id === 'rail-avatar-btn') {
+    let left = rect.right + 8;
+    let top = rect.bottom - menuHeight;
+    if (top < 8) top = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = rect.left - menuWidth - 8;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.bottom = 'auto';
+  } else {
+    let left = rect.left;
+    let top = rect.top - menuHeight - 8;
+    if (top < 8) top = rect.bottom + 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.bottom = 'auto';
+  }
 }
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('user-menu');
   const btn = document.getElementById('user-avatar-btn');
-  if (menu && menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) {
+  const railBtn = document.getElementById('rail-avatar-btn');
+  if (menu && menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn && e.target !== railBtn && !(btn && btn.contains(e.target)) && !(railBtn && railBtn.contains(e.target))) {
     menu.classList.remove('open');
   }
 });
