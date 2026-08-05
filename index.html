@@ -1372,7 +1372,7 @@
     background: none; border: none; border-radius: 8px; padding: 9px 10px; font-size: 13.5px;
   }
   #topbar-more-menu #export-btn:hover { background: var(--panel-2); }
-  #topbar-more-menu #export-menu { position: static; box-shadow: none; border: none; padding: 0 0 0 6px; margin-top: 2px; }
+  #topbar-more-menu #export-menu { position: absolute; bottom: calc(100% + 6px); top: auto; left: 0; right: auto; box-shadow: 0 6px 18px rgba(0,0,0,.25); border: 1px solid var(--border); margin-top: 0; }
 
   /* Persona panel */
   #persona-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -4195,6 +4195,7 @@ function closeHelpPanel() { document.getElementById('help-backdrop').classList.r
 
 function toggleGetHelpMenu(evt) {
   evt.stopPropagation();
+  closeAboutMenu();
   document.getElementById('get-help-menu').classList.toggle('open');
 }
 function closeGetHelpMenu() { document.getElementById('get-help-menu').classList.remove('open'); }
@@ -4205,6 +4206,7 @@ document.addEventListener('click', function(e){
 
 function toggleAboutMenu(evt) {
   evt.stopPropagation();
+  closeGetHelpMenu();
   document.getElementById('about-menu').classList.toggle('open');
 }
 function closeAboutMenu() { document.getElementById('about-menu').classList.remove('open'); }
