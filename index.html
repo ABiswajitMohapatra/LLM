@@ -1274,6 +1274,23 @@
     font-size: 12.5px; padding: 7px 12px; border-bottom: 2px solid transparent; font-weight: 500;
   }
   .artifact-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  /* Claude-style preview/code toggle in header */
+  .artifact-mode-toggle {
+    display: flex; align-items: center; gap: 2px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 3px; flex-shrink: 0;
+  }
+  .artifact-mode-btn {
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    border-radius: 6px; width: 28px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s ease, color .15s ease;
+  }
+  .artifact-mode-btn:hover { color: var(--text); background: var(--border); }
+  .artifact-mode-btn.active { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  /* Fade transition for artifact body */
+  .artifact-body { transition: opacity .2s ease; }
+  .artifact-body.fading { opacity: 0; }
   .artifact-toolbar { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
   .artifact-icon-btn {
     background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
@@ -2386,6 +2403,15 @@
   <div class="artifact-header">
     <span class="artifact-badge" id="artifact-badge">CODE</span>
     <span class="artifact-title" id="artifact-title">Artifact</span>
+    <!-- Claude-style Preview / Code icon toggle -->
+    <div class="artifact-mode-toggle" id="artifact-mode-toggle" style="display:none;">
+      <button class="artifact-mode-btn active" id="artifact-mode-preview" onclick="setArtifactTab('preview')" data-tooltip="Preview" aria-label="Preview">
+        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+      </button>
+      <button class="artifact-mode-btn" id="artifact-mode-code" onclick="setArtifactTab('code')" data-tooltip="Code" aria-label="Code">
+        <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
     <div class="artifact-toolbar">
       <button class="artifact-icon-btn" onclick="copyArtifactCode()" data-tooltip="Copy code" aria-label="Copy code"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
       <button class="artifact-icon-btn" onclick="downloadArtifact()" data-tooltip="Download" aria-label="Download"><svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -5721,20 +5747,32 @@ function renderArtifactTabs() {
   const tabsEl = document.getElementById('artifact-tabs');
   const previewable = ['html', 'svg', 'react', 'mermaid', 'markdown'].includes(artifactState.type);
   artifactActiveTab = previewable ? 'preview' : 'code';
-  if (previewable) {
-    tabsEl.innerHTML = `
-      <button class="artifact-tab active" data-tab="preview" onclick="setArtifactTab('preview')">Preview</button>
-      <button class="artifact-tab" data-tab="code" onclick="setArtifactTab('code')">Code</button>`;
-  } else {
-    tabsEl.innerHTML = `<button class="artifact-tab active" data-tab="code" onclick="setArtifactTab('code')">Code</button>`;
-  }
+  // Show/hide Claude-style mode toggle in header
+  const modeToggle = document.getElementById('artifact-mode-toggle');
+  if (modeToggle) modeToggle.style.display = previewable ? 'flex' : 'none';
+  // Keep original tabs hidden (empty) for compatibility; use header toggle instead
+  tabsEl.innerHTML = '';
+  // Sync toggle button states
+  _syncArtifactModeToggle();
   renderArtifactBody();
+}
+
+function _syncArtifactModeToggle() {
+  const previewBtn = document.getElementById('artifact-mode-preview');
+  const codeBtn = document.getElementById('artifact-mode-code');
+  if (!previewBtn || !codeBtn) return;
+  previewBtn.classList.toggle('active', artifactActiveTab === 'preview');
+  codeBtn.classList.toggle('active', artifactActiveTab === 'code');
 }
 
 function setArtifactTab(tab) {
   artifactActiveTab = tab;
   document.querySelectorAll('.artifact-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  renderArtifactBody();
+  _syncArtifactModeToggle();
+  // Smooth fade transition
+  const body = document.getElementById('artifact-body');
+  body.classList.add('fading');
+  setTimeout(() => { body.classList.remove('fading'); renderArtifactBody(); }, 150);
 }
 
 function renderArtifactBody() {
