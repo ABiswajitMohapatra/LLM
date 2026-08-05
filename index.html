@@ -256,8 +256,11 @@
     z-index: 60;
   }
   #user-menu.open { display: block; }
+  #user-menu-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
   #user-menu-name { font-size: 13px; font-weight: 600; color: var(--text); padding: 6px 8px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #user-menu-email { font-size: 11.5px; color: var(--text-dim); padding: 0 8px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #user-menu-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 15px; line-height: 1; padding: 6px 6px 0 0; flex-shrink: 0; }
+  #user-menu-close:hover { color: var(--text); }
   #user-menu .tm-divider { height: 1px; background: var(--border); margin: 6px 4px; }
   #user-menu .tm-item {
     display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
@@ -1703,8 +1706,13 @@
 </div>
 
 <div id="user-menu">
-  <div id="user-menu-name"></div>
-  <div id="user-menu-email"></div>
+  <div id="user-menu-header">
+    <div>
+      <div id="user-menu-name"></div>
+      <div id="user-menu-email"></div>
+    </div>
+    <button id="user-menu-close" onclick="closeUserMenu(event)" aria-label="Close">✕</button>
+  </div>
   <div class="tm-divider"></div>
   <button class="tm-item" onclick="openSettingsPanel()"><svg viewBox="0 0 24 24" fill="none" width="16" height="16"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg> Settings</button>
   <div id="get-help-wrap" style="position:relative;">
@@ -2784,10 +2792,19 @@ function toggleUserMenu(e) {
     menu.style.bottom = 'auto';
   }
 }
+function closeUserMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('user-menu');
+  if (menu) menu.classList.remove('open');
+}
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('user-menu');
   const btn = document.getElementById('user-avatar-btn');
   const railBtn = document.getElementById('rail-avatar-btn');
+  // Clicks inside any modal/panel (Settings, Get Help, Feedback, About, Get App, etc.)
+  // must never auto-close the profile menu - it only closes via the ✕ button
+  // or the avatar toggle itself.
+  if (e.target.closest('.panel-backdrop')) return;
   if (menu && menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn && e.target !== railBtn && !(btn && btn.contains(e.target)) && !(railBtn && railBtn.contains(e.target))) {
     menu.classList.remove('open');
   }
@@ -4133,7 +4150,7 @@ function openThemePanel() { document.getElementById('theme-backdrop').classList.
 function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
 
 /* ===== Settings / Get Help / About / Get App (UI-only placeholders) ===== */
-function openSettingsPanel() { populateSettingsPanel(); closeGetAppPanel(); document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function openSettingsPanel() { populateSettingsPanel(); closeGetAppPanel(); closeGetHelpMenu(); closeAboutMenu(); document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeSettingsPanel() { document.getElementById('settings-backdrop').classList.remove('show'); }
 
 const SETTINGS_KEY = 'biswalex_settings';
@@ -4196,6 +4213,8 @@ function closeHelpPanel() { document.getElementById('help-backdrop').classList.r
 function toggleGetHelpMenu(evt) {
   evt.stopPropagation();
   closeAboutMenu();
+  closeSettingsPanel();
+  closeGetAppPanel();
   document.getElementById('get-help-menu').classList.toggle('open');
 }
 function closeGetHelpMenu() { document.getElementById('get-help-menu').classList.remove('open'); }
@@ -4207,6 +4226,8 @@ document.addEventListener('click', function(e){
 function toggleAboutMenu(evt) {
   evt.stopPropagation();
   closeGetHelpMenu();
+  closeSettingsPanel();
+  closeGetAppPanel();
   document.getElementById('about-menu').classList.toggle('open');
 }
 function closeAboutMenu() { document.getElementById('about-menu').classList.remove('open'); }
@@ -4258,7 +4279,7 @@ async function submitFeedback() {
 }
 function openAboutPanel() { document.getElementById('about-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeAboutPanel() { document.getElementById('about-backdrop').classList.remove('show'); }
-function openGetAppPanel() { closeSettingsPanel(); document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function openGetAppPanel() { closeSettingsPanel(); closeGetHelpMenu(); closeAboutMenu(); document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeGetAppPanel() { document.getElementById('getapp-backdrop').classList.remove('show'); }
 
 let deferredInstallPrompt = null;
