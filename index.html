@@ -4224,13 +4224,37 @@ function openHelpCenterWebsite() {
 var FEEDBACK_ADMIN_EMAIL = "biswajitmohapatrachem170@gmail.com";
 function openFeedbackPanel() { document.getElementById('feedback-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeFeedbackPanel() { document.getElementById('feedback-backdrop').classList.remove('show'); document.getElementById('feedback-text').value=''; }
-function submitFeedback() {
+async function submitFeedback() {
   var text = document.getElementById('feedback-text').value.trim();
   if (!text) { alert('Please enter your feedback'); return; }
-  var subject = encodeURIComponent('User Feedback');
-  var body = encodeURIComponent(text);
-  window.location.href = 'mailto:' + FEEDBACK_ADMIN_EMAIL + '?subject=' + subject + '&body=' + body;
-  closeFeedbackPanel();
+  var submitBtn = document.querySelector('#feedback-backdrop .help-item[onclick="submitFeedback()"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
+  var user = getStoredUser && getStoredUser();
+  try {
+    const res = await apiFetch(API_URL + '/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        user_name: (user && user.name) || '',
+        user_email: (user && user.email) || '',
+        admin_email: FEEDBACK_ADMIN_EMAIL
+      })
+    });
+    if (res.ok) {
+      alert('Thanks! Your feedback has been sent.');
+      closeFeedbackPanel();
+    } else {
+      throw new Error('Feedback endpoint failed');
+    }
+  } catch (err) {
+    var subject = encodeURIComponent('User Feedback');
+    var body = encodeURIComponent(text);
+    window.location.href = 'mailto:' + FEEDBACK_ADMIN_EMAIL + '?subject=' + subject + '&body=' + body;
+    closeFeedbackPanel();
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit'; }
+  }
 }
 function openAboutPanel() { document.getElementById('about-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeAboutPanel() { document.getElementById('about-backdrop').classList.remove('show'); }
