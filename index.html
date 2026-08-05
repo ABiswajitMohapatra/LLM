@@ -5862,6 +5862,29 @@ try {
 
 function copyArtifactCode() {
   navigator.clipboard.writeText(artifactState.code);
+  // Show "Copied!" feedback on the copy button
+  const copyBtn = document.querySelector('.artifact-toolbar .artifact-icon-btn[onclick="copyArtifactCode()"]');
+  if (copyBtn) {
+    const orig = copyBtn.innerHTML;
+    copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M20 6L9 17l-5-5" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    copyBtn.style.color = '#4ade80';
+    copyBtn.style.borderColor = '#4ade80';
+    setTimeout(() => { copyBtn.innerHTML = orig; copyBtn.style.color = ''; copyBtn.style.borderColor = ''; }, 1500);
+  }
+}
+
+// Auto-open artifact panel in preview mode when response contains visual HTML/SVG/React/Mermaid
+function _autoOpenArtifactIfVisual(bubbleEl) {
+  const pre = bubbleEl.querySelector('pre code');
+  if (!pre) return;
+  const lang = ([...pre.classList].find(c => c.startsWith('language-')) || '').replace('language-', '').toLowerCase();
+  const visualTypes = ['html', 'svg', 'react', 'mermaid'];
+  if (!visualTypes.includes(lang)) return;
+  const code = pre.textContent;
+  if (!code || !code.trim()) return;
+  // Only auto-open if artifact panel is not already open
+  if (document.getElementById('artifact-panel').classList.contains('show')) return;
+  openArtifact(code, lang);
 }
 
 function downloadArtifact() {
@@ -6599,6 +6622,8 @@ async function streamAssistantReply(query) {
           } else if (payload.type === "done") {
             bubbleEl.innerHTML = renderMarkdown(fullText);
             enhanceBubble(bubbleEl);
+            // Auto-open artifact in preview mode for HTML/SVG/React/Mermaid
+            _autoOpenArtifactIfVisual(bubbleEl);
           }
         } catch (e) {}
       }
