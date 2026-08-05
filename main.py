@@ -220,6 +220,13 @@ class ResetPasswordRequest(BaseModel):
     confirm_password: str
 
 
+class FeedbackRequest(BaseModel):
+    message: str
+    user_name: str = ""
+    user_email: str = ""
+    admin_email: str = ""
+
+
 @app.get("/")
 def health():
     return {
@@ -299,6 +306,21 @@ def auth_reset_password(req: ResetPasswordRequest):
     except auth.AuthError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return result
+
+
+@app.post("/feedback")
+def submit_feedback(req: FeedbackRequest):
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="Feedback message is required.")
+    to_email = req.admin_email or auth.ADMIN_NOTIFY_EMAIL
+    if not to_email:
+        raise HTTPException(status_code=500, detail="Admin notification email is not configured.")
+    body = (
+        f"From: {req.user_name or 'Unknown'} ({req.user_email or 'no email'})\n\n"
+        f"{req.message}"
+    )
+    sent = auth._send_email(to_email, "New User Feedback - Mastishk", body)
+    return {"message": "Feedback submitted.", "email_sent": sent}
 
 
 @app.get("/rag-status")
