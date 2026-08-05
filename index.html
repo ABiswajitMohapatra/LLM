@@ -4133,7 +4133,7 @@ function openThemePanel() { document.getElementById('theme-backdrop').classList.
 function closeThemePanel() { document.getElementById('theme-backdrop').classList.remove('show'); }
 
 /* ===== Settings / Get Help / About / Get App (UI-only placeholders) ===== */
-function openSettingsPanel() { populateSettingsPanel(); document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function openSettingsPanel() { populateSettingsPanel(); closeGetAppPanel(); document.getElementById('settings-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeSettingsPanel() { document.getElementById('settings-backdrop').classList.remove('show'); }
 
 const SETTINGS_KEY = 'biswalex_settings';
@@ -4258,7 +4258,7 @@ async function submitFeedback() {
 }
 function openAboutPanel() { document.getElementById('about-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeAboutPanel() { document.getElementById('about-backdrop').classList.remove('show'); }
-function openGetAppPanel() { document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
+function openGetAppPanel() { closeSettingsPanel(); document.getElementById('getapp-backdrop').classList.add('show'); closeSidebarOnMobile(); }
 function closeGetAppPanel() { document.getElementById('getapp-backdrop').classList.remove('show'); }
 
 let deferredInstallPrompt = null;
