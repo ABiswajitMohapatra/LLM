@@ -3027,16 +3027,26 @@ function generateImage() {
   const actions = document.getElementById('image-panel-actions');
   if (!prompt) { output.textContent = 'Type a prompt first.'; return; }
   const [w, h] = document.getElementById('image-ratio').value.split('x');
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${Math.floor(Math.random() * 1e6)}&nologo=true`;
+  const seed = Math.floor(Math.random() * 1e6);
+  // Pollinations migrated to a new unified host (gen.pollinations.ai); the
+  // old image.pollinations.ai host has been flaky/unreachable since their
+  // migration, so try the new host first and fall back to the old one.
+  const urls = [
+    `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`,
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`
+  ];
   lastImagePrompt = prompt;
-  lastGeneratedImageUrl = url;
   output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
   actions.style.display = 'none';
-  const img = new Image();
-  img.onload = () => { output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
-  img.onerror = () => { output.textContent = '⚠️ Could not generate image. Try again.'; };
-  img.src = url;
-  img.alt = prompt;
+  function tryUrl(i) {
+    if (i >= urls.length) { output.textContent = '⚠️ Could not generate image. Try again.'; return; }
+    const img = new Image();
+    img.onload = () => { lastGeneratedImageUrl = urls[i]; output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
+    img.onerror = () => tryUrl(i + 1);
+    img.src = urls[i];
+    img.alt = prompt;
+  }
+  tryUrl(0);
 }
 
 function regenerateImage() { generateImage(); }
