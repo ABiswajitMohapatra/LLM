@@ -94,16 +94,20 @@ TEMPERATURE = 0.4
 # caught but incidental word overlap with normal conversation is not.
 TIME_SENSITIVE_PATTERNS = re.compile(
     r"\b(today|yesterday|tonight|this week|this month|this year|"
+    r"now|right now|currently|"
     r"news|latest news|breaking news|trending (now|today|topic)|"
-    r"stock price|share price|weather (in|today|forecast)|"
+    r"stock price|share price|weather (in|today|forecast|today|now)|"
     r"who is the (current|new)|election|live score|"
     r"who won|who'?s winning|score of|final score|match result|"
     r"game result|match today|match yesterday|going on|happening|"
     r"(cricket|football|soccer|rugby|hockey|basketball|tennis) match|"
     r"world cup|ipl|fifa|uefa|olympics|champions league|premier league|"
-    r"when (is|does|will|do) .*(start|begin)|when'?s .*(start|begin)|"
-    r"(series|tour|tournament|fixture)s? (start|begin|schedule)|"
-    r"schedule (of|for)|upcoming (series|tour|match(es)?|fixtures?))\b",
+    r"when (is|does|will|do) .*(start|begin|happen|play)|when'?s .*(start|begin|happen)|"
+    r"(series|tour|tournament|fixture)s? (start|begin|schedule|kab|kaun sa|konsa)|"
+    r"schedule (of|for|ka)|upcoming (series|tour|match(es)?|fixtures?)|"
+    r"kab|kaun|aaj|kal|aaj ka|latest|current|ongoing|live|breaking|"
+    r"(india|australia|pakistan|england|west indies|new zealand|sri lanka|south africa|bangladesh|zimbabwe).*(vs|versus|v/s|against).*(series|match|tour|test|odi|t20)|"
+    r"(series|match|game|fixture).*(schedule|date|time|when|kab))\b",
     re.IGNORECASE
 )
 
@@ -112,10 +116,12 @@ TIME_SENSITIVE_PATTERNS = re.compile(
 # the announcement itself may be weeks or months old - unlike "who won"/
 # "live score" queries, which genuinely need the last day's news.
 SCHEDULE_OR_FUTURE_PLAN_PATTERN = re.compile(
-    r"\b(when (is|does|will|do) .*(start|begin)|when'?s .*(start|begin)|"
-    r"(series|tour|tournament|fixture)s? (start|begin|schedule)|"
-    r"schedule (of|for)|upcoming (series|tour|match(es)?|fixtures?)|"
-    r"\b20(2[6-9]|3\d)\b.*(plan|schedule|calendar))\b",
+    r"\b(when (is|does|will|do) .*(start|begin|happen|play)|when'?s .*(start|begin|happen)|"
+    r"(series|tour|tournament|fixture|match|game)s? (start|begin|schedule|kab|kaun|hai)|"
+    r"schedule (of|for|ka)|upcoming (series|tour|match(es)?|fixtures?|series|events?)|"
+    r"kab (start|begin|hai|hoga|hua)|kaun sa time|konsa time|"
+    r"\b20(2[6-9]|3\d)\b.*(schedule|plan|calendar|series|tour|match)|"
+    r"(india|cricket|match|series|tournament).*(schedule|date|time|when|kab))\b",
     re.IGNORECASE
 )
 
