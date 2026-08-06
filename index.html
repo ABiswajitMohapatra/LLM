@@ -1631,28 +1631,17 @@
     <!-- FORGOT PASSWORD: step 1 - email -->
     <div class="ag-step" id="ag-step-forgot">
       <h2>Reset your password</h2>
-      <p class="ag-sub">Enter your email and we'll send you a code</p>
+      <p class="ag-sub">Enter your email and we'll send you a reset link</p>
       <div class="ag-error" id="ag-forgot-error"></div>
       <div class="ag-success" id="ag-forgot-success"></div>
       <div class="ag-field"><label>Email</label><input type="email" id="ag-forgot-email" autocomplete="email"></div>
-      <button class="ag-btn" id="ag-forgot-btn" onclick="agForgotPassword()"><span class="ag-spinner" id="ag-forgot-spinner"></span><span>Send code</span></button>
+      <button class="ag-btn" id="ag-forgot-btn" onclick="agForgotPassword()"><span class="ag-spinner" id="ag-forgot-spinner"></span><span>Send reset link</span></button>
       <div class="ag-links"><a onclick="agShowStep('login')">Back to login</a></div>
     </div>
 
-    <!-- FORGOT PASSWORD: step 2 - OTP -->
-    <div class="ag-step" id="ag-step-otp">
-      <h2>Enter code</h2>
-      <p class="ag-sub">We sent a 6-digit code to your email</p>
-      <div class="ag-error" id="ag-otp-error"></div>
-      <div class="ag-field"><label>Code</label><input type="text" id="ag-otp-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
-      <button class="ag-btn" id="ag-otp-btn" onclick="agVerifyOtp()"><span class="ag-spinner" id="ag-otp-spinner"></span><span>Verify code</span></button>
-      <div class="ag-links">
-        <a onclick="agForgotPassword(true)">Resend code</a>
-        <a onclick="agShowStep('login')">Back to login</a>
-      </div>
-    </div>
-
-    <!-- FORGOT PASSWORD: step 3 - new password -->
+    <!-- FORGOT PASSWORD: step 3 - new password (opened automatically when the
+         emailed reset link is clicked - see the reset_token URL param check
+         near app bootstrap) -->
     <div class="ag-step" id="ag-step-newpass">
       <h2>Set new password</h2>
       <p class="ag-sub">Choose a new password for your account</p>
@@ -2812,11 +2801,15 @@ async function agSignup() {
 let _agResetEmail = '';
 let _agResetToken = '';
 
-async function agForgotPassword(isResend) {
+// Link-based reset flow: submitting the forgot-password form just asks the
+// backend to email a link (no OTP typing step). The user finishes the
+// reset by clicking that link, which lands back on this page with
+// ?reset_token=...&email=... in the URL - handled by
+// agHandleResetLinkFromUrl() at bootstrap, below.
+async function agForgotPassword() {
   const emailInput = document.getElementById('ag-forgot-email');
-  const email = (isResend === true ? _agResetEmail : emailInput.value.trim());
+  const email = emailInput.value.trim();
   agHideError('ag-forgot-error');
-  agHideError('ag-otp-error');
   if (!email) { agShowError('ag-forgot-error', 'Please enter your email.'); return; }
   agSetLoading('ag-forgot', true);
   try {
@@ -2825,11 +2818,10 @@ async function agForgotPassword(isResend) {
       body: JSON.stringify({ email })
     });
     const data = await res.json();
-    if (!res.ok) { agShowError('ag-forgot-error', data.detail || 'Could not send reset code.'); return; }
-    _agResetEmail = email;
-    document.getElementById('ag-forgot-success').textContent = data.message || 'Code sent, check your email.';
+    if (!res.ok) { agShowError('ag-forgot-error', data.detail || 'Could not send reset link.'); return; }
+    document.getElementById('ag-forgot-success').textContent =
+      data.message || 'If an account exists for this email, a reset link has been sent. Check your inbox (and spam folder).';
     document.getElementById('ag-forgot-success').classList.add('show');
-    agShowStep('otp');
   } catch (e) {
     agShowError('ag-forgot-error', 'Network error. Please try again.');
   } finally {
@@ -2837,25 +2829,28 @@ async function agForgotPassword(isResend) {
   }
 }
 
-async function agVerifyOtp() {
-  const otp = document.getElementById('ag-otp-code').value.trim();
-  agHideError('ag-otp-error');
-  if (!otp) { agShowError('ag-otp-error', 'Please enter the code.'); return; }
-  agSetLoading('ag-otp', true);
-  try {
-    const res = await fetch(API_URL + '/auth/verify-otp', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: _agResetEmail, otp })
-    });
-    const data = await res.json();
-    if (!res.ok) { agShowError('ag-otp-error', data.detail || 'Invalid code.'); return; }
-    _agResetToken = data.reset_token;
-    agShowStep('newpass');
-  } catch (e) {
-    agShowError('ag-otp-error', 'Network error. Please try again.');
-  } finally {
-    agSetLoading('ag-otp', false);
-  }
+// Called once at page load. If the URL contains ?reset_token=...&email=...
+// (i.e. the user clicked the link from their reset email), pre-fill the
+// token/email and jump straight to the "set new password" step - skipping
+// any typed-code step entirely. The params are then stripped from the URL
+// so the token isn't left sitting in the address bar / browser history.
+function agHandleResetLinkFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('reset_token');
+  const email = params.get('email');
+  if (!token || !email) return false;
+
+  _agResetToken = token;
+  _agResetEmail = email;
+
+  params.delete('reset_token');
+  params.delete('email');
+  const cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+  window.history.replaceState({}, document.title, cleanUrl);
+
+  showAuthGate();
+  agShowStep('newpass');
+  return true;
 }
 
 async function agResetPassword() {
@@ -3006,7 +3001,10 @@ async function onAuthenticated() {
 // gone/expired) - this keeps the user logged in across visits until they
 // explicitly log out or every token expires, without an extra blocking
 // network round-trip before the UI can render.
-if (getAccessToken() && getRefreshToken()) {
+if (agHandleResetLinkFromUrl()) {
+  // Reset-link click takes priority over any existing session - drop
+  // straight into "set new password", regardless of login state.
+} else if (getAccessToken() && getRefreshToken()) {
   hideAuthGate();
   renderUserAvatar();
   // Session restore (e.g. page reload while still logged in) must also

@@ -48,6 +48,7 @@ import os
 import re
 import secrets
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import jwt  # PyJWT
@@ -66,6 +67,12 @@ JWT_ALGO = "HS256"
 JWT_ACCESS_MINUTES = int(os.environ.get("JWT_ACCESS_MINUTES", "30"))
 JWT_REFRESH_DAYS = int(os.environ.get("JWT_REFRESH_DAYS", "7"))
 OTP_TTL_MINUTES = int(os.environ.get("OTP_TTL_MINUTES", "10"))
+
+# Password reset now uses a clickable link (sent to the same email the user
+# signed up with) instead of a typed OTP code. FRONTEND_URL must point at
+# the deployed frontend so the emailed link actually opens the app.
+RESET_TOKEN_TTL_MINUTES = int(os.environ.get("RESET_TOKEN_TTL_MINUTES", "30"))
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://frontend-ashen-phi-83.vercel.app").rstrip("/")
 
 # Resend (https://resend.com) - HTTP API, not SMTP. Read once at import
 # time is deliberately avoided for the API key itself (read fresh inside
@@ -383,6 +390,24 @@ def _send_otp_email(email: str, otp: str) -> bool:
     )
 
 
+def _send_reset_link_email(email: str, token: str) -> bool:
+    """New flow: emails a clickable reset link (to the same address the
+    user signed up with) instead of a typed OTP. The link opens the
+    frontend with the token/email in the query string; the frontend reads
+    those and calls /auth/reset-password directly - no separate 'verify
+    code' step."""
+    link = f"{FRONTEND_URL}/?reset_token={token}&email={urllib.parse.quote(email)}"
+    return _send_email(
+        email,
+        "Reset your Mastishk password",
+        f"We received a request to reset your Mastishk password.\n\n"
+        f"Click the link below to set a new password:\n{link}\n\n"
+        f"This link expires in {RESET_TOKEN_TTL_MINUTES} minutes. "
+        f"If you didn't request this, you can safely ignore this email - "
+        f"your password will not be changed.",
+    )
+
+
 def _send_welcome_email(user: dict) -> bool:
     return _send_email(
         user["email"],
@@ -450,40 +475,47 @@ def _send_admin_signup_notification(user: dict, ip_address: str | None = None, u
 
 
 def request_password_reset(email: str):
+    """Link-based flow: generates a one-time reset token, stores only its
+    hash (never the raw token) in PasswordReset.otp_hash, marks the row
+    'verified' immediately (clicking the emailed link IS the verification -
+    there's no separate typed-code step), and emails a link containing the
+    raw token to the user's own signup email address."""
     email = (email or "").strip().lower()
     if not email or not EMAIL_PATTERN.match(email):
         raise AuthError("A valid email is required.")
 
     user = get_user_by_email(email)
-    otp = _generate_otp()
-    expires_at = _now() + datetime.timedelta(minutes=OTP_TTL_MINUTES)
-    otp_hash = _hash_otp(otp)
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = _now() + datetime.timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
+    token_hash = _hash_otp(reset_token)  # sha256, same helper as before
 
-    # Always write/overwrite a reset row and "send" an OTP even if the user
+    # Always write/overwrite a reset row and "send" a link even if the user
     # doesn't exist, so this endpoint doesn't leak which emails are
-    # registered. (verify/reset below still correctly no-ops for unknown
+    # registered. (reset_password below still correctly no-ops for unknown
     # accounts.)
     with db.get_db() as session:
         row = session.query(db.PasswordReset).filter(db.PasswordReset.email == email).first()
         if row:
-            row.otp_hash = otp_hash
+            row.otp_hash = token_hash
             row.expires_at = expires_at
-            row.verified = False
+            row.verified = True
             row.reset_token = None
             row.attempts = 0
         else:
-            session.add(db.PasswordReset(email=email, otp_hash=otp_hash, expires_at=expires_at))
+            session.add(db.PasswordReset(
+                email=email, otp_hash=token_hash, expires_at=expires_at, verified=True,
+            ))
 
     if user:
         try:
-            email_sent = _send_otp_email(email, otp)
+            email_sent = _send_reset_link_email(email, reset_token)
         except Exception as e:
-            logger.error("Unexpected error sending OTP email to %s: %s", email, e, exc_info=True)
+            logger.error("Unexpected error sending reset link to %s: %s", email, e, exc_info=True)
             email_sent = False
     else:
         email_sent = False
 
-    return {"message": "If an account exists for this email, a reset code has been sent.",
+    return {"message": "If an account exists for this email, a reset link has been sent.",
             "email_sent": email_sent}
 
 
@@ -518,6 +550,11 @@ def verify_otp(email: str, otp: str) -> str:
 
 
 def reset_password(email: str, reset_token: str, new_password: str, confirm_password: str):
+    """reset_token here is the raw token from the emailed link's query
+    string (?reset_token=...). We re-hash it and compare against the
+    stored hash - no separate 'verify OTP' call is needed, since clicking
+    a link only the account owner received in their inbox is itself the
+    verification step."""
     email = (email or "").strip().lower()
     if new_password != confirm_password:
         raise AuthError("Passwords do not match.")
@@ -526,15 +563,15 @@ def reset_password(email: str, reset_token: str, new_password: str, confirm_pass
     with db.get_db() as session:
         row = session.query(db.PasswordReset).filter(db.PasswordReset.email == email).first()
 
-        if not row or not row.verified or not row.reset_token:
-            raise AuthError("Please verify your reset code first.")
+        if not row or not row.verified:
+            raise AuthError("Please request a new password reset link.")
         expires_at = row.expires_at
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
         if expires_at < _now():
-            raise AuthError("This reset session has expired. Please start over.")
-        if not hmac.compare_digest(reset_token or "", row.reset_token):
-            raise AuthError("Invalid or expired reset session.")
+            raise AuthError("This reset link has expired. Please request a new one.")
+        if not hmac.compare_digest(_hash_otp((reset_token or "").strip()), row.otp_hash):
+            raise AuthError("Invalid or expired reset link.")
 
     user = get_user_by_email(email)
     if not user:
