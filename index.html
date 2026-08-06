@@ -742,7 +742,8 @@
     font-size: 15px; padding: 4px 8px; border-radius: 6px;
   }
   .icon-close:hover { background: var(--panel-2); color: var(--text); }
-  .panel-body { padding: 14px 16px; overflow-y: auto; }
+  .panel-body { padding: 14px 16px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .panel-body::-webkit-scrollbar { display: none; }
   .panel-body input[type="text"], .panel-body textarea {
     width: 100%; background: var(--panel-2); border: 1px solid var(--border);
     color: var(--text); border-radius: 8px; padding: 9px 10px; font-size: 13px;
