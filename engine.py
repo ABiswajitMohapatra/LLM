@@ -94,13 +94,28 @@ TEMPERATURE = 0.4
 # caught but incidental word overlap with normal conversation is not.
 TIME_SENSITIVE_PATTERNS = re.compile(
     r"\b(today|yesterday|tonight|this week|this month|this year|"
-    r"latest news|breaking news|trending (now|today|topic)|"
+    r"news|latest news|breaking news|trending (now|today|topic)|"
     r"stock price|share price|weather (in|today|forecast)|"
     r"who is the (current|new)|election|live score|"
     r"who won|who'?s winning|score of|final score|match result|"
     r"game result|match today|match yesterday|going on|happening|"
     r"(cricket|football|soccer|rugby|hockey|basketball|tennis) match|"
-    r"world cup|ipl|fifa|uefa|olympics|champions league|premier league)\b",
+    r"world cup|ipl|fifa|uefa|olympics|champions league|premier league|"
+    r"when (is|does|will|do) .*(start|begin)|when'?s .*(start|begin)|"
+    r"(series|tour|tournament|fixture)s? (start|begin|schedule)|"
+    r"schedule (of|for)|upcoming (series|tour|match(es)?|fixtures?))\b",
+    re.IGNORECASE
+)
+
+# Subset of the above: queries about a schedule/plan/announcement rather than
+# a live/just-happened event. These need a WIDE (or no) time window, since
+# the announcement itself may be weeks or months old - unlike "who won"/
+# "live score" queries, which genuinely need the last day's news.
+SCHEDULE_OR_FUTURE_PLAN_PATTERN = re.compile(
+    r"\b(when (is|does|will|do) .*(start|begin)|when'?s .*(start|begin)|"
+    r"(series|tour|tournament|fixture)s? (start|begin|schedule)|"
+    r"schedule (of|for)|upcoming (series|tour|match(es)?|fixtures?)|"
+    r"\b20(2[6-9]|3\d)\b.*(plan|schedule|calendar))\b",
     re.IGNORECASE
 )
 
@@ -752,6 +767,21 @@ def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> dict:
     """
     if not TAVILY_API_KEY:
         return {"_error": "TAVILY_API_KEY is not set in the environment (.env)."}
+    is_schedule_query = bool(SCHEDULE_OR_FUTURE_PLAN_PATTERN.search(query))
+    search_params = {
+        "query": query,
+        "search_depth": "advanced",
+        "include_answer": True,
+        "max_results": max_results,
+    }
+    if is_schedule_query:
+        # Schedule/future-plan queries: the announcement could be old, and
+        # official/board pages (not just "news" articles) often have the
+        # most reliable fixture info - so don't restrict by topic or time.
+        search_params["topic"] = "general"
+    else:
+        search_params["topic"] = "news"       # better for scores/results/breaking events
+        search_params["time_range"] = "month" # was "day" - too narrow, missed schedule-adjacent news
     try:
         resp = requests.post(
             TAVILY_URL,
@@ -759,14 +789,7 @@ def web_search(query: str, max_results: int = WEB_SEARCH_MAX_RESULTS) -> dict:
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {TAVILY_API_KEY}",
             },
-            json={
-                "query": query,
-                "search_depth": "advanced",
-                "topic": "news",       # better for scores/results/breaking events
-                "time_range": "day",   # bias toward the last 24h for freshness
-                "include_answer": True,
-                "max_results": max_results,
-            },
+            json=search_params,
             timeout=WEB_SEARCH_TIMEOUT,
         )
         resp.raise_for_status()
