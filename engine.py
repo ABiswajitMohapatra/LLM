@@ -1934,18 +1934,22 @@ def _add_title_slide(prs, theme, title, subtitle):
     slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
 
     accent_bar = slide.shapes.add_shape(1, Inches(0), Inches(3.55), Inches(0.15), Inches(1.4))
-    accent_bar.fill.solid(); accent_bar.fill.fore_color.rgb = _rgb(theme["accent"])
+    accent_bar.fill.solid()
+    accent_bar.fill.fore_color.rgb = _rgb(theme["accent"])
     accent_bar.line.fill.background()
 
     tbox = slide.shapes.add_textbox(Inches(0.9), Inches(3.0), Inches(11.5), Inches(1.6))
-    tf = tbox.text_frame; tf.word_wrap = True
+    tf = tbox.text_frame
+    tf.word_wrap = True
     tf.text = title or ""
-    tf.paragraphs[0].font.size = Pt(40); tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.size = Pt(40)
+    tf.paragraphs[0].font.bold = True
     tf.paragraphs[0].font.color.rgb = _rgb(theme["text"])
 
     if subtitle:
         sbox = slide.shapes.add_textbox(Inches(0.9), Inches(4.5), Inches(11.5), Inches(0.8))
-        sf = sbox.text_frame; sf.word_wrap = True
+        sf = sbox.text_frame
+        sf.word_wrap = True
         sf.text = subtitle
         sf.paragraphs[0].font.size = Pt(18)
         sf.paragraphs[0].font.color.rgb = _rgb(theme["subtext"])
@@ -1956,21 +1960,25 @@ def _add_header(slide, theme, title):
     tbox = slide.shapes.add_textbox(Inches(0.6), Inches(0.35), Inches(11.5), Inches(0.9))
     tf = tbox.text_frame
     tf.text = title or ""
-    tf.paragraphs[0].font.size = Pt(28); tf.paragraphs[0].font.bold = True
+    tf.paragraphs[0].font.size = Pt(28)
+    tf.paragraphs[0].font.bold = True
     tf.paragraphs[0].font.color.rgb = _rgb(theme["accent"])
     rule = slide.shapes.add_shape(1, Inches(0.6), Inches(1.15), Inches(3.2), Pt(3))
-    rule.fill.solid(); rule.fill.fore_color.rgb = _rgb(theme["accent"])
+    rule.fill.solid()
+    rule.fill.fore_color.rgb = _rgb(theme["accent"])
     rule.line.fill.background()
 
 
 def _add_content_slide(prs, theme, s):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid(); slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
     _add_header(slide, theme, s.get("title", ""))
 
     body_width = Inches(8.2) if s.get("image_query") else Inches(11.5)
     body = slide.shapes.add_textbox(Inches(0.8), Inches(1.6), body_width, Inches(5.3))
-    bf = body.text_frame; bf.word_wrap = True
+    bf = body.text_frame
+    bf.word_wrap = True
     bullets = s.get("bullets") or []
     for i, bullet in enumerate(bullets):
         p = bf.paragraphs[0] if i == 0 else bf.add_paragraph()
@@ -1983,7 +1991,8 @@ def _add_content_slide(prs, theme, s):
 
 def _add_table_slide(prs, theme, s):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid(); slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
     _add_header(slide, theme, s.get("title", ""))
 
     table_data = s.get("table") or {}
@@ -1999,20 +2008,23 @@ def _add_table_slide(prs, theme, s):
         cell.text = str(h)
         cell.text_frame.paragraphs[0].font.bold = True
         cell.text_frame.paragraphs[0].font.size = Pt(15)
-        cell.fill.solid(); cell.fill.fore_color.rgb = _rgb(theme["accent"])
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = _rgb(theme["accent"])
     for r, row in enumerate(rows, start=1):
         for c, val in enumerate(row):
             cell = gtable.cell(r, c)
             cell.text = str(val)
             cell.text_frame.paragraphs[0].font.size = Pt(13)
-            cell.fill.solid(); cell.fill.fore_color.rgb = _rgb(theme["bg"])
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = _rgb(theme["bg"])
             cell.text_frame.paragraphs[0].font.color.rgb = _rgb(theme["text"])
     return slide
 
 
 def _add_timeline_slide(prs, theme, s):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid(); slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = _rgb(theme["bg"])
     _add_header(slide, theme, s.get("title", ""))
 
     items = s.get("timeline") or []
@@ -2024,21 +2036,28 @@ def _add_timeline_slide(prs, theme, s):
     step = total_w / n
     y_line = 3.3
     line = slide.shapes.add_shape(1, Inches(0.7), Inches(y_line), Inches(total_w), Pt(3))
-    line.fill.solid(); line.fill.fore_color.rgb = _rgb(theme["accent"]); line.line.fill.background()
+    line.fill.solid()
+    line.fill.fore_color.rgb = _rgb(theme["accent"])
+    line.line.fill.background()
 
     for i, item in enumerate(items):
         x = 0.7 + i * step
         dot = slide.shapes.add_shape(9, Inches(x + step / 2 - 0.08), Inches(y_line - 0.06), Inches(0.16), Inches(0.16))
-        dot.fill.solid(); dot.fill.fore_color.rgb = _rgb(theme["accent"]); dot.line.fill.background()
+        dot.fill.solid()
+        dot.fill.fore_color.rgb = _rgb(theme["accent"])
+        dot.line.fill.background()
 
         lbl = slide.shapes.add_textbox(Inches(x), Inches(2.5), Inches(step), Inches(0.7))
-        lf = lbl.text_frame; lf.word_wrap = True
+        lf = lbl.text_frame
+        lf.word_wrap = True
         lf.text = str(item.get("label", ""))
-        lf.paragraphs[0].font.size = Pt(15); lf.paragraphs[0].font.bold = True
+        lf.paragraphs[0].font.size = Pt(15)
+        lf.paragraphs[0].font.bold = True
         lf.paragraphs[0].font.color.rgb = _rgb(theme["text"])
 
         det = slide.shapes.add_textbox(Inches(x), Inches(3.6), Inches(step), Inches(1.6))
-        df = det.text_frame; df.word_wrap = True
+        df = det.text_frame
+        df.word_wrap = True
         df.text = str(item.get("detail", ""))
         df.paragraphs[0].font.size = Pt(12)
         df.paragraphs[0].font.color.rgb = _rgb(theme["subtext"])
