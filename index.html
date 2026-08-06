@@ -3040,39 +3040,57 @@ function saveGlobalActivitySummary(text) {
 function openCode() { document.getElementById('code-backdrop').classList.add('show'); }
 function closeCodePanel() { document.getElementById('code-backdrop').classList.remove('show'); }
 
-// ---- Image generation (Pollinations.ai — free, no API key) ----
+// ---- Image generation (Puter.js — free, unlimited, user-pays via their Puter account) ----
 let lastGeneratedImageUrl = null;
 let lastImagePrompt = '';
+let _puterLoadPromise = null;
+
+function ensurePuterLib() {
+  if (window.puter && window.puter.ai) return Promise.resolve();
+  if (!_puterLoadPromise) {
+    _puterLoadPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://js.puter.com/v2/';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Could not load Puter.js. Check your connection.'));
+      document.head.appendChild(s);
+    });
+  }
+  return _puterLoadPromise;
+}
 
 function openImagePanel() { document.getElementById('image-backdrop').classList.add('show'); }
 function closeImagePanel() { document.getElementById('image-backdrop').classList.remove('show'); }
 
-function generateImage() {
+async function generateImage() {
   const prompt = document.getElementById('image-prompt').value.trim();
   const output = document.getElementById('image-output');
   const actions = document.getElementById('image-panel-actions');
   if (!prompt) { output.textContent = 'Type a prompt first.'; return; }
   const [w, h] = document.getElementById('image-ratio').value.split('x');
-  const seed = Math.floor(Math.random() * 1e6);
-  // Pollinations migrated to a new unified host (gen.pollinations.ai); the
-  // old image.pollinations.ai host has been flaky/unreachable since their
-  // migration, so try the new host first and fall back to the old one.
-  const urls = [
-    `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`,
-    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`
-  ];
   lastImagePrompt = prompt;
   output.innerHTML = '<span class="toolbar-spinner"></span> Generating...';
   actions.style.display = 'none';
-  function tryUrl(i) {
-    if (i >= urls.length) { output.textContent = '⚠️ Could not generate image. Try again.'; return; }
-    const img = new Image();
-    img.onload = () => { lastGeneratedImageUrl = urls[i]; output.innerHTML = ''; output.appendChild(img); actions.style.display = 'flex'; };
-    img.onerror = () => tryUrl(i + 1);
-    img.src = urls[i];
-    img.alt = prompt;
+  try {
+    await ensurePuterLib();
+    // First call opens Puter's login popup once per browser session (their
+    // "user pays" model) — after that it's free & unlimited from this origin.
+    const imgEl = await puter.ai.txt2img(prompt, {
+      model: 'gpt-image-2', // also supports: flux.2, grok-imagine, stable-diffusion-3
+      width: parseInt(w, 10),
+      height: parseInt(h, 10)
+    });
+    lastGeneratedImageUrl = imgEl.src;
+    output.innerHTML = '';
+    imgEl.style.maxWidth = '100%';
+    imgEl.style.maxHeight = '360px';
+    imgEl.style.display = 'block';
+    imgEl.alt = prompt;
+    output.appendChild(imgEl);
+    actions.style.display = 'flex';
+  } catch (err) {
+    output.textContent = '⚠️ Could not generate image: ' + (err && err.message ? err.message : 'Try again.');
   }
-  tryUrl(0);
 }
 
 function regenerateImage() { generateImage(); }
