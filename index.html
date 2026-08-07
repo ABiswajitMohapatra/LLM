@@ -404,7 +404,7 @@
   .avatar.user { background: #3a3a40; color: #cfcfd4; }
   .bubble {
     line-height: 1.65;
-    font-size: 15px;
+    font-size: var(--chat-font-size, 15px);
     max-width: 640px;
     font-weight: 420;
   }
@@ -4373,7 +4373,7 @@ function applySettings(s) {
   document.querySelectorAll('.bubble').forEach(b => b.style.fontSize = (s.fontSize || 15) + 'px');
   const widthMap = { Normal: 'normal', Wide: 'wide', Full: 'full' };
   document.documentElement.setAttribute('data-chat-width', widthMap[s.chatWidth || 'Normal']);
-  if (s.defaultModel) { selectedModel = s.defaultModel; localStorage.setItem('biswalex_model', s.defaultModel); if (typeof updateModelLabel === 'function') updateModelLabel(); }
+  if (s.defaultModel) { selectedModel = s.defaultModel; localStorage.setItem('biswalex_model', s.defaultModel); if (typeof updateModelPillLabel === 'function') updateModelPillLabel(); }
 }
 function saveSettingsPanel() {
   const s = {
