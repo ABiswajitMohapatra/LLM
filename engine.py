@@ -79,7 +79,7 @@ MIN_SIMILARITY = 0.55
 WEB_SEARCH_MAX_RESULTS = 5
 WEB_SEARCH_TIMEOUT = 8
 
-MAX_TOKENS = 3200
+MAX_TOKENS = 5200
 TEMPERATURE = 0.4
 
 # NOTE: earlier this list included bare single words like match/result/final/

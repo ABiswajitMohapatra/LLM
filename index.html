@@ -2160,7 +2160,7 @@
         </div>
         <div class="st-row">
           <div class="st-row-label">Notifications</div>
-          <label class="st-switch"><input type="checkbox" id="settings-notifications" checked><span class="st-switch-track"></span></label>
+          <label class="st-switch"><input type="checkbox" id="settings-notifications" checked onchange="if(this.checked && window.Notification && Notification.permission==='default') Notification.requestPermission();"><span class="st-switch-track"></span></label>
         </div>
         <div class="st-row">
           <div class="st-row-label">Send with Enter</div>
@@ -6651,7 +6651,15 @@ function setStreamingTitle(on) {
   if (on) {
     document.title = "● Generating... — " + DEFAULT_TITLE;
   } else if (document.hidden) {
-    document.title = "✓ Response ready — " + DEFAULT_TITLE;
+    const notifsOn = getSavedSettings().notifications !== false;
+    if (notifsOn) {
+      document.title = "✓ Response ready — " + DEFAULT_TITLE;
+      if (window.Notification && Notification.permission === 'granted') {
+        try { new Notification("Mastishk", { body: "Response ready", icon: "biswalex_logo.svg" }); } catch (e) {}
+      }
+    } else {
+      document.title = DEFAULT_TITLE;
+    }
   } else {
     document.title = DEFAULT_TITLE;
   }
@@ -6787,7 +6795,7 @@ async function streamAssistantReply(query) {
     const res = await apiFetch(API_URL + "/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getEffectivePersonaPrompt(), memory_context: getMemoryContextString() }),
+      body: JSON.stringify({ query, history, extra_file_content: extraFileContent, model: selectedModel, project_context: getActiveProjectContext(), research_mode: researchModeOn, persona_prompt: getEffectivePersonaPrompt(), memory_context: getMemoryContextString(), temperature: (getSavedSettings().temperature != null ? getSavedSettings().temperature / 10 : 0.7) }),
       signal: currentAbortController.signal
     });
 
