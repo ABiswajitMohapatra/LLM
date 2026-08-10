@@ -6803,53 +6803,105 @@ async function handleInlineImageGeneration(prompt) {
 
 // ===== Inline PPT generation (chat box) — additive, mirrors handleInlineImageGeneration =====
 const inlinePptBlobs = {};
+const INLINE_PPT_SLIDE_COUNT = 8;
+
+function _renderPptProgress(bubble, text, spinning) {
+  if (!bubble) return;
+  bubble.innerHTML =
+    '<div class="ppt-progress" style="display:flex;align-items:center;gap:8px;">' +
+      '<span class="ppt-progress-status">' + escapeHtml(text) + '</span>' +
+      (spinning ? '<div class="typing-dots"><span></span><span></span><span></span></div>' : '') +
+    '</div>';
+}
 
 async function handleInlinePptGeneration(topic) {
   if (isStreaming) return;
   isStreaming = true;
-  const bubbleId = addMessage('assistant', 'Building your presentation…', history.length);
+  const bubbleId = addMessage('assistant', '', history.length);
   const historyIndex = history.length;
   history.push({ role: 'assistant', message: '' });
+  const bubble = document.getElementById(bubbleId);
+  _renderPptProgress(bubble, 'Preparing presentation…', true);
 
-  try {
+  // Kick off the real .pptx file generation (backend) in parallel with the
+  // slide-by-slide outline (used only to drive the progress UI + preview).
+  const pptPromise = (async () => {
     const res = await apiFetch(API_URL + '/generate-ppt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic, slides: 8, template: 'business', model: selectedModel })
+      body: JSON.stringify({ topic: topic, slides: INLINE_PPT_SLIDE_COUNT, template: 'business', model: selectedModel })
     });
     if (!res.ok) {
       let detail = '';
       try { detail = (await res.json()).detail || ''; } catch (e) {}
       throw new Error('Server returned ' + res.status + (detail ? ' — ' + detail : ''));
     }
-    const blob = await res.blob();
+    return res.blob();
+  })();
+
+  const outlinePromise = askLLMFull(
+    'Create a slide-by-slide outline for a ' + INLINE_PPT_SLIDE_COUNT + '-slide presentation on: ' + topic + '. ' +
+    'Format strictly as:\n## Slide 1: <title>\n- point\n- point\n## Slide 2: <title>\n- point\n- point\n' +
+    '...continue through Slide ' + INLINE_PPT_SLIDE_COUNT + '. Exactly ' + INLINE_PPT_SLIDE_COUNT + ' slides, no extra commentary before or after.'
+  ).catch(() => '');
+
+  try {
+    const outlineText = await outlinePromise;
+    let slides = outlineText
+      ? outlineText.split(/(?=^##\s*Slide\s*\d+)/mi).map(s => s.trim()).filter(Boolean)
+      : [];
+    if (!slides.length) {
+      slides = Array.from({ length: INLINE_PPT_SLIDE_COUNT }, (_, i) => '## Slide ' + (i + 1));
+    }
+
+    let revealedMd = '';
+    for (let i = 0; i < slides.length; i++) {
+      _renderPptProgress(bubble, 'Creating slide ' + (i + 1) + ' of ' + slides.length + '…', true);
+      await new Promise(r => setTimeout(r, 450));
+      revealedMd += slides[i] + '\n\n';
+      _renderPptProgress(bubble, '✓ Slide ' + (i + 1) + ' of ' + slides.length + ' completed', false);
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    _renderPptProgress(bubble, 'Finalizing your .pptx file…', true);
+    const blob = await pptPromise;
+
     const safeName = (topic || 'presentation').slice(0, 40).replace(/[^a-z0-9 _-]/gi, '').trim() || 'presentation';
     const fileName = safeName + '.pptx';
-    inlinePptBlobs[bubbleId] = { blob, fileName };
+    inlinePptBlobs[bubbleId] = {
+      blob,
+      fileName,
+      outline: (revealedMd.trim() || outlineText || ('# ' + topic))
+    };
 
     const cardHtml =
-      '<div class="inline-ppt-card" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);max-width:340px;">' +
+      '<div class="inline-ppt-card" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);max-width:360px;">' +
         '<div style="font-size:26px;line-height:1;">📊</div>' +
         '<div style="flex:1;min-width:0;">' +
           '<div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(fileName) + '</div>' +
           '<div style="font-size:12px;color:var(--text-dim);">Presentation ready</div>' +
         '</div>' +
+        '<button class="artifact-icon-btn" style="flex-shrink:0;width:30px;height:30px;" data-tooltip="View" aria-label="View" onclick="viewInlinePpt(\'' + bubbleId + '\')">👁</button>' +
         '<button class="panel-secondary-btn" style="flex-shrink:0;" onclick="downloadInlinePpt(\'' + bubbleId + '\')">⬇ Download</button>' +
       '</div>';
 
-    const bubble = document.getElementById(bubbleId);
     if (bubble) bubble.innerHTML = cardHtml;
     history[historyIndex].message = '📊 Presentation ready: ' + fileName;
     upsertConversation();
     updateTokenCounter();
   } catch (err) {
-    const bubble = document.getElementById(bubbleId);
     const errText = '⚠️ Could not generate presentation: ' + (err && err.message ? err.message : 'Try again.');
     if (bubble) bubble.textContent = errText;
     history[historyIndex].message = errText;
   } finally {
     isStreaming = false;
   }
+}
+
+function viewInlinePpt(bubbleId) {
+  const entry = inlinePptBlobs[bubbleId];
+  if (!entry) return;
+  openArtifact(entry.outline, 'markdown', entry.fileName);
 }
 
 function downloadInlinePpt(bubbleId) {
