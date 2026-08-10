@@ -6734,10 +6734,56 @@ async function sendMessage() {
   input.value = "";
   autoGrow(input);
 
+  // ===== INLINE IMAGE-GENERATION INTENT (chat box) =====
+  // Lets a normal chat message like "generate an image of a cat" trigger
+  // the same Puter.js generation the sidebar panel already uses, without
+  // opening that panel. Purely additive - the sidebar panel (openImagePanel/
+  // generateImage/insertImageToChat) is untouched and still works exactly
+  // as before; this only intercepts before the normal /chat call.
+  const inlineImageMatch = query.match(
+    /^(?:generate|create|draw|make|paint)\s+(?:me\s+)?(?:an?\s+|the\s+)?(?:image|picture|photo|drawing|painting|illustration)\s*(?:of|showing|depicting)?\s*[:\-]?\s*(.+)$/i
+  );
+  if (inlineImageMatch && inlineImageMatch[1].trim()) {
+    await handleInlineImageGeneration(inlineImageMatch[1].trim());
+    return;
+  }
+  // ===== END INLINE IMAGE-GENERATION INTENT =====
+
   if (compareModeOn && !researchModeOn) {
     await streamCompareReply(query);
   } else {
     await streamAssistantReply(query);
+  }
+}
+
+async function handleInlineImageGeneration(prompt) {
+  if (isStreaming) return;
+  isStreaming = true;
+  const bubbleId = addMessage('assistant', '🎨 Generating image...', history.length);
+  const historyIndex = history.length;
+  history.push({ role: 'assistant', message: '' });
+
+  try {
+    await ensurePuterLib();
+    const imgEl = await puter.ai.txt2img(prompt, {
+      model: 'gpt-image-2',
+      width: 1024,
+      height: 1024
+    });
+    const bubble = document.getElementById(bubbleId);
+    const md = `![${prompt}](${imgEl.src})`;
+    if (bubble) bubble.innerHTML = renderMarkdown(md);
+    history[historyIndex].message = md;
+    if (bubble) enhanceBubble(bubble);
+    upsertConversation();
+    updateTokenCounter();
+  } catch (err) {
+    const bubble = document.getElementById(bubbleId);
+    const errText = '⚠️ Could not generate image: ' + (err && err.message ? err.message : 'Try again.');
+    if (bubble) bubble.textContent = errText;
+    history[historyIndex].message = errText;
+  } finally {
+    isStreaming = false;
   }
 }
 
