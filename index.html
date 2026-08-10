@@ -6749,6 +6749,20 @@ async function sendMessage() {
   }
   // ===== END INLINE IMAGE-GENERATION INTENT =====
 
+  // ===== INLINE PPT-GENERATION INTENT (chat box) =====
+  // Lets a normal chat message like "create a ppt on machine learning" trigger
+  // the same /generate-ppt backend the AI Studio panel already uses, without
+  // opening that panel. Purely additive - the AI Studio panel (openAIStudio/
+  // runStudio/downloadStudioResult) is untouched and still works exactly as before.
+  const inlinePptMatch = query.match(
+    /^(?:generate|create|make|build|design)\s+(?:me\s+)?(?:an?\s+)?(?:ppt|pptx|powerpoint|power\s*point|presentation|slides?|slide\s*deck)\s*(?:on|about|for|regarding)?\s*[:\-]?\s*(.+)$/i
+  );
+  if (inlinePptMatch && inlinePptMatch[1].trim()) {
+    await handleInlinePptGeneration(inlinePptMatch[1].trim());
+    return;
+  }
+  // ===== END INLINE PPT-GENERATION INTENT =====
+
   if (compareModeOn && !researchModeOn) {
     await streamCompareReply(query);
   } else {
@@ -6759,7 +6773,7 @@ async function sendMessage() {
 async function handleInlineImageGeneration(prompt) {
   if (isStreaming) return;
   isStreaming = true;
-  const bubbleId = addMessage('assistant', '🎨 Generating image...', history.length);
+  const bubbleId = addMessage('assistant', 'Generating image...', history.length);
   const historyIndex = history.length;
   history.push({ role: 'assistant', message: '' });
 
@@ -6786,6 +6800,67 @@ async function handleInlineImageGeneration(prompt) {
     isStreaming = false;
   }
 }
+
+// ===== Inline PPT generation (chat box) — additive, mirrors handleInlineImageGeneration =====
+const inlinePptBlobs = {};
+
+async function handleInlinePptGeneration(topic) {
+  if (isStreaming) return;
+  isStreaming = true;
+  const bubbleId = addMessage('assistant', 'Building your presentation…', history.length);
+  const historyIndex = history.length;
+  history.push({ role: 'assistant', message: '' });
+
+  try {
+    const res = await apiFetch(API_URL + '/generate-ppt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: topic, slides: 8, template: 'business', model: selectedModel })
+    });
+    if (!res.ok) {
+      let detail = '';
+      try { detail = (await res.json()).detail || ''; } catch (e) {}
+      throw new Error('Server returned ' + res.status + (detail ? ' — ' + detail : ''));
+    }
+    const blob = await res.blob();
+    const safeName = (topic || 'presentation').slice(0, 40).replace(/[^a-z0-9 _-]/gi, '').trim() || 'presentation';
+    const fileName = safeName + '.pptx';
+    inlinePptBlobs[bubbleId] = { blob, fileName };
+
+    const cardHtml =
+      '<div class="inline-ppt-card" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel-2);max-width:340px;">' +
+        '<div style="font-size:26px;line-height:1;">📊</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(fileName) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-dim);">Presentation ready</div>' +
+        '</div>' +
+        '<button class="panel-secondary-btn" style="flex-shrink:0;" onclick="downloadInlinePpt(\'' + bubbleId + '\')">⬇ Download</button>' +
+      '</div>';
+
+    const bubble = document.getElementById(bubbleId);
+    if (bubble) bubble.innerHTML = cardHtml;
+    history[historyIndex].message = '📊 Presentation ready: ' + fileName;
+    upsertConversation();
+    updateTokenCounter();
+  } catch (err) {
+    const bubble = document.getElementById(bubbleId);
+    const errText = '⚠️ Could not generate presentation: ' + (err && err.message ? err.message : 'Try again.');
+    if (bubble) bubble.textContent = errText;
+    history[historyIndex].message = errText;
+  } finally {
+    isStreaming = false;
+  }
+}
+
+function downloadInlinePpt(bubbleId) {
+  const entry = inlinePptBlobs[bubbleId];
+  if (!entry) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(entry.blob);
+  a.download = entry.fileName;
+  a.click();
+}
+// ===== END Inline PPT generation =====
 
 async function regenerateResponse(btn) {
   if (isStreaming) return;
