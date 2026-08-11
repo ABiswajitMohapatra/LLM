@@ -1986,6 +1986,12 @@ def _add_content_slide(prs, theme, s):
     bf = body.text_frame
     bf.word_wrap = True
     bullets = s.get("bullets") or []
+    if not bullets:
+        # LLM's slide plan came back without bullet points for this slide
+        # (e.g. its JSON response got cut off mid-slide). Fall back to the
+        # speaker notes, or the slide title, so the body isn't left blank.
+        fallback = (s.get("notes") or "").strip() or (s.get("title") or "").strip()
+        bullets = [fallback] if fallback else []
     for i, bullet in enumerate(bullets):
         p = bf.paragraphs[0] if i == 0 else bf.add_paragraph()
         p.text = "•  " + str(bullet)
