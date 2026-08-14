@@ -77,9 +77,15 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(_bearer_schem
                              detail="Invalid token type.")
     return {"id": int(payload["sub"]), "email": payload.get("email"), "name": payload.get("name")}
 
-# Store uploaded documents in memory: {filename: extracted_text}
-uploaded_documents = {}
-last_uploaded_filename = None
+# Store uploaded documents in memory, isolated PER USER: {user_id: {filename: extracted_text}}
+user_documents = {}
+user_last_uploaded = {}   # {user_id: filename}
+user_last_uploaded_batch = {}  # {user_id: [filenames]}
+user_current_batch_id = {}  # {user_id: batch_id}
+
+
+def _docs_for(uid):
+    return user_documents.setdefault(uid, {})
 # Shared-chat links: backed by db.py's SharedChat table (Postgres), same
 # durable storage as chat sessions/messages - see db.create_shared_chat()/
 # db.get_shared_chat(). Was an in-memory dict before, which meant every
@@ -89,10 +95,6 @@ last_uploaded_filename = None
 # recent file) when the user attaches several files at once. Purely
 # additive: a normal single-file upload (no batch_id) behaves exactly as
 # before, only setting last_uploaded_filename.
-last_uploaded_batch = []
-_current_batch_id = None
-
-
 class Message(BaseModel):
     role: str
     message: str
@@ -324,7 +326,7 @@ def submit_feedback(req: FeedbackRequest):
 
 
 @app.get("/rag-status")
-def rag_status():
+def rag_status(user=Depends(get_current_user)):
     index = engine.get_base_index()
     return {
         "documents_folder_path": engine.DOCS_FOLDER,
@@ -332,8 +334,8 @@ def rag_status():
         "files_in_folder": os.listdir(engine.DOCS_FOLDER) if os.path.isdir(engine.DOCS_FOLDER) else [],
         "chunks_indexed": len(index["chunks"]),
         "sources_indexed": sorted(set(index["sources"])),
-        "uploaded_documents": list(uploaded_documents.keys()),
-        "last_uploaded": last_uploaded_filename,
+        "uploaded_documents": list(_docs_for(user["id"]).keys()),
+        "last_uploaded": user_last_uploaded.get(user["id"]),
     }
 
 
@@ -350,6 +352,7 @@ def list_models():
 
 @app.post("/chat")
 def chat(req: ChatRequest, user=Depends(get_current_user)):
+    uid = user["id"]
     if req.research_mode:
         generator, sources = engine.research_report_stream(req.query, model=req.model)
 
@@ -358,7 +361,7 @@ def chat(req: ChatRequest, user=Depends(get_current_user)):
                 "type": "meta",
                 "doc_sources": [],
                 "web_used": True,
-                "uploaded_docs": list(uploaded_documents.keys()),
+                "uploaded_docs": list(_docs_for(uid).keys()),
                 "research_sources": sources,
             }
             yield f"data: {json.dumps(meta)}\n\n"
@@ -380,9 +383,9 @@ def chat(req: ChatRequest, user=Depends(get_current_user)):
         req.query,
         index,
         history,
-        uploaded_docs=uploaded_documents,
-        last_uploaded=last_uploaded_filename,
-        last_uploaded_batch=last_uploaded_batch,
+        uploaded_docs=_docs_for(uid),
+        last_uploaded=user_last_uploaded.get(uid),
+        last_uploaded_batch=user_last_uploaded_batch.get(uid, []),
         model=req.model,
         persona_prompt=req.persona_prompt,
         memory_context=req.memory_context,
@@ -393,7 +396,7 @@ def chat(req: ChatRequest, user=Depends(get_current_user)):
             "type": "meta",
             "doc_sources": doc_sources,
             "web_used": web_used,
-            "uploaded_docs": list(uploaded_documents.keys())
+            "uploaded_docs": list(_docs_for(uid).keys())
         }
         yield f"data: {json.dumps(meta)}\n\n"
         full_text_parts = []
@@ -567,7 +570,7 @@ def background_task_status(job_id: str, user=Depends(get_current_user)):
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...), batch_id: str = Form(None), user=Depends(get_current_user)):
-    global last_uploaded_filename, last_uploaded_batch, _current_batch_id
+    uid = user["id"]
     contents = await file.read()
     try:
         # engine.load_file() does synchronous, CPU-bound work (pdfplumber
@@ -599,16 +602,17 @@ async def upload(file: UploadFile = File(...), batch_id: str = Form(None), user=
             "filename": file.filename,
             "message": "No text could be extracted."
         }
-    uploaded_documents[file.filename] = text
-    last_uploaded_filename = file.filename
+    docs = _docs_for(uid)
+    docs[file.filename] = text
+    user_last_uploaded[uid] = file.filename
     if batch_id:
-        if batch_id != _current_batch_id:
-            _current_batch_id = batch_id
-            last_uploaded_batch = []
-        last_uploaded_batch.append(file.filename)
+        if batch_id != user_current_batch_id.get(uid):
+            user_current_batch_id[uid] = batch_id
+            user_last_uploaded_batch[uid] = []
+        user_last_uploaded_batch[uid].append(file.filename)
     else:
-        _current_batch_id = None
-        last_uploaded_batch = [file.filename]
+        user_current_batch_id[uid] = None
+        user_last_uploaded_batch[uid] = [file.filename]
 
     # Kick off page-aware chunking + embedding + FAISS/BM25 indexing in
     # the background so this response isn't held up by it (this is the
@@ -625,7 +629,7 @@ async def upload(file: UploadFile = File(...), batch_id: str = Form(None), user=
         "success": True,
         "filename": file.filename,
         "characters": len(text),
-        "documents_loaded": len(uploaded_documents),
+        "documents_loaded": len(docs),
         "message": "Document indexed successfully."
     }
 
@@ -643,24 +647,25 @@ def upload_status(filename: str, user=Depends(get_current_user)):
 
 @app.delete("/documents/{filename}")
 def delete_document(filename: str, user=Depends(get_current_user)):
-    global last_uploaded_filename
-    if filename not in uploaded_documents:
+    uid = user["id"]
+    docs = _docs_for(uid)
+    if filename not in docs:
         return {"success": False, "message": f"'{filename}' not found."}
-    del uploaded_documents[filename]
-    if last_uploaded_filename == filename:
-        last_uploaded_filename = list(uploaded_documents.keys())[-1] if uploaded_documents else None
+    del docs[filename]
+    if user_last_uploaded.get(uid) == filename:
+        user_last_uploaded[uid] = list(docs.keys())[-1] if docs else None
     return {
         "success": True,
         "message": f"'{filename}' removed.",
-        "remaining_documents": list(uploaded_documents.keys())
+        "remaining_documents": list(docs.keys())
     }
 
 
 @app.post("/clear")
 def clear_documents(user=Depends(get_current_user)):
-    global last_uploaded_filename
-    uploaded_documents.clear()
-    last_uploaded_filename = None
+    uid = user["id"]
+    _docs_for(uid).clear()
+    user_last_uploaded[uid] = None
     return {
         "success": True,
         "message": "All uploaded documents removed."
@@ -669,10 +674,12 @@ def clear_documents(user=Depends(get_current_user)):
 
 @app.get("/documents")
 def documents(user=Depends(get_current_user)):
+    uid = user["id"]
+    docs = _docs_for(uid)
     return {
-        "count": len(uploaded_documents),
-        "documents": list(uploaded_documents.keys()),
-        "last_uploaded": last_uploaded_filename,
+        "count": len(docs),
+        "documents": list(docs.keys()),
+        "last_uploaded": user_last_uploaded.get(uid),
     }
 
 
