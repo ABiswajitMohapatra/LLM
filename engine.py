@@ -39,16 +39,18 @@ CHAT_MODEL = "openai/gpt-oss-20b"
 # path toward an August 2026 shutdown). Kept the original Llama models and
 # added the newer GPT-OSS / Qwen3.6 / Kimi models as additional options.
 AVAILABLE_MODELS = {
-    "llama-3.1-8b-instant": "Llama 3.1 8B Instant",
     "openai/gpt-oss-120b": "GPT-OSS 120B",
     "openai/gpt-oss-20b": "GPT-OSS 20B",
-    "llama-3.3-70b-versatile": "Llama 3.3 70B Versatile",
-    # Free OpenRouter models added below (existing Groq models untouched)
-    # NOTE: DeepSeek and Qwen3-32B free tiers were discontinued by OpenRouter
-    # (paid-only as of July 2026) - using currently-free models instead.
+    # Free OpenRouter models (verified live via openrouter.ai/api/v1/models)
     "nvidia/nemotron-3-super-120b-a12b:free": "Nemotron 3 Super 120B (Free)",
     "google/gemma-4-26b-a4b-it:free": "Gemma 4 26B (Free)",
     "nvidia/nemotron-3-nano-30b-a3b:free": "Nemotron 3 Nano 30B (Free)",
+    "nvidia/nemotron-3.5-lightning:free": "Nemotron 3.5 Lightning (Free)",
+    "dots-studio/dots-3-note-preview:free": "Dots3-Note Preview (Free)",
+    "poolside/laguna-s-2.1:free": "Poolside Laguna S 2.1 (Free)",
+    "poolside/laguna-xs-2.1:free": "Poolside Laguna XS 2.1 (Free)",
+    "cohere/north-mini-code:free": "Cohere North Mini Code (Free)",
+    "z-ai/glm-5.2:free": "GLM 5.2 (Free)",
 }
 
 # Models routed to OpenRouter instead of Groq (all ":free" tier)
