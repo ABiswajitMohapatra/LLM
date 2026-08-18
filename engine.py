@@ -45,12 +45,6 @@ AVAILABLE_MODELS = {
     "nvidia/nemotron-3-super-120b-a12b:free": "Nemotron 3 Super 120B (Free)",
     "google/gemma-4-26b-a4b-it:free": "Gemma 4 26B (Free)",
     "nvidia/nemotron-3-nano-30b-a3b:free": "Nemotron 3 Nano 30B (Free)",
-    "nvidia/nemotron-3.5-lightning:free": "Nemotron 3.5 Lightning (Free)",
-    "dots-studio/dots-3-note-preview:free": "Dots3-Note Preview (Free)",
-    "poolside/laguna-s-2.1:free": "Poolside Laguna S 2.1 (Free)",
-    "poolside/laguna-xs-2.1:free": "Poolside Laguna XS 2.1 (Free)",
-    "cohere/north-mini-code:free": "Cohere North Mini Code (Free)",
-    "z-ai/glm-5.2:free": "GLM 5.2 (Free)",
 }
 
 # Models routed to OpenRouter instead of Groq (all ":free" tier)
