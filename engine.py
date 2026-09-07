@@ -52,7 +52,6 @@ AVAILABLE_MODELS = {
     # =========================
     "nvidia/nemotron-3-super-120b-a12b:free":
         "Nemotron 3 Super 120B (Free)",
-"qwen/qwen3.8-27b": "Qwen 3.8 27B",
    
 }
 
