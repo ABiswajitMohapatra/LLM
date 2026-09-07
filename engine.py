@@ -38,21 +38,38 @@ CHAT_MODEL = "openai/gpt-oss-20b"
 # fully decommissioned by Groq; Gemma2/Qwen3-32B are on Groq's deprecation
 # path toward an August 2026 shutdown). Kept the original Llama models and
 # added the newer GPT-OSS / Qwen3.6 / Kimi models as additional options.
+```python
 AVAILABLE_MODELS = {
+    # =========================
+    # GROQ MODELS
+    # =========================
     "openai/gpt-oss-120b": "GPT-OSS 120B",
     "openai/gpt-oss-20b": "GPT-OSS 20B",
-    # Free OpenRouter models (verified live via openrouter.ai/api/v1/models)
-    "nvidia/nemotron-3-super-120b-a12b:free": "Nemotron 3 Super 120B (Free)",
-    "google/gemma-4-26b-a4b-it:free": "Gemma 4 26B (Free)",
-    "nvidia/nemotron-3-nano-30b-a3b:free": "Nemotron 3 Nano 30B (Free)",
+
+    "llama-3.3-70b-versatile": "Llama 3.3 70B",
+    "llama-3.1-8b-instant": "Llama 3.1 8B Instant",
+
+    # =========================
+    # OPENROUTER FREE MODELS
+    # =========================
+    "nvidia/nemotron-3-super-120b-a12b:free":
+        "Nemotron 3 Super 120B (Free)",
+
+    "google/gemma-4-26b-a4b-it:free":
+        "Gemma 4 26B (Free)",
+
+    "nvidia/nemotron-3-nano-30b-a3b:free":
+        "Nemotron 3 Nano 30B (Free)",
 }
 
-# Models routed to OpenRouter instead of Groq (all ":free" tier)
+
+# Models routed through OpenRouter
 OPENROUTER_MODELS = {
     "nvidia/nemotron-3-super-120b-a12b:free",
     "google/gemma-4-26b-a4b-it:free",
     "nvidia/nemotron-3-nano-30b-a3b:free",
 }
+
 
 
 
