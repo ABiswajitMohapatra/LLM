@@ -46,28 +46,20 @@ AVAILABLE_MODELS = {
     "openai/gpt-oss-120b": "GPT-OSS 120B",
     "openai/gpt-oss-20b": "GPT-OSS 20B",
 
-    "llama-3.3-70b-versatile": "Llama 3.3 70B",
-    "llama-3.1-8b-instant": "Llama 3.1 8B Instant",
 
     # =========================
     # OPENROUTER FREE MODELS
     # =========================
     "nvidia/nemotron-3-super-120b-a12b:free":
         "Nemotron 3 Super 120B (Free)",
-
-    "google/gemma-4-26b-a4b-it:free":
-        "Gemma 4 26B (Free)",
-
-    "nvidia/nemotron-3-nano-30b-a3b:free":
-        "Nemotron 3 Nano 30B (Free)",
+"qwen/qwen3.8-27b": "Qwen 3.8 27B",
+   
 }
 
 
 # Models routed through OpenRouter
 OPENROUTER_MODELS = {
     "nvidia/nemotron-3-super-120b-a12b:free",
-    "google/gemma-4-26b-a4b-it:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
 }
 
 EMBED_MODEL_NAME = "BAAI/bge-small-en-v1.5"
