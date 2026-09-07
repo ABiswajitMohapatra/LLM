@@ -38,7 +38,7 @@ CHAT_MODEL = "openai/gpt-oss-20b"
 # fully decommissioned by Groq; Gemma2/Qwen3-32B are on Groq's deprecation
 # path toward an August 2026 shutdown). Kept the original Llama models and
 # added the newer GPT-OSS / Qwen3.6 / Kimi models as additional options.
-```python
+
 AVAILABLE_MODELS = {
     # =========================
     # GROQ MODELS
@@ -69,9 +69,6 @@ OPENROUTER_MODELS = {
     "google/gemma-4-26b-a4b-it:free",
     "nvidia/nemotron-3-nano-30b-a3b:free",
 }
-
-
-
 
 EMBED_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 EMBED_DIM = 384
